@@ -1,4 +1,6 @@
 #include "radiusPadding.h"
+#include "recognitionGridSearch.h"
+#include "ccaGridSearch.h"
 #include "config.h"
 
 #include <exception>
@@ -8,11 +10,23 @@
 int main(int argc, char* argv[]) {
     if (argc > 3 || (argc > 1 && std::string(argv[1]) == "--help")) {
         std::cout << "Usage: BallExperiments [image-path|--all] [output-directory]\n"
+                  << "       BallExperiments --recognition-grid [output-directory]\n"
+                  << "       BallExperiments --cca-grid [output-directory]\n"
                   << "Defaults: Media/AllBalls.jpeg output/experiments/radius_padding\n";
         return argc > 3 ? 1 : 0;
     }
 
     try {
+        if (argc > 1 && std::string(argv[1]) == "--cca-grid") {
+            experiments::runCCAGridSearch(argc > 2
+                ? argv[2] : "output/experiments/cca_grid_search");
+            return 0;
+        }
+        if (argc > 1 && std::string(argv[1]) == "--recognition-grid") {
+            experiments::runRecognitionGridSearch(argc > 2
+                ? argv[2] : "output/experiments/recognition_grid_search");
+            return 0;
+        }
         const std::filesystem::path output = argc > 2
             ? argv[2] : "output/experiments/radius_padding";
         if (argc > 1 && std::string(argv[1]) == "--all") {

@@ -40,12 +40,37 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Ball Recognition Results}{6}{subsection.3.3}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Ball recognition results for two different methods.}}{6}{table.4}\protected@file@percent }
 \newlabel{tab:recognition-results}{{4}{6}{Ball recognition results for two different methods}{table.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Qualitative Analysis and Failure Cases}{6}{subsection.3.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4}Solution Anaysis and limitations}{7}{section.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Limitations}{7}{subsection.4.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Possible Improvements}{7}{subsection.4.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{7}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}Appendix}{7}{section.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Use of Generative AI}{7}{subsection.6.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Resources}{7}{subsection.6.2}\protected@file@percent }
-\gdef \@abspage@last{7}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Exploratory Recognition Experiments}{6}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:recognition-experiments}{{3.4}{6}{Exploratory Recognition Experiments}{subsection.3.4}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.1}Evaluation protocol and interpretation}{6}{subsubsection.3.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.2}Radius padding and cloth removal}{7}{subsubsection.3.4.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Radius-padding experiment on matched balls in Table1--6 using the original recognition thresholds and K=2.}}{8}{table.5}\protected@file@percent }
+\newlabel{tab:radius-padding-results}{{5}{8}{Radius-padding experiment on matched balls in Table1--6 using the original recognition thresholds and K=2}{table.5}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.3}Recognition search: fixed processing and caching}{8}{subsubsection.3.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.4}Stage one: joint K and type-threshold grid}{9}{subsubsection.3.4.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Stage-one recognition search space.}}{9}{table.6}\protected@file@percent }
+\newlabel{tab:recognition-search-space}{{6}{9}{Stage-one recognition search space}{table.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Effect of K and cloth filtering on Table1--6. Default columns use the original thresholds. Tuned columns select the highest-ranked stage-one configuration within each K/filter pair; colour thresholds remain fixed.}}{9}{table.7}\protected@file@percent }
+\newlabel{tab:recognition-search-k}{{7}{9}{Effect of K and cloth filtering on Table1--6. Default columns use the original thresholds. Tuned columns select the highest-ranked stage-one configuration within each K/filter pair; colour thresholds remain fixed}{table.7}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.5}Stage two: grouped colour-threshold search}{10}{subsubsection.3.4.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.6}Selected configuration and measured improvement}{10}{subsubsection.3.4.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Baseline and selected recognition parameters. Other colour parameters retain their original values.}}{10}{table.8}\protected@file@percent }
+\newlabel{tab:recognition-search-parameters}{{8}{10}{Baseline and selected recognition parameters. Other colour parameters retain their original values}{table.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Exploratory recognition scores. Tuning uses Table1--6; the final column is full-number recognition on AllBalls, reported separately.}}{11}{table.9}\protected@file@percent }
+\newlabel{tab:recognition-search-summary}{{9}{11}{Exploratory recognition scores. Tuning uses Table1--6; the final column is full-number recognition on AllBalls, reported separately}{table.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Per-image counts before and after the recognition search. All comparisons use the same matched candidates.}}{11}{table.10}\protected@file@percent }
+\newlabel{tab:recognition-search-images}{{10}{11}{Per-image counts before and after the recognition search. All comparisons use the same matched candidates}{table.10}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces Selected configuration's type confusion matrix on Table1--6. Rows are ground truth and columns are predictions.}}{12}{table.11}\protected@file@percent }
+\newlabel{tab:recognition-search-confusion}{{11}{12}{Selected configuration's type confusion matrix on Table1--6. Rows are ground truth and columns are predictions}{table.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces One matched candidate from Table1, compared under the original baseline, the cloth-filter baseline, the best stage-one configuration and the final selected configuration. Only final masked ball crops are shown. Each panel reports K, cloth setting, predicted type and number. Green text denotes a correct prediction and red denotes an incorrect prediction against the matched annotation. Identical winning configurations are displayed once.}}{12}{figure.3}\protected@file@percent }
+\newlabel{fig:recognition-search-example}{{3}{12}{One matched candidate from Table1, compared under the original baseline, the cloth-filter baseline, the best stage-one configuration and the final selected configuration. Only final masked ball crops are shown. Each panel reports K, cloth setting, predicted type and number. Green text denotes a correct prediction and red denotes an incorrect prediction against the matched annotation. Identical winning configurations are displayed once}{figure.3}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.7}Reproducibility, outputs and remaining limitations}{12}{subsubsection.3.4.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Qualitative Analysis and Failure Cases}{13}{subsection.3.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Solution Anaysis and limitations}{13}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Limitations}{13}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Possible Improvements}{13}{subsection.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{14}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Appendix}{14}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Use of Generative AI}{14}{subsection.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Resources}{14}{subsection.6.2}\protected@file@percent }
+\gdef \@abspage@last{14}

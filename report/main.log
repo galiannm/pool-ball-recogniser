@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2023.10.7)  27 OCT 2026 16:10
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2023.10.7)  27 OCT 2026 16:57
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -386,7 +386,7 @@ Package microtype Info: No adjustment of character kerning.
  (/usr/local/texlive/2023/texmf-dist/tex/latex/microtype/mt-cmr.cfg
 File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman (RS)
 )
-<assets/pipelineDiagram.png, id=96, 632.3625pt x 587.19376pt>
+<assets/pipelineDiagram.png, id=128, 632.3625pt x 587.19376pt>
 File: assets/pipelineDiagram.png Graphic file (type png)
 <use assets/pipelineDiagram.png>
 Package pdftex.def Info: assets/pipelineDiagram.png  used on input line 47.
@@ -402,28 +402,34 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `cmtt' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
-<assets/AllBallsDetection.jpeg, id=110, 1938.24126pt x 510.90875pt>
+<assets/AllBallsDetection.jpeg, id=142, 1938.24126pt x 510.90875pt>
 File: assets/AllBallsDetection.jpeg Graphic file (type jpg)
 <use assets/AllBallsDetection.jpeg>
 Package pdftex.def Info: assets/AllBallsDetection.jpeg  used on input line 122.
 (pdftex.def)             Requested size: 273.14923pt x 71.99448pt.
- [2{/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}] [3 <./assets/AllBallsDetection.jpeg>] [4] [5] [6] [7] (./main.aux)
+ [2{/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}] [3 <./assets/AllBallsDetection.jpeg>] [4] [5] (./sections/recognition_experiments.tex [6] [7] (./tables/radius_padding_results.tex) [8] (./tables/recognition_search_k.tex) [9] (./tables/recognition_search_parameters.tex) (./tables/recognition_search_summary.tex [10]) (./tables/recognition_search_images.tex) (./tables/recognition_search_confusion.tex [11])
+<assets//recognition_search_example.png, id=213, 963.6pt x 366.36874pt>
+File: assets//recognition_search_example.png Graphic file (type png)
+<use assets//recognition_search_example.png>
+Package pdftex.def Info: assets//recognition_search_example.png  used on input line 361.
+(pdftex.def)             Requested size: 455.24411pt x 173.08778pt.
+) [12 <./assets//recognition_search_example.png (PNG copy)>] [13] [14] (./main.aux)
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 5643EA4A61B63FB53A78DBEF93691016;3888.
+(rerunfilecheck)             Checksum: 7CD00B35862900B457B129957E584CCA;6188.
  ) 
 Here is how much of TeX's memory you used:
- 12077 strings out of 476025
- 192429 string characters out of 5790017
- 1863388 words of memory out of 5000000
- 32220 multiletter control sequences out of 15000+600000
- 527312 words of font info for 119 fonts, out of 8000000 for 9000
+ 12257 strings out of 476025
+ 195753 string characters out of 5790017
+ 1867388 words of memory out of 5000000
+ 32279 multiletter control sequences out of 15000+600000
+ 532482 words of font info for 159 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,12n,76p,1058b,446s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1728.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb>
-Output written on main.pdf (7 pages, 550468 bytes).
+ 75i,12n,76p,1058b,450s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1000.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm0900.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1000.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1728.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sftt1000.pfb>
+Output written on main.pdf (14 pages, 751968 bytes).
 PDF statistics:
- 208 PDF objects out of 1000 (max. 8388607)
- 173 compressed objects within 2 object streams
- 37 named destinations out of 1000 (max. 500000)
- 33475 words of extra memory for PDF output out of 35830 (max. 10000000)
+ 317 PDF objects out of 1000 (max. 8388607)
+ 261 compressed objects within 3 object streams
+ 63 named destinations out of 1000 (max. 500000)
+ 47880 words of extra memory for PDF output out of 51595 (max. 10000000)
 

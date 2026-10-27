@@ -264,8 +264,11 @@ TODO: Add image of the AllBalls image after perpective transformation
 \section{Evaluation and Results}
 \subsection{Methodology}
 
-The reference image AllBalls.jpeg was used exclusively for parameter selection, 
-while the six other images were reserved for evaluation. This separation 
+For the original detector and baseline evaluation, the reference image AllBalls.jpeg
+was used for parameter selection, while the six other images were reserved for
+evaluation. The later exploratory recognition search in
+Section~\ref{sec:recognition-experiments} also uses these six images for tuning;
+its results are reported separately. The original separation
 reduces the risk of reporting performance only on an image used to optimise 
 the detector.
 
@@ -402,6 +405,9 @@ classified 76, corresponding to an end-to-end correct identification rate of $84
 
 This distinction is important because a classification system cannot correctly 
 identify a ball that was missed during localisation.
+
+\input{sections/recognition_experiments.tex}
+\input{sections/cca_experiment.tex}
 
 \subsection{Qualitative Analysis and Failure Cases}
 

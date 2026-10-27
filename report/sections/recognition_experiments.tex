@@ -1,0 +1,406 @@
+\subsection{Exploratory Recognition Experiments}
+\label{sec:recognition-experiments}
+
+The baseline results above describe the original implementation. Two subsequent
+experiments investigated whether the extraction mask and recognition parameters
+could improve these results. Both experiments were implemented in a separate
+\code{experiments/} directory and executed using the independent
+\code{BallExperiments} target. They did not replace the classification functions,
+configuration values, or execution path of the main application. The results in
+this subsection therefore describe experimental alternatives rather than a
+change to the deployed baseline.
+
+\subsubsection{Evaluation protocol and interpretation}
+
+For these experiments, Table1--Table6 were used as an exploratory tuning set.
+AllBalls was reported separately as a reference image and was not included in
+the ranking objective of the recognition grid search. This differs from the
+earlier detection experiment, which selected Hough parameters on AllBalls and
+evaluated them on Table1--Table6. Since the recognition search used the labels
+of Table1--Table6 to select thresholds, its final scores on those images are
+tuning scores, not independent test estimates. Furthermore, all seven images
+share the same viewpoint and some unchanged ball positions. AllBalls is also
+the image on which the original rules were developed. Its separate results
+are consequently a useful regression check, but not evidence of generalisation
+to a new camera, table or lighting condition.
+
+The detector, pocket filtering, perspective transformation and matching
+tolerance were held fixed. Detection was performed once per image. Predicted
+centres were transformed into table coordinates and matched one-to-one to
+annotated ball centres with a maximum distance of 15 table pixels, using the
+existing evaluation implementation. A match was established before varying
+recognition parameters and reused for every configuration. The experimental
+run contained 90 annotated balls in Table1--Table6, of which 86 were matched.
+There were two unmatched candidate detections, which were excluded from
+recognition accuracy and displayed with an unavailable correctness indicator.
+All 16 annotated balls in AllBalls were matched. These are counts measured
+by the experiment's actual detection run; they are not inferred from a
+previously saved detection table.
+
+For a matched ball, its annotated number determines its true type: number 0
+denotes the white cue ball, numbers 1--8 are solid, and numbers 9--15 are
+striped. Candidate indices identify detections within an image and should not
+be interpreted as ball numbers.
+
+Four measures were recorded. Let $M$ be the number of matched detections,
+$G$ the number of annotated balls, $t_i$ the true type and $n_i$ the true
+number of matched candidate $i$. Let $\hat{t}_i$ and $\hat{n}_i$ be the
+predicted type and number. The recognition accuracies are
+\[
+ A_{\mathrm{type}}=\frac{1}{M}\sum_{i=1}^{M}
+       \mathbf{1}(\hat{t}_i=t_i),\qquad
+ A_{\mathrm{number}}=\frac{1}{M}\sum_{i=1}^{M}
+       \mathbf{1}(\hat{n}_i=n_i).
+\]
+The number prediction uses the predicted type, so a type error can propagate
+into number recognition. An additional diagnostic reruns number classification
+with the true type supplied:
+\[
+ A_{\mathrm{oracle}}=\frac{1}{M}\sum_{i=1}^{M}
+       \mathbf{1}\bigl(f_{\mathrm{number}}(\mathrm{clusters}_i,t_i)=n_i\bigr).
+\]
+This diagnostic helps separate colour-selection failures from type errors.
+It is not an executable recognition solution because ground truth is required.
+In particular, supplying the true type of a cue ball invokes the existing
+number-0 shortcut when segmentation is available. Thus the measure should not
+be described as a pure hue-classification accuracy. Finally, end-to-end number
+recall divides correct detected-and-numbered balls by $G$ instead of $M$.
+Missed balls remain errors under this measure. It does not measure the
+precision of numbered detections, since false-positive candidates are not
+included in its numerator or denominator.
+
+\subsubsection{Radius padding and cloth removal}
+
+The initial hypothesis was that Hough detection could underestimate a ball's
+radius and exclude useful pixels around its edge. The extraction radius was
+therefore changed from the rounded Hough radius $r$ to
+$r'=r+p$, where $p\in\{0,1,2,3,4\}$ pixels. Both the square crop and its
+circular mask used $r'$. Enlarging the square alone would not admit additional
+pixels into colour analysis, because pixels outside the original mask would
+still be excluded. Crops were clipped to the image boundaries. Padding zero
+without filtering reused the original extraction function and reproduced the
+baseline mask.
+
+Each padding value was evaluated with and without a local cloth-removal
+filter, producing ten variants per candidate. K was fixed at 2 and all type
+and number thresholds retained their original values. This isolated the effect
+of extraction from changes to the recognition rules.
+
+The filter estimated the surrounding cloth colour from an annulus of width
+six pixels immediately outside the padded circle. Sampling used the original
+colour image. A sample was eligible when its OpenCV HSV values satisfied
+$35\leq H\leq95$, $S\geq50$ and $V\geq30$. These conditions restricted
+the estimate to visible green material rather than including arbitrary
+colours from nearby objects. If fewer than 20 eligible samples were available,
+filtering was skipped and the padded circular mask was retained.
+
+The modal hue bin of eligible samples was selected. Saturation and brightness
+were averaged over samples within ten hue units of that mode. Pixels inside
+the candidate's mask were marked as potential cloth when their hue differed
+from the modal hue by at most 10, their saturation and brightness differed
+from the corresponding averages by at most 70, and they satisfied the same
+minimum saturation and brightness conditions. These tolerances use OpenCV's
+$0$--$179$ hue and $0$--$255$ saturation/brightness scales.
+
+Potential cloth pixels were divided into eight-connected components. Only
+components touching the boundary of the circular mask were removed. The
+boundary was computed by subtracting a $3\times3$ elliptical erosion from
+the original mask, with pixels outside the crop treated as zero. This also
+recognised image-clipped edges as boundaries. Removed pixels were excluded
+from the mask rather than replaced by black pixels inside the analysis area.
+Consequently, K-means percentages used only the retained pixels as their
+denominator. The black background in diagnostic images was for display.
+
+Boundary connectivity reduces the chance of deleting isolated green markings
+inside another ball, but does not distinguish a green ball from the cloth
+when their colours are similar and the matching region reaches the boundary.
+The observed masks showed that real green ball regions could be removed.
+Conversely, shadows and reflections could prevent some cloth pixels from
+matching the estimated colour. Cloth removal was therefore treated as an
+experimental option rather than assumed to be beneficial.
+
+\input{tables/radius_padding_results.tex}
+
+Without filtering, increasing padding reduced correct number predictions on
+Table1--Table6 from 67 at zero padding to 60, 49, 43 and 42 at one through
+four pixels respectively. Cloth filtering partially compensated for the
+additional background, but padded variants still failed to improve number
+recognition over the original baseline. Two-pixel padding with filtering
+increased correct type predictions from 76 to 78, but reduced correct numbers
+from 67 to 64. The zero-padding filter alone gave 77 correct types and 69
+correct numbers. On AllBalls, the unfiltered baseline already classified all
+16 balls correctly; the filter at zero padding reduced both counts to 15.
+
+These findings support retaining the original extraction radius for the next
+experiment. A likely explanation for the deterioration with padding is that
+additional cloth pixels alter cluster colours and proportions. This is an
+interpretation of the masks and recognition changes, not a direct measurement
+of the geometric accuracy of the Hough radius. The results do not establish
+that every detected radius equals the true visible ball boundary.
+
+\subsubsection{Recognition search: fixed processing and caching}
+
+The next experiment varied K, the interpretation of cluster colours and the
+type and number decision thresholds. Radius padding was fixed at zero.
+Cloth filtering remained an on/off factor, using the same filter parameters
+as the preceding experiment. Connected-component type correction was not
+included, so changes could be attributed to clustering and colour rules.
+
+K-means was performed in three-dimensional BGR space using the existing
+implementation. The requested cluster counts were $K\in\{2,3,4,5,6\}$.
+For each call, the random-number generator state was set to 12345, three
+K-means++ initialisations were attempted, and the termination criteria were
+50 iterations or an epsilon of 0.2. The prior random state was restored
+afterwards. These controls make comparisons repeatable within the same
+software environment; bit-for-bit equality across different OpenCV versions
+or platforms is not assumed.
+
+Each candidate was segmented once for each K/filter combination. The run
+contained 104 candidates across all images, giving 1,040 cached segmentations.
+Only cluster percentages and representative BGR/HSV colours were retained
+for threshold evaluation. Cluster masks and segmented images were released
+after caching because subsequent rules depend on these features rather than
+on individual pixel labels. The original masked crops were retained for
+final diagnostic figures. No K-means rerun was required for each threshold
+configuration.
+
+The experimental classifiers accepted explicit parameter structures rather
+than changing constants in the main classifier. Before searching, the
+experimental default type, percentages and number predictions were compared
+with the original production functions on every cached segmentation. Any
+disagreement terminated the experiment. This checked that baseline scores
+and parameterised scores represented the same original decision rules.
+
+\subsubsection{Stage one: joint K and type-threshold grid}
+
+The first stage evaluated the full Cartesian product below. The original
+number thresholds were fixed during this stage, although changing the light
+thresholds also affected which cluster was eligible for number recognition.
+The same light definition was used in type classification and body-colour
+selection.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Stage-one recognition search space.}
+\label{tab:recognition-search-space}
+\begin{tabular}{ll}
+\toprule
+Parameter & Evaluated values \\
+\midrule
+Number of clusters K & 2, 3, 4, 5, 6 \\
+Cloth filtering & Off, on \\
+Minimum light-cluster V & 150, 170, 190 \\
+Maximum light-cluster S & 125, 145, 165, 185 \\
+Minimum light proportion for cue ball & 80\%, 85\%, 90\% \\
+Minimum non-light proportion for solid ball & 60\%, 65\%, 70\%, 75\%, 80\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+
+This produced $5\times2\times3\times4\times3\times5=1{,}800$
+configurations. A cluster was light when $V$ met the minimum and $S$ did
+not exceed the maximum. A ball was first considered for the cue-ball rule,
+then the solid rule, and finally the striped rule. Percentages and ordering
+therefore followed the original implementation. A failed segmentation or
+absence of sufficient evidence remained unknown and counted as incorrect
+for a matched ball.
+
+The dark-cluster threshold was fixed at $V\leq90$. Although it changes the
+separate reported dark and coloured percentages, it does not change a type
+decision: the solid and striped rules use the sum of these two categories.
+Searching it as a type parameter would duplicate equivalent predictions.
+The separate black-ball thresholds in number recognition were searched in
+stage two.
+
+Configurations were ranked first by correct full-number predictions, then by
+correct type predictions, then by correct oracle-number predictions. All
+counts used Table1--Table6 only. Remaining ties favoured the smaller departure
+from the original parameters. The departure summed absolute threshold changes
+normalised by their search step sizes, plus $K-2$ and one unit for enabling
+cloth filtering. The hue boundary at 165 used a five-unit normalisation even
+though its upper alternative was 168; the body-area threshold used absolute
+percentage-point change. Final ties favoured the earlier configuration ID.
+This tie rule prefers less change when measured performance is equal; it
+does not establish that the chosen thresholds are uniquely optimal. A
+separate best-type ranking reversed the first two accuracy criteria.
+
+\input{tables/recognition_search_k.tex}
+
+The default-threshold columns show that increasing K alone did not improve
+number recognition. Without cloth filtering, the original K=2 configuration
+correctly numbered 67 balls, compared with 61, 65, 65 and 66 for K=3--6.
+However, after joint type-threshold tuning, K=6 without filtering achieved
+73 correct numbers and 81 correct types. Thus the effect of K depended on
+how the resulting clusters were interpreted; the experiment did not support
+simply increasing K while leaving all thresholds fixed.
+
+\subsubsection{Stage two: grouped colour-threshold search}
+
+To limit the much larger colour search, a shortlist was formed from the
+top three distinct K/filter pairs under the full-number ranking and the
+top three distinct K/filter pairs under the type-first ranking. The original
+K=2 baseline, with and without cloth filtering, was also included. Exact
+duplicate seed configurations were removed. This run produced six seeds.
+Distinctness within each ranking avoided filling the shortlist with several
+nearly identical threshold settings for the same K/filter pair.
+
+Each seed retained its K, cloth setting and stage-one type thresholds.
+Colour thresholds were searched in three consecutive groups:
+
+\begin{enumerate}
+\item Warm colours: red's upper hue boundary $\{4,6,8\}$;
+orange's upper boundary $\{12,15,18\}$; yellow's upper boundary
+$\{30,35,40\}$; red's wrap-around lower boundary
+$\{168,170,172\}$; and the red/maroon brightness split
+$\{130,150,170\}$. The nominal Cartesian product contained 243 combinations.
+\item Green, blue and purple: green's lower boundary
+$\{40,45,50\}$; green's upper boundary $\{85,90,95\}$;
+blue's lower boundary $\{95,100,105\}$; the blue/purple boundary
+$\{125,130,135\}$; and purple's upper boundary
+$\{160,165,168\}$. This also gave 243 nominal combinations.
+\item Neutral colours and body selection: black's saturation split
+$\{40,60,80\}$; black's maximum brightness $\{70,90,110\}$;
+and minimum eligible body-cluster area $\{1,2,5\}\%$.
+This gave 27 nominal combinations.
+\end{enumerate}
+
+The intervals retained the original logic: red occupies both ends of the
+hue scale; orange and yellow follow its low-hue interval; green and blue
+have separate lower bounds; blue and purple share a boundary. Hue intervals
+must remain ordered, with strictly positive gaps between yellow and green,
+green and blue, and purple and high-hue red. Combinations violating these
+constraints were rejected. Existing unknown-colour gaps were therefore
+preserved rather than forcing every hue into a ball colour.
+
+For each group, the current configuration was retained as a candidate. The
+group's best configuration under the same full-number ranking became the
+starting point for the next group. Two complete passes revisited warm,
+cool and neutral thresholds after later groups had changed. This was a
+sequence of exhaustive searches within small groups, not an exhaustive
+Cartesian search over every colour parameter jointly. It can miss a useful
+combination requiring simultaneous changes across groups, and it does not
+prove global optimality. Stage-one type thresholds were not revisited after
+colour tuning. Their remaining interactions with colour thresholds are
+another limitation of the staged search.
+
+The actual second stage evaluated 5,526 valid combinations. Together with
+stage one this gave 7,326 scored trials. Trials repeated across groups,
+seeds or passes were retained in the CSV audit trail; this count is not
+the number of unique parameter vectors. Each trial recorded its parent
+configuration and stage so the selection sequence could be reconstructed.
+The minimum eligible cluster percentage was included for completeness, but
+with at most six clusters the largest non-light cluster often already
+exceeds all tested minimum areas. A parameter with no effect on these
+images should not be interpreted as precisely estimated.
+
+\subsubsection{Selected configuration and measured improvement}
+
+\input{tables/recognition_search_parameters.tex}
+\input{tables/recognition_search_summary.tex}
+
+The highest-ranked configuration used K=6, no cloth filtering,
+$V\geq170$ and $S\leq125$ for light clusters, an 85\% light threshold
+for the cue ball, and an 80\% non-light threshold for solids. Relative to
+the original rules, its blue/purple hue boundary moved from 130 to 125.
+Other colour thresholds remained unchanged. It was configuration 2153
+in the saved run. The same configuration won both the full-number and
+type-first rankings after tie-breaking, so these names do not refer to
+two distinct selected models.
+
+On the 86 matched tuning balls, type correctness increased from 76 to 81:
+$88.37\%$ to $94.19\%$, a gain of 5.81 percentage points. Full-number
+correctness increased from 67 to 74: $77.91\%$ to $86.05\%$, a gain of
+8.14 percentage points. Five type errors and seven number errors were
+corrected relative to the baseline, with no previously correct predictions
+becoming incorrect in either category on these matched candidates.
+
+The best stage-one configuration already produced 73 correct numbers.
+Colour tuning added one further correct number on Table1--Table6 and
+restored the stage-one reference score on AllBalls from 15/16 to 16/16.
+The latter restoration was observed after selection, not used to choose
+the hue boundary. Oracle-number correctness increased from 70/86 for the
+baseline to 75/86 for the selected configuration. It remained only one
+ball above full-number correctness, indicating that supplying the correct
+type alone resolved little of the remaining number-recognition error.
+
+The cloth filter improved the original thresholds slightly, but was not
+part of the selected overall configuration. Its benefit was therefore
+conditional on K and the thresholds. These results support keeping cloth
+filtering optional rather than automatically adding it to the main pipeline.
+
+\input{tables/recognition_search_images.tex}
+
+Improvements were unevenly distributed. On Table1, correct type predictions
+increased from 8/14 to 11/14 and correct numbers from 6/14 to 9/14. On
+Table2, correct numbers increased from 13/16 to 15/16. Tables5 and 6 each
+gained one correct number, while Tables3 and 4 retained their baseline
+number counts. This per-image view prevents the pooled gain from being
+mistaken for an equally large improvement on every scene.
+
+Using all 90 annotations as the denominator, correct detected-and-numbered
+balls increased from 67/90 ($74.44\%$) to 74/90 ($82.22\%$).
+Detection itself was unchanged; the four missed balls could not be recovered
+by recognition tuning. The 16/16 reference result also matched, rather than
+exceeded, the original baseline on AllBalls.
+
+\input{tables/recognition_search_confusion.tex}
+
+The selected configuration still made five type errors and twelve full-number
+errors among matched tuning detections. For example, some striped balls were
+predicted as white because their visible light region dominated the crop.
+Some purple balls were assigned another colour or returned unknown; two black
+balls were assigned yellow. These examples show that tuning global thresholds
+does not resolve all effects of ball orientation, shadows, highlights and
+the selection of a single representative body cluster. They also explain
+why most remaining number errors persisted when the true type was supplied.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{recognition_search_example.png}
+\caption{One matched candidate from Table1, compared under the original baseline,
+the cloth-filter baseline, the best stage-one configuration and the final
+selected configuration. Only final masked ball crops are shown. Each panel
+reports K, cloth setting, predicted type and number. Green text denotes a
+correct prediction and red denotes an incorrect prediction against the
+matched annotation. Identical winning configurations are displayed once.}
+\label{fig:recognition-search-example}
+\end{figure}
+\FloatBarrier
+
+\subsubsection{Reproducibility, outputs and remaining limitations}
+
+The search is run from the repository root with
+\code{./build-local/BallExperiments --recognition-grid} after building the
+\code{BallExperiments} CMake target. Search ranges and original defaults are
+defined in \code{experiments/recognitionSearchConfig.h}. An optional output
+directory argument allows separate runs to be preserved.
+
+Outputs are written under \code{output/experiments/recognition_grid_search/}.
+The type and colour leaderboards contain every evaluated configuration,
+its complete parameter vector, ranking metrics, stage and parent identifier.
+The K-comparison table records both the original thresholds and the best
+stage-one thresholds for each K/filter pair. Other CSV files contain
+the seed shortlist, finalist configurations, pooled and per-image metrics,
+candidate-level predictions, type and number confusion matrices, detection
+counts, mask sizes and cached cluster features. Unmatched candidates have
+blank correctness fields rather than being silently counted as correct or
+incorrect classifications. A separate image is saved for each candidate,
+with the baseline and distinct finalist configurations placed side by side.
+
+Report tables and the diagnostic figure are local snapshots produced by
+\code{python3 experiments/writeRecognitionReport.py}; the report can compile
+without the experiment outputs. Rerunning the search does not automatically
+update those snapshots. The surrounding interpretation must also be reviewed
+if parameters or measured results change.
+
+The main limitation is selection on a small, correlated image set. Thousands
+of threshold trials can fit properties specific to these balls, their
+orientations and the shared illumination. The measured gains should therefore
+motivate evaluation on fresh photographs before replacing the baseline.
+Neither the pooled tuning result nor the AllBalls reference check establishes
+performance on independent data. The search was also bounded to five K values,
+small threshold grids and two grouped colour passes; it establishes the best
+observed configuration under that procedure, not the best possible recognition
+system. No new production settings were applied as part of this experiment.

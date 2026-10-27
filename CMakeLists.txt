@@ -47,6 +47,9 @@ target_link_libraries(PoolBallDetection PRIVATE ${OpenCV_LIBS})
 add_executable(BallExperiments
     experiments/main.cpp
     experiments/radiusPadding.cpp
+    experiments/recognitionGridSearch.cpp
+    experiments/ccaGridSearch.cpp
+    recognition/connectedComponentAnalysis.cpp
     evaluation/evaluation.cpp
     detection/ballDetection.cpp
     detection/geometricFilter.cpp
