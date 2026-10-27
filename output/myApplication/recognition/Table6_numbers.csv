@@ -1,0 +1,14 @@
+candidate,predictedType,predictedNumber
+1,White,0
+2,Solid,1
+3,Solid,5
+4,White,0
+5,Striped,9
+6,Striped,15
+7,Solid,8
+8,Solid,2
+9,Striped,14
+10,Solid,7
+11,Striped,13
+12,Solid,6
+13,Striped,-1

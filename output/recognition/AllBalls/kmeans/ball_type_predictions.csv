@@ -1,0 +1,17 @@
+candidate,actualBallNumber,predictedBallNumber,predictedType,lightPercent,colouredPercent,darkPercent
+1,13,13,Striped,56.0799,43.9201,0
+2,0,0,White,98.0883,1.91167,0
+3,5,5,Solid,0,100,0
+4,8,8,Solid,8.04219,0,91.9578
+5,1,1,Solid,0,100,0
+6,12,12,Striped,57.0204,0,42.9796
+7,15,15,Striped,66.4967,33.5033,0
+8,11,11,Striped,67.3707,32.6293,0
+9,9,9,Striped,53.2069,46.7931,0
+10,4,4,Solid,10.5471,0,89.4529
+11,6,6,Solid,10.1516,0,89.8484
+12,10,10,Striped,76.705,23.295,0
+13,3,3,Solid,13.1975,86.8025,0
+14,7,7,Solid,10.0198,89.9802,0
+15,2,2,Solid,7.95545,92.0446,0
+16,14,14,Striped,61.8138,0,38.1862
