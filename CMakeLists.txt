@@ -42,3 +42,21 @@ target_include_directories(PoolBallDetection PRIVATE
     ${OpenCV_INCLUDE_DIRS}
 )
 target_link_libraries(PoolBallDetection PRIVATE ${OpenCV_LIBS})
+
+# Independent runner: the main application and recognition code stay unchanged.
+add_executable(BallExperiments
+    experiments/main.cpp
+    experiments/radiusPadding.cpp
+    evaluation/evaluation.cpp
+    detection/ballDetection.cpp
+    detection/geometricFilter.cpp
+    geometry/perspectiveTransform.cpp
+    recognition/extractBall.cpp
+    recognition/kMeansSegmentation.cpp
+    recognition/ballTypeClassifier.cpp
+)
+target_include_directories(BallExperiments PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${OpenCV_INCLUDE_DIRS}
+)
+target_link_libraries(BallExperiments PRIVATE ${OpenCV_LIBS})
