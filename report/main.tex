@@ -1,4 +1,4 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[10pt,a4paper]{article}
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -8,6 +8,7 @@
 \usepackage{amsmath}
 \usepackage[hidelinks]{hyperref}
 \usepackage{microtype}
+\usepackage{placeins}
 
 \graphicspath{{assets/}}
 \setlength{\parindent}{0pt}
@@ -15,191 +16,472 @@
 \newcommand{\code}[1]{\nolinkurl{#1}}
 \setlength{\emergencystretch}{2em}
 
-\title{Pool Ball Detection and Recognition\\[4pt]
-       \large Computer Vision Assignment --- Draft Report}
-% Replace this author field before submission.
-\author{Author name and student number}
-\date{27 October 2026}
+\title{Pool ball Recognition Assignment\\[4pt]
+       \large Computer Vision (CSU44053)}
+
+\author{Manon Yiqin Galian Ng (23375206)}
 
 \begin{document}
 \maketitle
 
-\begin{abstract}
-This project implements a C++17 and OpenCV pipeline for detecting pool balls,
-classifying their type, and estimating their number from colour. Detection uses
-table masking, the circular Hough transform, and geometric filtering near
-pockets. Recognition uses K-means colour segmentation, with an optional
-connected-component analysis (CCA) stage. In the saved six-image validation
-results, detection achieves an aggregate F1 score of 0.940. Among 86 matched
-and analysed balls, the baseline correctly classifies 76 types and 67 numbers;
-the CCA variant correctly classifies 73 types and 64 numbers. These figures
-describe the saved experiment outputs rather than a new evaluation run.
-\end{abstract}
+\section{Assignment Overview}
 
-\section{Task and dataset}
-The system processes a photograph of a pool table and produces detected ball
-centres, predicted types, and predicted numbers. The type categories are White,
-Solid, and Striped. Number 0 denotes the cue ball, numbers 1--8 are solids, and
-numbers 9--15 are stripes. A predicted number of $-1$ denotes an unknown result.
+The objective of this assignment was to develop a computer vision system capable of locating and 
+recognising pool balls from photographs of a pool table. The two main tasks were to determine the 
+position of each ball and to classify it as a solid, striped (along with each ball's repective number)
+or white cue ball.
 
-\code{AllBalls.jpeg} is used for tuning and inspecting colour clusters.
-\code{Table1.jpeg} through \code{Table6.jpeg} form the validation image set.
-The saved detection results contain 90 annotated balls across these six images.
-Ground-truth positions and numbers are loaded from
-\code{data/ground_truth/BallLocations.csv}. Actual numbers are used for matching
-and scoring; they are not inputs to the number classifier.
+The image dataset consisted of one reference image, AllBalls.jpeg, used for parameter tuning, and six test 
+images, Table1–Table6.jpeg, containing different ball arrangements. All images were captured from 
+the same camera viewpoint, and the four corners of the playing surface were provided.
 
-\section{Method}
-\subsection{Detection and geometric filtering}
-Pixels outside a manually specified table quadrilateral are masked out. The
-image is converted to grayscale and smoothed with a $5\times5$ Gaussian filter
-with standard deviation 1.5. Circular Hough detection then proposes ball centres
-and radii. Table~\ref{tab:parameters} lists the configured detection parameters.
+The system was implemented in C++ using OpenCV, following a classical image-processing approach 
+rather than a neural network. The implemented pipelines combines circular Hough detection, 
+geometric filtering, perspective transformation, colour segmentation and rule-based classification.
+
+\section{System Design and Implementation}
+\subsection{Pipeline Overview}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.60\linewidth]{assets/pipelineDiagram.png}
+    \caption{Overall processing pipeline, from input image to detected and classified balls.}
+    \label{fig:pipeline}
+\end{figure}
+\FloatBarrier
+
+\noindent The processing pipeline consists of two main stages: ball localisation and ball recognition. 
+Localisation uses geometric and edge information to identify candidate circles.
+Ball recognition analysed the colour composition of each detected ball.
+
+\subsection{Ball Detection}
+
+Since the table boundaries were known and the camera position remained fixed, 
+the playing surface could be represented by a quadrilateral. A binary mask 
+was constructed from its four corners, restricting circle detection to the 
+relevant image region and reducing interference from the surrounding 
+environment. The goal of this step was to remove the background surrounding 
+the pool table so that it would not interfere with ball detection.
+
+The masked image was converted to grayscale and smoothed using a $5 \times 5$ 
+Gaussian filter with a standard deviation of 1.5 (TODO: explain why these smoothing params). 
+Smoothing was used as it reduces high-frequency noise and small local 
+intensity variations that might otherwise introduce spurious edge responses.
+
+Candidate ball locations were detected using OpenCV’s circular Hough transform
+with the gradient-based method (\texttt{HOUGH\_GRADIENT}). Applied to the grayscale, 
+Gaussian-smoothed image, it identifies circular structures and returns their 
+estimated centres and radii. These circles were treated as candidates because
+other features, such as pockets, could also produce detections.
+
+\subsubsection{Parameter tuning using grid search}
+
+The Hough transform requires several parameters that affect how many
+circles are detected and how accurately they match the balls. Rather than
+choosing these values only by visual inspection, a grid search was used
+to compare parameter combinations on the masked tuning image,
+\texttt{AllBalls.jpeg}.
+
+The search varied four parameters:
+\begin{itemize}
+    \item Accumulator resolution ratio:
+          $dp \in \{1.0, 1.5, 2.0\}$.
+    \item Minimum distance between detected centres:
+          $\{15, 18, 20, 22, 25\}$ pixels.
+    \item Upper Canny edge threshold:
+          $\{75, 100, 125, 150\}$.
+    \item Circle accumulator threshold:
+          $\{15, 20, 25, 30, 35, 40, 45, 50\}$.
+\end{itemize}
+
+This produced 480 parameter combinations. The minimum and maximum
+circle radii were fixed at 15 and 30 pixels respectively.
+
+For each combination, detected centres were transformed into table
+coordinates and matched to the annotated centres within a tolerance
+of 15 pixels. The best configuration was selected by first maximising
+the number of true positives, then minimising false positives, and
+finally minimising the mean centre localisation error.
+
+The results for every combination were saved to a CSV file, together
+with an image showing the detections from the best configuration.
+Pocket filtering was not applied during this search; it was evaluated
+as a separate processing step.
+
+\subsubsection{Removing pocket detections}
+
+Table pockets can also produce circular detections. To remove these,
+candidate centres were transformed into table coordinates and compared
+with six approximate pocket positions. Candidates within 25 pixels
+of a pocket centre were discarded.
+
+After the choosing the final Hough parameters and pocker filterting we obtained
+the following results on the tuning image:
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.60\linewidth]{assets/AllBallsDetection.jpeg}
+    \caption{AllBalls Ball detection with final Hough Params.}
+    \label{fig:allballs-detection}
+\end{figure}
+\FloatBarrier
+
+\subsection{Ball Extraction and Colour Segmentation}
+
+Once the candidate balls have been detected, each ball is extracted from the 
+original colour image using a square region centred on the predicted circle. 
+A circular binary mask restricts subsequent processing to pixels belonging to 
+the ball.
+
+Initial experiments investigated colour thresholding, including HLS-based 
+methods. However, a single global threshold was difficult to apply 
+consistently across differently coloured balls, particularly in the presence 
+of highlights, shadows and white markings.
+
+The final implementation therefore uses K-means clustering to partition the 
+colour pixels of each ball into two groups. Clustering is performed on BGR 
+pixel values, and the resulting cluster centres are converted to HSV for 
+interpretation.
+
+The proportion of ball pixels assigned to each cluster is calculated.
+Each cluster's representative colour is then converted to HSV and
+categorised using the following rules:
+
+\begin{itemize}
+    \item \textbf{Light:} brightness $V \geq 170$ and
+          saturation $S \leq 165$.
+    \item \textbf{Dark:} brightness $V \leq 90$.
+    \item \textbf{Coloured:} all remaining clusters.
+\end{itemize}
+
+Here, saturation and brightness range from 0 to 255. The percentages
+of clusters in each category are added together to obtain the total
+light, dark and coloured proportions used for ball-type classification.
+
+This approach reduces the original pixel-level information to a small set of 
+interpretable features. It does not require manually defining a separate colour 
+threshold for every individual ball.
+
+\subsection{Ball recognition}
+
+Ball recognition is performed in two stages. First, each detected ball
+is classified as white, solid or striped. Its predicted type is then
+combined with its colour to estimate its number.
+
+\subsubsection{Ball Type classification}
+
+Classification is performed using the proportions of light, dark and coloured 
+pixels obtained from segmentation.
+
+A ball is classified as white when at least $85\%$ of its pixels belong to 
+light clusters. It is classified as solid when at least $70\%$ of its pixels 
+belong to non-light clusters. Balls containing both light and non-light 
+regions, without meeting the preceding criteria, are classified as striped.
+
+These rules reflect the visual characteristics of pool balls: solid balls are 
+predominantly coloured, while striped balls contain a substantial white region
+in addition to their coloured band.
+
+However, this approach is sensitive to the visible orientation of the ball. 
+A striped ball viewed from its white side may resemble the cue ball, while one
+viewed predominantly from its coloured side may resemble a solid ball.
+
+An additional experimental classifier was developed using connected-component 
+analysis. It examines the spatial organisation of light and non-light regions, 
+including the largest connected components and the proportion of the circular 
+boundary occupied by light pixels. Its performance is compared with the simpler 
+colour-based method in Section 3.
+
+\subsubsection{Ball number recognition}
+
+Number recognition uses the predicted ball type and the HSV colour
+of the largest eligible non-light cluster. Clusters covering less
+than $2\%$ of the ball area are ignored, as are light clusters
+($V \geq 170$ and $S \leq 165$).
+
+A ball predicted as white is assigned number 0, representing the
+cue ball. For solid and striped balls, the selected cluster is
+examined using the following rules. OpenCV represents hue on a
+scale from 0 to 179, while saturation and brightness range from
+0 to 255.
+
+If $S < 60$, the ball is assigned number 8 only when $V \leq 90$
+and its predicted type is solid. Otherwise, this low-saturation
+case returns an unknown result.
+
+For clusters with $S \geq 60$, the colour thresholds in
+Table~\ref{tab:number-thresholds} determine the base number.
 
 \begin{table}[htbp]
-\centering
-\caption{Configured detection and evaluation parameters.}
-\label{tab:parameters}
-\begin{tabular}{lr}
-\toprule
-Parameter & Value \\
-\midrule
-Hough accumulator resolution ratio & 1.5 \\
-Minimum centre separation (original-image pixels) & 18 \\
-Hough edge threshold / accumulator threshold & 75 / 35 \\
-Minimum / maximum radius (original-image pixels) & 15 / 30 \\
-Transformed table size (pixels) & $1434\times683$ \\
-Pocket exclusion radius (transformed pixels) & 25 \\
-Ground-truth matching tolerance (transformed pixels) & 15 \\
-\bottomrule
-\end{tabular}
+    \centering
+    \caption{Experimental HSV thresholds for ball-number recognition.}
+    \label{tab:number-thresholds}
+    \begin{tabular}{lcl}
+        \toprule
+        Colour & Base number & HSV condition \\
+        \midrule
+        Yellow & 1 & $15 \leq H < 35$ \\
+        Blue   & 2 & $100 \leq H < 130$ \\
+        Red    & 3 & $(H < 6 \text{ or } H \geq 170)$,
+                     $V \geq 150$ \\
+        Purple & 4 & $130 \leq H < 165$ \\
+        Orange & 5 & $6 \leq H < 15$ \\
+        Green  & 6 & $45 \leq H < 90$ \\
+        Maroon & 7 & $(H < 6 \text{ or } H \geq 170)$,
+                     $V < 150$ \\
+        \bottomrule
+    \end{tabular}
 \end{table}
+\FloatBarrier
 
-A perspective transformation maps detected centres into table coordinates.
-Candidates within 25 transformed pixels of an approximate pocket centre are
-removed. The retained circles remain in original-image coordinates for cropping
-and drawing. Ground-truth matching is performed in transformed coordinates.
+Solid balls retain the base number, while striped balls add 8,
+giving numbers 9--15. Red and maroon share the same hue range,
+so brightness is used to distinguish them.
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.88\linewidth]{table1-detection.jpeg}
-\caption{Saved detection overlay for Table1. This image illustrates the output;
-quantitative detection counts are reported in Table~\ref{tab:detection}.}
-\label{fig:detection}
-\end{figure}
+When segmentation is unavailable, the predicted type is unknown,
+or no eligible cluster or colour match is found, the predicted
+number is set to $-1$. These thresholds are experimental and may
+be sensitive to changes in lighting.
 
-\subsection{Ball extraction and K-means segmentation}
-Each detected ball is cropped from the original colour image and assigned a
-circular binary mask. Only pixels inside this mask are clustered. K-means uses
-three-dimensional BGR samples; HSV values are computed from the resulting
-cluster colours for subsequent analysis. The demo compares $K=2,3,4,5$, while
-the configured recognition pipeline uses $K=2$.
+\subsection{Perspective Transformation}
 
-Each cluster stores its mask, percentage of the ball area, BGR colour, and HSV
-colour. Cluster percentages are computed relative to the circular ROI, and
-clusters are sorted by decreasing area. Diagnostic grids combine the original
-crop, segmented images, and cluster masks with labels.
+The table appears at an angle in the original photographs, while the
+provided ground-truth positions refer to a rectangular, top-down view.
+To compare our detections with these positions, their coordinates must
+be converted into the same coordinate system.
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.60\linewidth]{kmeans-example.png}
-\caption{Saved AllBalls diagnostic grid for candidate 6, showing the original
-crop and the segmentation and masks for $K=2$ through $K=5$.}
-\label{fig:kmeans}
-\end{figure}
+The four known table corners were mapped to the corners of a
+$1434 \times 683$ pixel rectangle. The resulting perspective
+transformation was then applied to each detected ball centre.
 
-\subsection{Type classification}
-For each cluster, saturation $S$ and brightness $V$ determine its category.
-A cluster is light when $V\geq170$ and $S\leq165$, dark when $V\leq90$, and
-coloured otherwise. The classifier sums the area percentages in each category.
-The decision rules are applied in the following order:
-\begin{enumerate}
-\item White if at least 85\% of the ball is light.
-\item Solid if the combined coloured and dark percentage is at least 70\%.
-\item Striped if both light and non-light regions are present.
-\item Unknown if no preceding rule applies.
-\end{enumerate}
-The black ball remains a Solid at this stage.
+Ball detection and recognition were performed on the original image.
+Transforming the image beforehand could stretch the circular ball
+outlines into ellipses, making the Hough circle detector less reliable.
+The full image was transformed separately when producing visualisations
+for comparison with the ground truth.
 
-The optional CCA classifier starts with this baseline prediction. It examines
-light and non-light connected components, excluding components smaller than
-2\% of the ball area. It also measures light coverage within a boundary band
-obtained by eroding the circular ROI mask. Additional rules use these features
-to revise the predicted type. A stricter White rule does not reject all baseline
-White predictions: when no CCA rule applies, the baseline prediction is retained.
+TODO: Add image of the AllBalls image after perpective transformation
 
-\subsection{Number recognition}
-Number recognition follows type recognition and reuses the segmentation. White
-maps to the cue ball, number 0. For solids and stripes, the largest eligible
-non-light cluster supplies the body colour; clusters smaller than 2\% are
-ignored. Experimental HSV rules identify yellow, blue, red, purple, orange,
-green, or maroon. The corresponding solid numbers are 1--7, and stripes add 8.
-A dark, low-saturation body cluster can identify number 8 when the predicted type
-is Solid. Red and maroon are separated using brightness. Unsupported colours
-return $-1$ rather than forcing a number prediction.
+\section{Evaluation and Results}
+\subsection{Methodology}
 
-The application keeps detection, type recognition, and number recognition as
-three separate stages. It saves type-labelled and number-labelled images, along
-with CSV files containing the predictions.
+The reference image AllBalls.jpeg was used exclusively for parameter selection, 
+while the six other images were reserved for evaluation. This separation 
+reduces the risk of reporting performance only on an image used to optimise 
+the detector.
 
-\section{Evaluation and saved results}
-\subsection{Detection}
-Detections are matched one-to-one to annotated centres within the configured
-15-pixel tolerance. The matching procedure maximises the number of valid
-matches; it does not globally minimise localisation distance. Precision, recall,
-and F1 are computed as
-\[
- P=\frac{TP}{TP+FP},\qquad
- R=\frac{TP}{TP+FN},\qquad
- F_1=\frac{2TP}{2TP+FP+FN}.
-\]
-\input{tables/detection.tex}
+An automated grid search evaluated 480 combinations of Hough parameters. 
+Configurations were ranked by the number of correctly detected balls, 
+followed by the number of false positives and the average localisation error.
 
-\subsection{Recognition}
-Type and number correctness are evaluated separately. The number classifier is
-called once with the baseline type and once with the CCA type. Unknown number
-predictions count as incorrect. Recognition accuracy below is conditional on
-the 86 matched and successfully analysed detections; unmatched detections are
-excluded from the recognition loop.
-\input{tables/recognition.tex}
+The final parameters were: 
 
-These tables are snapshots of the existing CSV outputs. They are not updated
-automatically when the application is rebuilt or when LaTeX is compiled. The
-recognition source CSVs contain an extra empty trailing field in each row; this
-was ignored after checking that the named correctness flags agreed with the
-stored predictions and ground truth. The numerical columns were not shifted.
+\begin{table}[htbp]
+    \centering
+    \caption{Final Hough transform parameters for ball detection.}
+    \label{tab:hough-transform-parameters}
+    \begin{tabular}{lcl}
+        \toprule
+        Parameter & Value & Description \\
+        \midrule
+        \texttt{dp}        & 1.5 & Image-to-accumulator resolution ratio \\
+        \texttt{minDist}   & 18  & Minimum distance between centres (pixels) \\
+        \texttt{param1}    & 75  & Upper Canny edge threshold \\
+        \texttt{param2}    & 35  & Accumulator threshold for accepting circles \\
+        Minimum radius    & 15  & Smallest accepted circle radius (pixels) \\
+        Maximum radius    & 30  & Largest accepted circle radius (pixels) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+\FloatBarrier
 
-\section{Discussion and limitations}
-CCA does not improve the aggregate results in the saved validation outputs:
-both type and number accuracy are lower than the baseline. Its additional
-spatial rules should therefore be assessed per image and per error case before
-being adopted in the main application.
+Detected centres were compared with the provided ground truth after 
+perspective transformation. A one-to-one matching procedure assigned 
+detections to annotated centres within a maximum distance of 15 pixels 
+in table coordinates.
 
-The number classifier uses experimental thresholds chosen for the current image
-set. Illumination affects brightness and saturation, particularly for dark blue,
-purple, green, and maroon balls. The red--maroon brightness split is especially
-sensitive to shadows. A type error can also change a correct colour estimate
-into the wrong numbered ball by applying the solid/stripe offset incorrectly.
+Unmatched detections were counted as false positives (FP), while unmatched 
+ground-truth balls were counted as false negatives (FN). Correctly matched 
+detections were counted as true positives (TP).
 
-Fixed table corners, radius ranges, and pocket locations restrict the current
-pipeline to a similar camera view. Pocket filtering may remove a genuine ball
-close to a pocket. Future experiments should examine colour normalisation,
-additional views and lighting conditions, and error cases for each class.
-Development and tuning on the validation images would also need to be disclosed;
-these results should not be described as an independent held-out test without
-checking that separation.
+Performance was assessed using precision, recall and F1-score. The mean 
+Euclidean distance between matched centres was also calculated to evaluate 
+localisation accuracy.
 
-\section{Reproducibility and report status}
-The implementation uses C++17, OpenCV 4, and CMake. From the project root,
-\code{cmake --build build-local} builds the application. Menu 8 runs the
-AllBalls K-means experiment; menu 9 runs recognition validation; menu 4 runs
-detection validation; menu 1 runs the interactive three-stage application.
+\subsection{Ball Detection Results}
 
-This is an editable draft based on the local implementation and saved outputs.
-Before submission, replace the author field, check the assignment requirements,
-add the required literature references, and refresh the result tables after any
-changes to the classifier or experiment settings. The copied example figures
-and table sources are included within the report folder so the document can be
-compiled independently of the application output directory.
+On the tuning image, the selected configuration detected all 16 annotated 
+balls, with three additional false detections. This gave a precision of 
+$84.21\%$, recall of $100\%$ and F1-score of $91.43\%$, before pocket filtering.
+
+The subsequent evaluation on the six test images produced the following 
+results using the full masked and pocket-filtered detection pipeline.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Ball detection results on the validation images.}
+    \label{tab:detection-results}
+    \begin{tabular}{lrrrrr}
+        \toprule
+        Image & GT & TP & FP & FN & F1 \\
+        \midrule
+        Table 1 & 16 & 14 & 2 & 2 & 0.8750 \\
+        Table 2 & 16 & 16 & 2 & 0 & 0.9412 \\
+        Table 3 & 16 & 15 & 0 & 1 & 0.9677 \\
+        Table 4 & 15 & 14 & 1 & 1 & 0.9333 \\
+        Table 5 & 14 & 14 & 1 & 0 & 0.9655 \\
+        Table 6 & 13 & 13 & 1 & 0 & 0.9630 \\
+        \midrule
+        \textbf{Total} & \textbf{90} & \textbf{86} &
+        \textbf{7} & \textbf{4} & \textbf{0.9399} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+\FloatBarrier
+
+Across all six images, the detector achieved an overall precision of $92.47\%$, 
+recall of $95.56\%$ and F1-score of $93.99\%$. The mean localisation error across 
+matched detections was approximately 5.01 pixels.
+
+The relatively high recall indicates that the method successfully identifies 
+most of the visible balls. However, its performance is less consistent when 
+balls overlap or are closely grouped.
+
+Table 1 produced the lowest detection F1-score and the largest mean centre 
+error (7.68 pixels). This image contains a tightly arranged group of balls, 
+where adjacent circular boundaries may interfere with Hough detection and 
+accurate localisation.
+
+By contrast, the later images contain more spatially separated balls, making 
+individual circular outlines easier to identify. This is consistent with the 
+generally stronger detection results on Tables 3–6.
+
+\subsection{Ball Recognition Results}
+
+Recognition was evaluated separately using only the detections successfully 
+matched to ground-truth balls. This isolates classification performance from 
+localisation errors.
+
+The baseline K-means colour classifier correctly classified 76 of the 86 
+matched balls, giving an accuracy of $88.37\%$.
+
+The experimental classifier incorporating connected-component features 
+correctly classified 73 of the 86 matched balls, reducing accuracy to $84.88\%$.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Ball recognition results for two different methods.}
+    \label{tab:recognition-results}
+    \begin{tabular}{lrrrrr}
+        \toprule
+        Method & Correct/Matched & Accuracy \\
+        \midrule
+        K-means colour rules & 76/86 & $88.37\%$ \\
+        K-means + CCA + colour rules & 73/86 & $88.37\%$ \\
+        \midrule
+        \textbf{Total} & \textbf{90} & \textbf{86} &
+        \textbf{7} & \textbf{4} & \textbf{0.9399} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+\FloatBarrier
+
+The additional connected-component rules introduced three new classification 
+errors without correcting any existing errors in this test set.
+
+This suggests that spatial information is not necessarily more reliable than 
+overall colour proportions. In particular, the shape and boundary coverage of 
+white regions vary considerably with the orientation of striped balls. 
+Consequently, rules intended to recognise stripes can also incorrectly modify 
+predictions for the white cue ball or solid balls.
+
+The simpler colour-based method was therefore retained in the main application.
+
+The recognition accuracy of $88.37\%$ is conditional on successful detection. 
+Considering all 90 ground-truth balls, the system correctly detected and 
+classified 76, corresponding to an end-to-end correct identification rate of $84.44\%$.
+
+This distinction is important because a classification system cannot correctly 
+identify a ball that was missed during localisation.
+
+\subsection{Qualitative Analysis and Failure Cases}
+
+Visual inspections revealed several recurring challenges.
+
+\textbf{Overlapping and touching balls}. When balls are closely arranged, their 
+visible boundaries may merge or be partially obscured. This can result in 
+missed circles, imprecise centres or incorrect segmentation caused by pixels 
+from neighbouring balls.
+
+\textbf{Ball orientation}. A striped ball does not necessarily display equal amounts 
+of white and colour. Depending on its orientation, the observed colour 
+proportions may resemble either a solid ball or the white cue ball. This 
+limitation is inherent to classification based on a single two-dimensional view.
+
+\textbf{Lighting and shadows}. Highlights may cause coloured areas to appear white, 
+while shadows can make coloured regions appear dark. Because classification 
+depends on representative cluster colours and fixed HSV thresholds, these 
+variations can change the predicted ball type.
+
+\textbf{Detection errors propagated into recognition}. An inaccurate circle may 
+include background pixels or exclude part of the ball. K-means then segments 
+an imperfect crop, and the resulting percentages may no longer represent the 
+actual ball.
+
+These observations demonstrate why good localisation performance does not 
+guarantee equally strong recognition performance.
+
+\section{Solution Anaysis and limitations}
+\subsection{Limitations}
+
+Our method performs well on the supplied dataset, but several design choices 
+limit its generalisation.
+
+First, the fixed table mask and transformation depend on a known camera 
+viewpoint. A different viewpoint would require new corner coordinates or an 
+automatic table-localisation stage.
+
+Second, a single set of Hough parameters may not be suitable for images 
+containing balls with substantially different apparent sizes, lighting 
+conditions or resolutions.
+
+Third, two-cluster colour segmentation simplifies classification but may not 
+adequately represent balls containing several visually distinct regions, such 
+as the coloured band, white area, printed number and specular highlights.
+
+\subsection{Possible Improvements}
+
+Potential improvements include more robust ball-boundary extraction, adaptive 
+colour classification and improved treatment of overlapping balls. More 
+extensive testing across varied lighting conditions and viewpoints would 
+also help assess generalisation.
+
+Nevertheless, these extensions are not essential to the current assignment. 
+The existing pipeline provides a complete solution with measurable performance
+and well-understood limitations.
+
+\section{Conclusion}
+
+This project implemented a classical computer vision pipeline for pool-ball 
+localisation and recognition using geometric information, circular Hough 
+detection, perspective transformation and colour-based segmentation.
+
+The detector achieved an overall F1-score of $93.99\%$ on the six test images,
+while the selected colour-based recognition method correctly classified $88.37\%$
+of successfully matched balls.
+
+The results demonstrate that computer vision methods can produce strong localisation performance when the camera 
+geometry is known. 
+Recognition is more challenging because the visible colour 
+distribution changes with ball orientation, illumination and occlusion.
+
+The comparison with connected-component analysis also demonstrated that 
+additional processing does not necessarily improve accuracy. Overall, 
+the project achieved its two primary objectives while identifying concrete 
+limitations and directions for future work.
+
+\section{Appendix}
+\subsection{Use of Generative AI}
+\subsection{Resources}
+
 
 \end{document}
