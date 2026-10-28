@@ -35,6 +35,7 @@ add_executable(PoolBallDetection
     validation/kMeansValidation.cpp
 
     io/output.cpp
+    io/finalResults.cpp
 )
 
 target_include_directories(PoolBallDetection PRIVATE
@@ -56,6 +57,10 @@ add_executable(BallExperiments
     experiments/backprojectionExperiment.cpp
     experiments/circularEdgeSupport.cpp
     experiments/circularEdgeExperiment.cpp
+    experiments/recognitionFinalResults.cpp
+    experiments/recognitionTuner.cpp
+    io/finalResults.cpp
+    io/output.cpp
     visualisation/combineImages.cpp
     recognition/connectedComponentAnalysis.cpp
     evaluation/evaluation.cpp

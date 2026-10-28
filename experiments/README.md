@@ -414,3 +414,103 @@ the first false detection without losing an existing true detection on these
 images, but rejecting the second would also reject at least that genuine ball.
 This is exploratory score inspection on already seen images, not independent
 validation of a chosen threshold. No rejection threshold is applied.
+
+# Final images for the tuned recognition configurations
+
+```sh
+cmake --build build-local --target BallExperiments -j 4
+./build-local/BallExperiments --recognition-final
+```
+
+The optional output argument defaults to
+`output/experiments/recognition_grid_search/`. This exports the already selected
+recognition winner 2153 and CCA winner 20242 without rerunning either search.
+It does not modify the main classifier or its settings. All seven images use
+the current detector, with exactly the same candidate order and coordinates
+for every recognition profile.
+
+- `final_results/<image-stem>/`: tuned K=6, no CCA.
+- `final_results_cca/<image-stem>/`: tuned K=6 plus the selected solid-only CCA.
+- `final_results_current/<image-stem>/`: current production classifier snapshot.
+- `final_comparisons/<image-stem>/table_comparison.png`: three overhead views.
+- `final_comparisons/<image-stem>/candidate_N.png`: original crop with the
+  three predictions and the annotation identity, saved for changed candidates.
+  Green text means correct number, red incorrect, grey unmatched detection.
+- `final_changes.csv`: every candidate's current, K=6 and K=6+CCA predictions,
+  with number corrections, regressions and other changes explicitly identified.
+- `final_counts.csv`, `final_summary.md`, `final_configuration.txt`: per-image
+  counts, pooled comparison and settings/provenance.
+
+Each final-results directory has the same four PNGs and `balls.csv` schema as
+the application. Application and experiment use `io/finalResults.h/.cpp` for
+identical rendering. Ground truth is loaded after predictions are exported
+and is used solely for the comparison outputs and counts.
+
+The historical experiment uses strict `S < 60` for black; the application now
+uses `S <= 60`. The exporter preserves both rules rather than retroactively
+changing the experiment. In particular, Table2 candidate 16 remains yellow 1
+in the K=6 exports but is black 8 in the current application, so it appears as
+a regression. The original winner was selected on Table1–6; its scores remain
+exploratory rather than independent test accuracy.
+
+# AllBalls recognition slider viewer
+
+```sh
+cmake --build build-local --target BallExperiments -j 4
+./build-local/BallExperiments --recognition-tuner
+```
+
+Run from the repository root in a desktop terminal. The optional output argument
+defaults to `output/experiments/recognition_tuner/`. This opens one window with
+the sliders, a prediction overlay cropped to the balls, and masks for the selected
+candidate. The compact shared window keeps sliders visible on macOS instead of
+letting larger preview windows cover a separate controls window. Saved previews
+retain the full original-image overlay and full-resolution selected-ball grid.
+AllBalls is the only image that can be loaded in this viewer. Detection and
+extraction stay fixed while recognition changes; K-means is cached separately
+for each visited K, so changing thresholds does not rerun clustering.
+
+Controls:
+
+| Slider | Meaning |
+| --- | --- |
+| K | Number of BGR clusters, 2–8 |
+| Light V min | Minimum HSV brightness for a light cluster |
+| Light S max | Maximum HSV saturation for a light cluster |
+| Cue light % | Minimum light coverage for cue classification |
+| Solid nonlight % | Minimum non-light coverage for solid classification |
+| Black S max | Saturation cutoff for the selected body cluster |
+| Black V max | Maximum brightness for black classification |
+| Black S inclusive | 0 means S < cutoff; 1 means S <= cutoff |
+| Blue-purple H | Hue boundary between blue and purple, 101–164 |
+| Candidate | One-based detection index for the enlarged crop and masks |
+
+These are HSV controls, not HLS: V is brightness, not HLS lightness. Masks show
+whole K-means clusters selected by their representative HSV, not independent
+pixel-level thresholding. The body mask identifies the largest eligible non-light
+cluster. Black-like masks show all clusters meeting S/V cutoffs; the number rule
+still uses only the selected body cluster and requires a solid type for black.
+The reporting-only `darkMaxV` is fixed and not exposed as a misleading number
+classification slider. CCA, padding and cloth filtering are disabled.
+
+- **T**: tuned K=6 preset (configuration 2153, original strict black cutoff).
+- **B**: current K=2 baseline preset, including the inclusive black cutoff.
+- **S**: save a new `snapshot_0001/`, `snapshot_0002/`, etc.; existing snapshots
+  are preserved. Each contains `settings.yml` with every recognition parameter,
+  `overview.png`, `selected_ball.png`, `predictions.csv`, `clusters.csv`, and the
+  usual `final_results/AllBalls/` images and `balls.csv`.
+- **Q** or **Esc**: quit. Closing the viewer window also exits.
+
+The viewer starts with the tuned K=6 preset. Cyan highlights the selected
+candidate; green/red overlays indicate correct/incorrect number predictions
+against AllBalls annotations; unmatched detections are grey. The header shows
+conditional type/number accuracy and matched detections versus annotation count.
+Annotations do not influence predictions. No settings are written to the main
+application and no snapshot is saved until S is pressed.
+
+Use the masks and cluster CSV to inspect why a setting changes a prediction.
+Perfect AllBalls accuracy alone cannot distinguish several configurations or
+establish generalisation. The T preset comes from the earlier exploratory search
+on Table1–6; starting from it does not make those earlier results independent.
+Future manual adjustments should use AllBalls only and be frozen before any
+further evaluation of the six project images.

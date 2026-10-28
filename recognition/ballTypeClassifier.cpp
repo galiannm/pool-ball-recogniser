@@ -34,7 +34,7 @@ int classifyBallNumber(const KMeansResult& segmentation, const BallTypeResult& p
     const int brightness = body->hsv[2];
 
     // Black is a number decision; its type remains Solid.
-    if (saturation < 60) {
+    if (saturation <= 60) {
         if (brightness <= 90 && predictedType.type == "Solid")
             return 8;
         return -1;

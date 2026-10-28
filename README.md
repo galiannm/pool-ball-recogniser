@@ -96,7 +96,7 @@ ranking remain explicit in `evaluation/gridSearch.cpp`.
 
 | Task | Output |
 | --- | --- |
-| Application | `output/detect_circles/`, `output/detect_circles_filtered/` |
+| Application | `output/myApplication/detection/`, `detection_filtered/`, `recognition/`, `final_results/` |
 | Baseline | `output/baseline.jpeg` |
 | Grid search | `output/grid_search.csv`, `output/best_detection.jpeg` |
 | Validation | `output/validation/` |
@@ -114,6 +114,42 @@ CSV runners check file creation and final writing. Existing filenames are
 overwritten as before; unrelated or older files are not deleted. In particular,
 old numbered extraction crops can remain after a run with fewer candidates.
 The printed extraction count is the candidate count.
+
+### Final application results
+
+Application mode also saves `output/myApplication/final_results/<image-stem>/`:
+
+| File | Contents |
+| --- | --- |
+| `original_numbered.png` | Source photo with Hough circles and predicted identity labels |
+| `table_rectified.png` | Playing surface warped to 1434 columns by 683 rows |
+| `table_numbered.png` | Rectified photo with transformed centre markers and predicted identities |
+| `table_diagram.png` | Clean table with nominal 43-pixel-diameter ball symbols, coloured and striped according to predictions |
+| `balls.csv` | One row per retained detection, joining its identity, source circle and transformed centre |
+
+Labels are `Cue`, a number 1–15, or `Unknown`. The CSV stores cue as 0 and unknown
+as -1. Candidate IDs are one-based and retain the detection order used in the
+recognition CSVs. Duplicate predictions are retained; these outputs do not infer
+missing balls or use annotations to correct predictions.
+
+`originalX`, `originalY` and `originalRadiusPixels` use source-photo pixels.
+`tableX` is the column and `tableY` the row, with origin at the top-left cushion,
+x increasing rightwards and y downwards. The existing transformation maps the
+supplied corners to `(0,0)`, `(1433,0)`, `(1433,682)` and `(0,682)` respectively.
+This endpoint convention is unchanged; at the chosen resolution the table scale
+is approximately one pixel per millimetre. CSV coordinates retain six decimals
+and are not rounded or clipped for rendering.
+
+The diagram uses a fixed nominal 43 mm diameter (approximately 43 pixels),
+not the original Hough radius. Its ball outlines and colours are schematic, not
+measurements of the warped silhouettes. The numbered rectified photo marks only
+centres and labels, without assuming that a source-image circle remains a circle
+after perspective transformation. A predicted green ball is green because of
+its predicted identity, not because it passed an evaluation check.
+
+These outputs use the application's current detector and recognition settings.
+Automatic evaluation and non-interactive batch processing are separate steps;
+the application's existing image windows still wait for a key to advance.
 
 `data/ground_truth/BallLocations.csv` is the working annotation file, including
 previous manual corrections and visually estimated centres. The original backup

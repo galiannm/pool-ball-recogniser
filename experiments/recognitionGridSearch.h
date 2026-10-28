@@ -13,5 +13,6 @@ int classifyExperimentalNumber(const KMeansResult& segmentation,
                                const RecognitionParameters& parameters);
 
 void runRecognitionGridSearch(const std::filesystem::path& outputDirectory);
+void exportRecognitionFinalResults(const std::filesystem::path& outputDirectory);
 
 } // namespace experiments

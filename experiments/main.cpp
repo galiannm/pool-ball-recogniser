@@ -1,5 +1,6 @@
 #include "radiusPadding.h"
 #include "recognitionGridSearch.h"
+#include "recognitionTuner.h"
 #include "ccaGridSearch.h"
 #include "watershedDetection.h"
 #include "segmentationGuidedDetection.h"
@@ -15,6 +16,8 @@ int main(int argc, char* argv[]) {
     if (argc > 3 || (argc > 1 && std::string(argv[1]) == "--help")) {
         std::cout << "Usage: BallExperiments [image-path|--all] [output-directory]\n"
                   << "       BallExperiments --recognition-grid [output-directory]\n"
+                  << "       BallExperiments --recognition-final [output-directory]\n"
+                  << "       BallExperiments --recognition-tuner [output-directory]\n"
                   << "       BallExperiments --cca-grid [output-directory]\n"
                   << "       BallExperiments --watershed [output-directory]\n"
                   << "       BallExperiments --segmentation-hough [output-directory]\n"
@@ -25,6 +28,16 @@ int main(int argc, char* argv[]) {
     }
 
     try {
+        if (argc > 1 && std::string(argv[1]) == "--recognition-tuner") {
+            experiments::runRecognitionTuner(argc > 2
+                ? argv[2] : "output/experiments/recognition_tuner");
+            return 0;
+        }
+        if (argc > 1 && std::string(argv[1]) == "--recognition-final") {
+            experiments::exportRecognitionFinalResults(argc > 2
+                ? argv[2] : "output/experiments/recognition_grid_search");
+            return 0;
+        }
         if (argc > 1 && std::string(argv[1]) == "--edge-support") {
             experiments::runCircularEdgeExperiment(argc > 2
                 ? argv[2] : "output/experiments/circular_edge_support");

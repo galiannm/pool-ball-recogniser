@@ -1,4 +1,5 @@
 #include "io/output.h"
+#include "io/finalResults.h"
 
 #include <opencv2/opencv.hpp>
 #include <filesystem>
@@ -197,6 +198,12 @@ void MyApplication() {
             recognitionDir / (stem + "_numbered.png"),
             numberedImage
         );
+
+        // Final presentation only: original predictions, rectified table,
+        // nominal-size ball diagram and joined coordinates/identities CSV.
+        // No annotations or evaluation are used to create these outputs.
+        saveFinalResults(image, filesystem::path(config::applicationOutputDirectory) / "final_results" / stem,
+                         circles, tableCentres, predictedTypes, predictedNumbers);
 
         waitKey(0);
     }
