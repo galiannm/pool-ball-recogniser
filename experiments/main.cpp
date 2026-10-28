@@ -1,6 +1,7 @@
 #include "radiusPadding.h"
 #include "recognitionGridSearch.h"
 #include "recognitionTuner.h"
+#include "ballColourHistograms.h"
 #include "ccaGridSearch.h"
 #include "watershedDetection.h"
 #include "segmentationGuidedDetection.h"
@@ -18,6 +19,7 @@ int main(int argc, char* argv[]) {
                   << "       BallExperiments --recognition-grid [output-directory]\n"
                   << "       BallExperiments --recognition-final [output-directory]\n"
                   << "       BallExperiments --recognition-tuner [output-directory]\n"
+                  << "       BallExperiments --colour-histograms [output-directory]\n"
                   << "       BallExperiments --cca-grid [output-directory]\n"
                   << "       BallExperiments --watershed [output-directory]\n"
                   << "       BallExperiments --segmentation-hough [output-directory]\n"
@@ -28,6 +30,11 @@ int main(int argc, char* argv[]) {
     }
 
     try {
+        if (argc > 1 && std::string(argv[1]) == "--colour-histograms") {
+            experiments::runBallColourHistogramExperiment(argc > 2
+                ? argv[2] : "output/experiments/ball_colour_histograms");
+            return 0;
+        }
         if (argc > 1 && std::string(argv[1]) == "--recognition-tuner") {
             experiments::runRecognitionTuner(argc > 2
                 ? argv[2] : "output/experiments/recognition_tuner");

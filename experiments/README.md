@@ -514,3 +514,84 @@ establish generalisation. The T preset comes from the earlier exploratory search
 on Table1–6; starting from it does not make those earlier results independent.
 Future manual adjustments should use AllBalls only and be frozen before any
 further evaluation of the six project images.
+
+# Learned ball-colour histograms and backprojection
+
+```sh
+cmake --build build-local --target BallExperiments -j 4
+./build-local/BallExperiments --colour-histograms
+```
+
+The optional output argument defaults to
+`output/experiments/ball_colour_histograms/`. Reusable training/inference code
+is in `ballColourHistograms.h/.cpp`; the runner is `ballHistogramExperiment.cpp`.
+The main application and existing experiments are unchanged.
+
+The runner matches AllBalls detections to its labelled annotations and uses
+balls 1–15 to train eight body-colour models. Solid and stripe examples share
+a model: 1/9 yellow, 2/10 blue, 3/11 red, 4/12 purple, 5/13 orange, 6/14 green,
+7/15 maroon; 8 supplies the black model. Cue is handled by the existing type
+classifier and does not train a body-colour histogram. Missing training identities
+or insufficient body pixels abort training rather than using evaluation images.
+
+Three fixed representations are compared, without a parameter search or automatic
+winner selection: HS (18 hue × 8 saturation bins), HSV (18×8×8), and HLS (18×8×8,
+stored internally in H,S,L order). Hue spans [0,180); saturation and tone span
+[0,256). Histograms use individual pixels, rather than K-means average colours.
+HLS is included as a genuine lightness/saturation representation in this experiment.
+
+All spaces use the same body mask: erode the circular crop with a 3×3 ellipse,
+then remove pixels satisfying HSV V>=170 and S<=165. At least 12 body pixels
+are required. For BGR chroma (max channel minus min channel) <15, hue is set to
+zero because near-neutral hue is unstable. There is no cloth filter, padding,
+hand-painted training mask or class-specific threshold. Shadows and some adjacent
+balls can therefore remain in the training/query pixels.
+
+Each histogram is smoothed with [1,2,1]/4 along its axes, wrapping hue and
+replicating saturation/tone endpoints, then L1-normalised. Shared colour models
+average individually normalised examples, giving each ball equal weight despite
+different crop sizes. The models are written and closed in `training/models.yml`
+before Table1–6 images or their labels are used.
+
+Inference compares the query histogram against all eight frozen models using
+1 minus Bhattacharyya distance. The highest score selects body colour; there is
+no fitted confidence/margin rejection threshold. The current K=2 type classifier
+is held fixed for every method to isolate number recognition. White maps to cue,
+solid maps to colours 1–8, stripe maps to colours 1–7 plus 8; stripe+black returns
+Unknown. The baseline includes the application's inclusive black cutoff.
+
+Backprojection uses float feature images so sub-unit histogram masses are not
+rounded away. Its maps locate colours consistent with each learned histogram.
+The displayed winning-model map is scaled by that model histogram's peak, purely
+for visibility; map brightness is not the classification score or a calibrated
+class probability. Rankings come from whole-body histogram comparison.
+
+Outputs:
+
+- `configuration.txt`: fixed settings and scoring protocol.
+- `training/models.yml`: all trained histograms and example counts.
+- `training/examples.csv`, `training/ball_N.png`: training identities, source
+  circles, body-pixel counts, original crops and masks (cue marked unused).
+- `training/*_histograms.png`: model visualisations, with H rows, S columns and
+  tone slices arranged left-to-right; each colour is peak-scaled for display.
+- `metrics.csv`: per-image and pooled evaluation metrics, with AllBalls explicitly
+  labelled training resubstitution and excluded from pooled Table1–6 results.
+- `predictions.csv`, `colour_scores.csv`, `changes.csv`, `confusion.csv`: candidate
+  predictions, all eight model scores, fixes/regressions and number confusion.
+- `<image-stem>/candidate_N.png`: original crop, body mask and three winning-model
+  backprojection maps, with predicted identities and a separate annotation label.
+- `final_results/<method>/<image-stem>/`: the same original, rectified, numbered
+  and diagram PNGs plus `balls.csv` as the application, using predictions only.
+- `summary.md`: method comparison, denominators and limitations.
+
+Current Table1–6 number scores: baseline 68/86; HS 72/86; HSV 72/86; HLS 71/86.
+All methods retain the same 76/86 correct types and detection counts (86 TP,
+2 FP, 4 FN). AllBalls scores are 16/16, measured on the training crops themselves.
+Oracle-number scores supply the true type solely to diagnose remaining colour
+errors; they are not deployed predictions. The experiment does not combine the
+learned colour models with tuned K=6/CCA type decisions.
+
+No evaluation labels train these histograms or select thresholds. The six images
+have nevertheless been inspected in earlier project work, so they should not be
+described as pristine unseen data. Scores from these three predefined methods
+must not be used to retrospectively claim a newly selected independent test result.

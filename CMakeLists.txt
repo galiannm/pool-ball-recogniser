@@ -59,6 +59,8 @@ add_executable(BallExperiments
     experiments/circularEdgeExperiment.cpp
     experiments/recognitionFinalResults.cpp
     experiments/recognitionTuner.cpp
+    experiments/ballColourHistograms.cpp
+    experiments/ballHistogramExperiment.cpp
     io/finalResults.cpp
     io/output.cpp
     visualisation/combineImages.cpp
