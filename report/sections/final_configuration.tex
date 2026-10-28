@@ -1,0 +1,90 @@
+\subsection{Final Experimental Recommendation}
+\label{sec:final-configuration}
+
+The experiments support retaining the original masked, pocket-filtered Hough
+detector and recommending the tuned K=6 recognition configuration with the
+solid-only CCA correction. This is the strongest observed combination of
+localisation, type and number recognition among the evaluated alternatives.
+The recommendation is based on pooled results and recorded regressions,
+rather than selecting a method because it recovers one visually convincing
+example. Table1--Table6 were used to tune recognition, so the recommended
+recognition scores remain exploratory.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Recognition progression with the original Hough detections fixed.
+All counts are over the same 86 matched balls in Table1--Table6.}
+\label{tab:final-recognition-progression}
+\begin{tabular}{lrrrr}
+\toprule
+Configuration & Correct type & Type accuracy & Correct number & Number accuracy \\
+\midrule
+Original K=2 baseline & 76/86 & 88.37\% & 67/86 & 77.91\% \\
+Tuned K=6 & 81/86 & 94.19\% & 74/86 & 86.05\% \\
+Tuned K=6 + solid-only CCA & 82/86 & 95.35\% & 75/86 & 87.21\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+
+The recommended settings are:
+\begin{itemize}
+\item \textbf{Detection:} retain $dp=1.5$, minimum centre distance 18,
+upper Canny threshold 75, accumulator threshold 35, radii 15--30,
+the known table mask and the existing 25-table-pixel pocket exclusion.
+\item \textbf{Extraction:} retain the detected radius, with zero padding
+and no cloth filtering.
+\item \textbf{Clustering:} use six BGR colour clusters with the existing
+fixed-seed K-means implementation.
+\item \textbf{Light definition:} require $V\geq170$ and $S\leq125$,
+consistently in type classification, body-cluster selection and CCA.
+\item \textbf{Base type:} require at least 85\% light for the cue ball
+or at least 80\% non-light for a solid; otherwise retain the existing
+striped/unknown rules.
+\item \textbf{Number recognition:} use blue hue $100\leq H<125$
+and purple $125\leq H<165$; retain the other original number thresholds
+and the minimum eligible cluster area of 2\%.
+\item \textbf{CCA:} retain eight-connected components above a 2\%
+ball-area cutoff and a $5\times5$ erosion boundary band. Enable only
+the solid override: at least 70\% non-light pixels, at most 20\%
+light-boundary coverage and exactly one eligible non-light component.
+Disable cue and stripe overrides; otherwise retain the base type.
+\end{itemize}
+
+Relative to the original K=2 baseline, this combination increased correct
+types by six and correct numbers by eight. Of these gains, the targeted
+CCA correction accounted for only one additional correct type and number
+beyond K=6. On AllBalls, the combination retained the original baseline's
+16/16 correct types and numbers. Considering all 90 comparison annotations,
+including the four missed detections, correct types corresponded to 82/90
+($91.11\%$) and correct numbers to 75/90 ($83.33\%$). These are
+detected-and-correct recall measures, not precision measures: false
+detections must still be reported separately.
+
+The other experiments informed the following exclusions. Padding admitted
+additional background and generally worsened number recognition. Cloth
+filtering slightly improved some original-threshold results, but was not
+part of the best K=6 combination and could remove real green-ball pixels.
+The original full CCA rule set reduced accuracy; only the tuned solid
+correction was retained in the recommendation. The distance-peak watershed
+prototype recovered no detections. Segmentation-first Hough recovered
+three previously missed annotation identities, including ball 10 in
+Table3 and Table4, but lost three others and increased false detections
+from two to 16. Its watershed check reduced false detections to 11 but
+also reduced true positives from 86 to 83. These alternatives therefore
+did not justify replacing the standard detector.
+
+There is a distinction between an experimental recommendation and application
+integration. The main application's current configuration still requests
+K=2 and calls the original type classifier, using the original light and
+solid thresholds. It does not invoke the selected solid-only CCA correction.
+The K=6 and CCA results above were implemented and measured in the independent
+experiment executable. No claim is made that the main application already
+produces the recommended recognition scores.
+
+The next practical step is consolidation and evaluation on fresh images,
+rather than assuming that another processing stage will necessarily improve
+the result. This report records the selected experimental configuration,
+its limits, and the unsuccessful alternatives so that later integration
+can be checked against the same settings and evidence.

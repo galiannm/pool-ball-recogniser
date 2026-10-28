@@ -1,6 +1,8 @@
 #include "radiusPadding.h"
 #include "recognitionGridSearch.h"
 #include "ccaGridSearch.h"
+#include "watershedDetection.h"
+#include "segmentationGuidedDetection.h"
 #include "config.h"
 
 #include <exception>
@@ -12,11 +14,23 @@ int main(int argc, char* argv[]) {
         std::cout << "Usage: BallExperiments [image-path|--all] [output-directory]\n"
                   << "       BallExperiments --recognition-grid [output-directory]\n"
                   << "       BallExperiments --cca-grid [output-directory]\n"
+                  << "       BallExperiments --watershed [output-directory]\n"
+                  << "       BallExperiments --segmentation-hough [output-directory]\n"
                   << "Defaults: Media/AllBalls.jpeg output/experiments/radius_padding\n";
         return argc > 3 ? 1 : 0;
     }
 
     try {
+        if (argc > 1 && std::string(argv[1]) == "--segmentation-hough") {
+            experiments::runSegmentationGuidedExperiment(argc > 2
+                ? argv[2] : "output/experiments/segmentation_guided_detection");
+            return 0;
+        }
+        if (argc > 1 && std::string(argv[1]) == "--watershed") {
+            experiments::runWatershedDetectionExperiment(argc > 2
+                ? argv[2] : "output/experiments/watershed_detection");
+            return 0;
+        }
         if (argc > 1 && std::string(argv[1]) == "--cca-grid") {
             experiments::runCCAGridSearch(argc > 2
                 ? argv[2] : "output/experiments/cca_grid_search");

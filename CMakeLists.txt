@@ -49,6 +49,10 @@ add_executable(BallExperiments
     experiments/radiusPadding.cpp
     experiments/recognitionGridSearch.cpp
     experiments/ccaGridSearch.cpp
+    experiments/watershedDetection.cpp
+    experiments/segmentationGuidedDetection.cpp
+    experiments/segmentationGuidedExperiment.cpp
+    visualisation/combineImages.cpp
     recognition/connectedComponentAnalysis.cpp
     evaluation/evaluation.cpp
     detection/ballDetection.cpp

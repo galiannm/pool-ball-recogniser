@@ -1,0 +1,288 @@
+\subsection{Watershed Segmentation for Crowded-Ball Detection}
+\label{sec:watershed-experiment}
+
+The first segmentation-based detection experiment investigated whether marker-controlled watershed
+segmentation could recover balls missed by the circular Hough detector in
+crowded regions. Unlike the preceding experiments, its primary objective
+was improved localisation rather than a different type or colour threshold.
+The method was implemented as an independent fixed prototype in
+\code{experiments/watershedDetection.cpp}, without replacing the detector
+used by the main application. No parameter grid was run.
+
+Watershed separates image regions by growing regions from labelled markers.
+An additional ball therefore requires an additional suitable marker; merely
+running watershed from the existing Hough centres cannot recover a ball
+whose interior has no marker. The experiment followed the general
+distance-transform/marker approach illustrated in
+\href{https://docs.opencv.org/4.12.0/d2/dbd/tutorial_distance_transform.html}
+{OpenCV's distance-transform and watershed tutorial}, adapted to the known
+table geometry and existing Hough detections.
+
+\subsubsection{Auditing the baseline misses}
+
+The current detector was rerun on every image, including table masking,
+Gaussian smoothing, Hough detection and the existing pocket filter. Its
+centres were transformed into table coordinates and matched one-to-one
+to annotations within 15 table pixels. Raw Hough candidates were evaluated
+separately to identify whether the pocket filter removed a previously
+matched ball. The audit also recorded whether a missed annotation lay
+inside one of the image-derived crowded-region windows.
+
+\input{tables/watershed_misses.tex}
+
+On Table1--Table6, the current run matched 86 of 90 annotations and produced
+two false detections. The four misses were balls 6 and 7 in Table1 and
+ball 10 in both Table3 and Table4. All four were already unmatched before
+pocket filtering and all lay inside crowded windows. Thus this run did
+not support pocket filtering as the immediate explanation for these misses.
+The annotations' distances to their nearest filtered detections exceeded
+the 15-pixel matching tolerance, rather than simply requiring a different
+assignment of two otherwise eligible matches.
+
+These counts were measured by rerunning the current source and agree with
+the current baseline in Table~\ref{tab:detection-results}. An older saved
+validation CSV recorded seven false detections; it is retained as a historical
+artifact rather than mixed with these new comparison results.
+Recognition parameters had already been
+tuned using Table1--Table6; downstream recognition scores therefore remain
+exploratory rather than independent test estimates.
+
+Inverse perspective transformation was used to display missed annotations
+at their approximate original-image positions. These points were used
+only for evaluation and diagnostic overlays. They did not influence
+window construction, foreground masks, distance peaks, markers, basin
+validation or proposal acceptance. The segmentation function accepts an
+image and baseline circles, not annotations.
+
+\subsubsection{Local windows and foreground construction}
+
+Pairs of filtered Hough circles were considered nearby when their centre
+distance was at most 1.4 times the sum of their radii. Transitive groups
+with at least two detections formed the initial crowded groups. Their
+circle bounding boxes were expanded by twice the median group radius
+and clipped to the image. Overlapping windows were merged, and every
+baseline circle centred in a resulting window supplied a Hough marker.
+The expected radius for new candidates was the median Hough radius in
+that window. Ten windows were processed across the seven images.
+
+This local design preserves isolated detections and limits processing of
+unrelated cloth or table features. Its limitation is equally explicit:
+a completely missed group with no suitable nearby Hough detections, or
+an isolated missed ball outside the selected windows, cannot be recovered.
+The audit showed that this coverage limitation did not exclude any of
+the four missed annotations in this particular run.
+
+Cloth colour was estimated separately in each window. Eligible samples
+lay inside the known table polygon, outside disks of 1.25 times each
+local Hough radius, and satisfied $35\leq H\leq95$, $S\geq35$ and
+$V\geq30$ in OpenCV HSV units. Samples were taken every two pixels in
+each direction. At least 40 eligible samples were required; otherwise
+the window was skipped without changing the Hough detections.
+
+The samples were converted to OpenCV's encoded 8-bit Lab representation.
+The cloth representative was the component-wise median Lab vector. Let
+$d_j$ be a sample's Euclidean distance from that representative. A pixel
+was provisionally foreground when its Lab distance exceeded
+\[
+ T=\operatorname{clip}_{[16,45]}\left(
+      \operatorname{median}(d_j)
+      +2.5\operatorname{median}\left|d_j-\operatorname{median}(d_j)\right|
+    \right).
+\]
+These numerical distances apply to the encoded channel values and should
+not be interpreted as calibrated perceptual colour differences.
+
+Small foreground cores of radius $0.65r$ were retained around existing
+Hough centres. This reduced the chance that a known green ball disappeared
+entirely into a green-cloth mask. It did not solve the corresponding
+problem for a missed green ball with no Hough marker. A $3\times3$
+elliptical closing operation filled narrow gaps, enclosed holes were
+filled using flood filling from a padded exterior, and the result was
+intersected with the table polygon. In a tightly packed group, this
+foreground can remain one merged object rather than one object per ball.
+
+\subsubsection{Markers, watershed and candidate acceptance}
+
+Three variants were compared:
+\begin{enumerate}
+\item \textbf{Hough baseline:} the unchanged filtered Hough circles.
+\item \textbf{Hough-seeded watershed:} one marker per existing Hough
+detection, with no new detection proposals. This is a segmentation
+control: circles are not relocated and no Hough circle is removed.
+\item \textbf{Hybrid watershed:} Hough markers plus additional
+distance-transform peaks that pass placement and basin checks.
+\end{enumerate}
+
+The foreground's Euclidean distance transform measured distance to the
+nearest zero pixel. Local maxima were detected using rectangular dilation
+with a neighbourhood approximately 0.9 expected radii wide. Peaks had to
+reach at least 0.45 expected radii in distance. Connected peak plateaus
+were represented by an actual plateau pixel nearest their centroid,
+rather than assuming that a centroid necessarily lies on a peak.
+
+Peaks were considered in decreasing distance order. A proposed marker
+had to be at least 1.15 times the larger radius from every existing
+Hough marker and previously accepted additional marker. It also had
+to lie at least 0.6 expected radii from the crop edge. These checks
+reduce duplicate markers and proposals truncated by local windows, but
+can reject a distance peak displaced towards a neighbouring ball.
+
+Markers used distinct positive integer labels in a 32-bit image. Hough
+and additional foreground markers were disks of radius three pixels.
+Sure background was outside a $7\times7$ elliptical dilation of the
+foreground or outside the table polygon; the intervening collar remained
+unknown. Watershed was applied to the original BGR crop after
+$3\times3$ Gaussian smoothing with $\sigma=0.8$. It was not applied
+directly to the floating-point distance transform. Separate seeded and
+hybrid label maps were saved for comparison.
+
+For each additional marker, its labelled basin was intersected with the
+foreground mask. Acceptance required:
+\begin{itemize}
+\item Basin pixel area between 0.25 and 1.8 times the expected disk area.
+\item Circularity $4\pi A/P^2\geq0.35$, measured from the largest external
+contour's area $A$ and perimeter $P$.
+\item Largest-contour bounding-box aspect ratio at most 2.2.
+\item At least 35\% foreground support inside an expected-radius disk.
+\item No duplicate of an existing or newly appended circle, and passage
+through the same pocket filter used for baseline detections.
+\end{itemize}
+
+An accepted circle would use the distance peak as its centre and the
+local median Hough radius as its radius. A visible watershed basin's
+centroid was not substituted for an existing Hough centre, since partial
+occlusion can shift a visible-region centroid away from the physical
+ball centre. Existing circles and radii were preserved. Consequently,
+this prototype could add missed candidates but could not correct an
+existing inaccurate centre or delete a baseline false positive.
+
+\subsubsection{Detection and recognition results}
+
+\input{tables/watershed_summary.tex}
+\input{tables/watershed_peaks.tex}
+
+The prototype did not recover any real-image detections. Across all
+seven images it produced 52 eligible local distance maxima. Forty were
+rejected as duplicates of Hough markers and eight lay too close to a
+window edge. Four additional markers proceeded to basin validation:
+three were rejected for insufficient circularity and one for insufficient
+area. None was accepted. The resulting hybrid circle lists therefore
+equalled the baseline circle lists.
+
+On Table1--Table6, all methods consequently had 86 true positives,
+two false positives and four false negatives. Precision was $97.73\%$,
+recall $95.56\%$ and F1 $96.63\%$. Mean matched-centre error was
+4.91 table pixels. No annotated ball was recovered or lost. The
+Hough-seeded control was expected to retain baseline detection scores
+by design; the hybrid's unchanged score was the empirical negative result.
+AllBalls retained 16 matched detections with no false detections.
+
+\input{tables/watershed_images.tex}
+
+Recognition was held fixed to configuration 2153 plus the selected
+solid-only CCA correction from Section~\ref{sec:cca-search}. All methods
+used the standard circular extraction mask, not the watershed basin.
+This isolates detection proposals from an additional change to recognition
+segmentation. With no accepted additional circles, correct type and
+number counts remained 82/86 and 75/86 on matched Table1--Table6 balls,
+and 16/16 on AllBalls. End-to-end number recall remained 75/90
+($83.33\%$). This experiment did not test whether substituting watershed
+masks for circular recognition masks would improve colour estimates.
+
+\subsubsection{Why the additional markers failed}
+
+The diagnostics showed a limitation of distance-transform seeding for
+these particular masks. In Table1, closely packed balls, shadows and
+foreground cleanup formed a broad connected foreground mass. Its
+distance transform had large interior peaks corresponding to the group
+shape, rather than a separate peak at every visible ball. The two
+extracted peaks were both close to existing Hough detections. In
+particular, there was no independent accepted marker for the missed
+green or maroon ball. The green-cloth similarity and occluded boundaries
+are plausible contributors, but the experiment did not separately
+quantify their causal effects.
+
+In the Table3 example, the missed striped blue ball touched the detected
+black ball. Their combined foreground produced a distance maximum
+between the visible objects, near the already detected black ball.
+Duplicate suppression rejected it as an additional marker. A geometric
+peak in the merged silhouette therefore did not reliably identify the
+missing ball's centre. All four missed annotations lay inside processed
+windows, so simply enlarging the processing coverage would not resolve
+this observed marker problem.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{watershed_table1.png}
+\caption{Table1 crowded-region diagnostics. The foreground mask merges
+the packed group, and the distance transform does not provide one
+independent marker per ball. Hough-seeded and hybrid watershed use the
+same surviving markers in this case. The final panel shows rejected
+distance peaks in red; no new circles were accepted. Watershed region
+colours are arbitrary labels and white lines are watershed boundaries.}
+\label{fig:watershed-table1}
+\end{figure}
+\FloatBarrier
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.78\linewidth]{watershed_table3.png}
+\caption{A Table3 window containing the missed striped blue ball next
+to a detected black ball. The merged foreground's distance peak does
+not provide a sufficiently independent new marker. The seeded label
+map consequently does not separate the missed ball as a new object.}
+\label{fig:watershed-table3}
+\end{figure}
+\FloatBarrier
+
+The implementation was also checked on a synthetic scene containing
+three overlapping, differently coloured circles on a green background,
+with only two Hough circles supplied. The hybrid recovered one additional
+circle within three pixels of the known synthetic centre, preserved
+the two supplied circles exactly, and retained the expected radius.
+Additional checks covered empty or isolated detections, invalid image
+types and insufficient cloth samples. This confirms that the proposal
+path can function under controlled conditions; it does not establish
+reliability on the real crowded scenes.
+
+\subsubsection{Interpretation, outputs and reproducibility}
+
+The measured conclusion is that this fixed watershed prototype did not
+improve detection. It does not establish that every watershed-based
+method would fail. The limiting factors were the provisional foreground
+representation, the availability of independent markers, and the
+conservative acceptance policy. Specular highlights, stripes and
+neighbouring balls also create internal colour boundaries that need
+not coincide with object boundaries. Further work could investigate
+additional edge-based markers or fitting visible circular arcs, but
+those alternatives were not implemented in this comparison. Acceptance
+thresholds were not relaxed after inspecting the annotations in an
+attempt to force a positive result.
+
+There are no pixel-level ground-truth masks in the provided data.
+Segmentation quality was therefore inspected visually; the experiment
+reports centre-detection and recognition scores rather than mask IoU
+or boundary accuracy. Watershed cannot directly reconstruct the hidden
+part of a ball, and a segmented visible region is not automatically
+an unbiased estimate of its complete circular boundary.
+
+The experiment runs from the repository root with:
+\begin{quote}
+\code{./build-local/BallExperiments --watershed}
+\end{quote}
+An optional output-directory argument preserves separate runs. The
+default directory is \code{output/experiments/watershed_detection/}.
+The source options are in \code{experiments/watershedDetection.h}.
+Saved files include pooled/per-image metrics, the raw-versus-filtered
+ground-truth audit, local-window metadata, every peak's acceptance or
+rejection reason, matched recognition predictions, and recovered/lost
+annotation identities. Parameter values are exported to CSV and the
+prototype procedure is described in a companion Markdown file.
+Each image has one full detection comparison and one diagnostic sheet
+per crowded window, rather than individual ball subdirectories.
+
+Report snapshots are refreshed using
+\code{python3 experiments/writeWatershedReport.py}. The surrounding
+discussion contains run-specific observations and must be reviewed if
+the implementation or results change. The main detection and recognition
+pipelines remain unchanged.

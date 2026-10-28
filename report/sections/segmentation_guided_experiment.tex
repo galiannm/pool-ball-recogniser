@@ -1,0 +1,264 @@
+\subsection{Segmentation-First Routing to Two Hough Searches}
+\label{sec:segmentation-guided-hough}
+
+The preceding watershed experiment depended on existing Hough detections to
+locate crowded windows and on distance-transform maxima to propose missing
+markers. Its failure to recover the striped blue ball above the black ball
+in Table4 motivated a different order of operations. The next experiment
+constructed foreground components before running Hough, identified potential
+clusters from their area and shape, and used different Hough settings inside
+and outside those windows. A separate watershed check then assessed whether
+the newly generated markers improved candidate validation.
+
+Three methods were compared: the current standard Hough detector;
+segmentation-guided Hough with circular-arc validation; and the same guided
+candidates followed by watershed-basin validation. All methods used the same
+known table polygon and the same final pocket filter. Detection proposals
+were generated before loading ground-truth annotations. No annotated ball
+centre was used to select a component, seed a marker, or accept a circle.
+The main application was not changed.
+
+\subsubsection{Foreground components before any Hough call}
+
+Foreground was estimated over the table using $128\times128$ image tiles.
+Within each tile, every second pixel in each direction was eligible as a
+cloth sample when its HSV values satisfied $35\leq H\leq95$,
+$S\geq35$ and $V\geq30$. At least 30 samples were required. The
+component-wise median of their encoded 8-bit Lab values supplied the local
+cloth colour. The foreground-distance threshold was the median sample
+distance plus 2.5 times its median absolute deviation, clipped to $[16,45]$,
+as in the preceding experiment. A global cloth estimate provided a fallback
+for tiles without enough samples. If no global model was available, no
+cluster was declared and standard Hough was retained everywhere.
+
+No Hough-based exclusion disks or foreground cores were used at this stage.
+This distinguishes the experiment from the earlier Hough-first watershed
+prototype. Local cloth estimation can still confuse a green ball with the
+cloth, but an isolated ball omitted from the foreground is not automatically
+deleted: standard Hough still examines the original table-masked image.
+
+The foreground construction inset the table polygon with a $41\times41$
+elliptical erosion to suppress rail and shadow connections. A $3\times3$
+elliptical closing filled small gaps, enclosed holes were filled, and the
+mask was restricted to the inset table. Components smaller than 80 pixels
+were discarded. An initial engineering run with an 11-pixel inset had
+connected foreground along rails into nearly table-wide search windows.
+Its outputs were retained separately; the reported configuration uses the
+41-pixel inset. This adjustment was based on inspecting the mask failure,
+but the experiment remains exploratory and should not be presented as an
+untouched held-out evaluation.
+
+An image-coordinate size guide was constructed without Hough detections:
+the expected radius increased linearly from 15 to 30 pixels between the
+minimum and maximum source-image y coordinates of the table corners.
+This used the existing radius bounds and camera geometry, not annotated
+ball sizes. It is a heuristic; actual apparent radii need not follow
+that exact linear relation.
+
+A foreground component was considered a potential cluster when its area
+was at least 1.6 times the expected disk area, or when its bounding-box
+aspect ratio was at least 1.45 and its area was at least 0.8 expected disk
+areas. Components covering over 10\% of the table, or long rail-like
+components with aspect ratio above four and more than 60\% of pixels in
+the table's boundary band, were excluded. A window extended each selected
+component's bounding box by 1.25 expected radii. Overlapping windows were
+merged. The final run produced 32 windows across seven images; some
+represented shadows or single balls rather than actual multi-ball clusters.
+
+\subsubsection{Routing standard and permissive circle searches}
+
+Standard Hough retained the original settings: $dp=1.5$, minimum centre
+distance 18 pixels, upper Canny threshold 75, accumulator threshold 35,
+and radius bounds 15--30 pixels. It was computed on the unmodified
+table-masked image and then routed by candidate centre. This avoids
+introducing artificial image edges by painting cluster interiors black
+before circle detection.
+
+Standard candidates centred in the interior of a cluster bounding box
+were replaced by results from its local permissive search. An overlap
+margin of half an expected radius retained standard candidates near
+the region boundary, while the padded local crop covered the same area.
+Thus routing did not intentionally leave a gap between the two searches.
+
+The local search retained $dp=1.5$, Canny threshold 75 and the original
+$5\times5$, $\sigma=1.5$ preprocessing, but reduced the accumulator
+threshold to 22 and minimum centre distance to 12 pixels. Its radius
+bounds were $\max(12,\lfloor0.7r_e\rfloor)$ and
+$\min(32,\lceil1.6r_e\rceil)$, where $r_e$ is the window's size guide.
+This widens the plausible range modestly instead of treating occlusion
+as evidence that the physical ball radius has become much smaller.
+The exact bounds for each window were saved to CSV.
+
+Local searches used the original colour crops, not binary foreground
+images. Foreground was a routing and support cue; Hough still measured
+image edges. Each proposal was checked using 72 samples around its
+predicted circumference. A sample was supported when a Canny edge was
+within 2.5 pixels and the absolute cosine between its Sobel gradient
+direction and the circle's radial direction was at least 0.6. This
+reduces support from edges crossing a proposed circle tangentially or
+from unrelated internal markings.
+
+At least 30\% of circumference samples had to be supported. A contiguous
+supported arc of at least 75 degrees was also required, allowing isolated
+one-sample gaps to be bridged for the arc-length calculation only.
+The raw support percentage was not increased by that bridging. At least
+35\% of the proposed disk had to overlap foreground, and the centre
+had to lie inside the table. These tests allow a partly occluded circle
+to lack edge evidence along its hidden side.
+
+Candidates passing these checks were ordered by
+$0.7\times\text{edge support}+0.3\times\text{arc angle}/360$.
+A candidate was considered a duplicate only when its centre was closer
+than 0.8 times the smaller radius to an already selected circle.
+This replaces the earlier distance-peak experiment's much wider
+1.15-larger-radius exclusion, which could suppress occluded neighbours.
+Standard detections retained by routing were selected first. If a
+window accepted no local proposal, available standard circles in that
+window were retained as an explicit empty-search fallback. This decision
+did not consult ground truth.
+
+\subsubsection{Separate watershed ablation}
+
+The optional watershed stage used accepted circle centres as distinct
+markers. This directly addresses the earlier missing-marker limitation:
+the new markers came from local image-edge evidence, not from maxima
+of the merged foreground silhouette. Small cores of half a detected
+radius were added to the watershed foreground around these accepted
+centres, after cluster selection had already finished. Foreground
+markers had radius three pixels; background lay outside a $7\times7$
+foreground dilation or outside the table. Watershed used the original
+BGR crop smoothed with a $3\times3$ Gaussian, $\sigma=0.8$.
+
+For each accepted local candidate, the resulting label area overlapping
+the watershed foreground had to fall between 0.15 and 2.0 times its
+expected disk area. This was a candidate-rejection check, not a new
+centre-estimation method. Standard detections and explicit fallback
+detections were not removed by this check. Centres and radii were not
+changed. Comparing the guided variant before and after this check
+isolates this particular contribution of watershed; it does not test
+every possible use of watershed contours or masks.
+
+\subsubsection{Table4 recovery and overall results}
+
+\input{tables/segmentation_hough_table4.tex}
+
+The guided search recovered the previously missed ball 10 in Table4.
+Its detected source centre was $(1479.75,104.25)$ with radius 19.5 pixels.
+After perspective transformation its centre error was 7.00 table pixels,
+within the fixed 15-pixel matching tolerance. The watershed check retained
+this candidate. Thus visible circular-edge evidence could recover the
+ball that the earlier distance-peak marker strategy missed. The fixed
+recognition pipeline correctly predicted striped for this candidate,
+but returned an unknown number; recovery of its location did not imply
+correct number recognition.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{segmentation_hough_table4.png}
+\caption{Evaluation-only close-up centred on the missed Table4 annotation.
+The standard detector misses ball 10, while the local permissive search
+recovers it and supplies a separate watershed marker. Green circles
+are matched detections, red circles are false detections and the blue
+cross marks a missed annotation. Ground truth selected this display
+crop after detection; it did not determine any proposal or marker.}
+\label{fig:segmentation-hough-table4}
+\end{figure}
+\FloatBarrier
+
+However, the same Table4 run lost the baseline match to ball 7 and
+introduced additional false detections. Before watershed it produced
+14 true and two false detections, compared with the baseline's 14 true
+and zero false detections. The watershed area check retained the same
+16 circles in Table4. This is a change in which balls were found,
+not an overall Table4 detection improvement.
+
+\input{tables/segmentation_hough_summary.tex}
+\input{tables/segmentation_hough_changes.tex}
+
+Across Table1--Table6, guided Hough recovered three previously missed
+annotations: ball 7 in Table1 and ball 10 in Table3 and Table4. It
+also lost three previously matched annotations: ball 9 in Table1,
+ball 7 in Table4 and ball 10 in Table6. Total true positives therefore
+remained 86, with four misses. False detections increased from two
+to 16, reducing precision from $97.73\%$ to $84.31\%$ and F1 from
+$96.63\%$ to $89.58\%$. The mean matched-centre error also increased
+from 4.91 to 5.29 table pixels.
+
+Watershed reduced the guided variant's false detections from 16 to 11,
+but removed three additional correct matches. It therefore produced
+83 true positives, seven misses, precision $88.30\%$ and F1 $90.22\%$.
+It was slightly better than unfiltered guided Hough in F1, but worse
+than standard Hough. On AllBalls, guided Hough retained 16 true
+detections while adding four false detections; watershed retained
+14 true and three false detections, losing two reference balls.
+
+\input{tables/segmentation_hough_images.tex}
+
+Recognition was frozen to configuration 2153 plus the selected solid-only
+CCA correction, using ordinary circular masks. The baseline correctly
+classified 82 types and 75 numbers among its 86 matched balls. Guided
+Hough produced 78 correct types and 71 numbers, while guided Hough
+with watershed produced 75 types and 69 numbers. Changed local centres
+and radii can alter extraction and colour proportions even for an
+annotation still matched by both detectors. These scores therefore
+measure the downstream effect of the complete detection alternatives,
+not only the identities of recovered balls. Recognition thresholds
+were previously tuned on Table1--Table6, so these remain exploratory
+comparison scores rather than independent recognition test estimates.
+
+\subsubsection{Interpretation and reproducibility}
+
+The experiment supports the narrow hypothesis that a more permissive
+local edge search can supply a missing marker for the visible ball
+10/ball 8 pair. It does not support replacing the current detector
+with this complete prototype. Segmentation sometimes groups shadows
+or single balls as clusters, local Hough accepts plausible circular
+fragments from background and internal features, and changing an
+existing crop can lose an otherwise acceptable annotation match.
+The watershed area check also rejects some correct markers because
+colour boundaries within a ball are not identical to object boundaries.
+These costs must be counted alongside the visually convincing recovery.
+
+A stronger follow-up could preserve confirmed standard centres in a
+cluster and use local proposals primarily to supplement missing balls,
+with stricter background and arc-consistency tests. That would be a
+different comparison and was not silently substituted for the requested
+two-route experiment. No segmentation IoU is reported because the
+dataset supplies centres and numbers rather than pixel-level masks.
+
+The command is:
+\begin{quote}
+\code{./build-local/BallExperiments --segmentation-hough}
+\end{quote}
+An optional output path preserves separate runs. Options are defined in:
+\begin{quote}
+\code{experiments/segmentationGuidedDetection.h}
+\end{quote}
+The default output directory is:
+\begin{quote}
+\code{output/experiments/segmentation_guided_detection/}
+\end{quote}
+It contains pooled/per-image scores, per-annotation coverage and
+recovery/loss records, candidate predictions, full option values,
+cluster windows and routing metadata, radial edge/arc evidence, and
+watershed acceptance/rejection reasons. Diagnostic sheets show the
+foreground before Hough, routing interiors, raw local proposals,
+accepted local circles and watershed labels. Recovered annotations
+receive additional close-up comparisons for evaluation only.
+
+Synthetic checks confirmed that changing the local Hough threshold did
+not change the foreground or routing mask, that accepted local candidates
+met their radial-arc criteria, and that watershed output was a subset
+of the guided circles. Empty local searches and absent cloth models
+were checked for baseline fallback. All exported pooled/per-image scores
+and annotation changes were reconciled with predictions, and the standard
+control matched the preceding experiment's centres and recognition results.
+
+Report tables and the Table4 figure are refreshed with:
+\begin{quote}
+\code{python3 experiments/writeSegmentationGuidedReport.py}
+\end{quote}
+The surrounding prose records this run's settings and results and
+needs review after a rerun with different options. All implementation
+changes remain in the experiment target; production detection and
+recognition functions and their parameters are unchanged.

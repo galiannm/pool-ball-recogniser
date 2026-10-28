@@ -176,3 +176,118 @@ make -C report
 The discussion is in `report/sections/cca_experiment.tex`. Its run-specific
 prose must be reviewed if the grid or results change. The main application's
 recognition settings and CCA functions are unchanged by this experiment.
+
+# Watershed detection comparison
+
+```sh
+cmake --build build-local --target BallExperiments -j 4
+./build-local/BallExperiments --watershed
+```
+
+An optional output-directory argument overrides
+`output/experiments/watershed_detection/`. This is a fixed prototype, not a grid
+search. Options are in `watershedDetection.h`; values are recorded in `parameters.csv`
+and the procedure in `parameters.md`. It processes the configured image set
+with the existing camera/table geometry.
+
+The three variants are Hough alone, Hough-seeded watershed, and hybrid watershed
+with additional distance-transform markers. Nearby Hough groups define local
+windows. A local Lab cloth estimate supplies a provisional foreground, keeping
+known Hough cores, closing small gaps and filling holes. The hybrid considers
+distance maxima that are sufficiently independent of existing markers, then
+checks their watershed basins for area, shape, foreground support and pockets.
+Existing Hough circles are never moved or removed. Proposed centres use peaks,
+not basin centroids; proposed radii use the local median Hough radius.
+
+Hough-seeded watershed is a segmentation control, so its detection scores are
+unchanged by design. All recognition uses standard circular masks and the
+fixed K=6/configuration-2153 classifier plus the selected solid-only CCA rule.
+Watershed masks are diagnostic only. Ground-truth annotations enter evaluation
+and overlays, never segmentation, markers or candidate acceptance. The public
+segmentation function accepts no ground-truth arguments.
+
+Outputs:
+
+- `summary.md` and `metrics.csv`: pooled and per-image detection/recognition scores.
+- `ground_truth_audit.csv`: all annotations, raw/filtered matching, nearest baseline
+  error and whether the point falls inside a processed window.
+- `regions.csv`: crop coordinates, Hough seeds, expected size, cloth statistics and status.
+- `proposals.csv`: peak positions, basin checks and explicit rejection reasons.
+- `predictions.csv`: final centres, matched labels and frozen recognition predictions.
+- `changes.csv`: recovered/lost annotation identities for each method.
+- `<image-stem>/detection_comparison.png`: all three detection variants.
+- `<image-stem>/region_N_diagnostics.png`: original region, foreground, distance
+  transform, both marker maps, both watershed label maps, and peak outcomes.
+
+The current prototype adds no detections on the real images. Do not interpret
+the existence of watershed labels as successful missed-ball recovery. Its
+distance peaks are unreliable in the merged silhouettes of the actual crowded
+groups. No pixel-level annotations are available to quantify mask accuracy.
+
+To refresh the report snapshots and PDF:
+
+```sh
+python3 experiments/writeWatershedReport.py
+make -C report
+```
+
+The detailed discussion is in `report/sections/watershed_experiment.tex`.
+The snapshot script updates tables and figures, not the run-specific prose.
+
+# Segmentation-first Hough routing
+
+```sh
+cmake --build build-local --target BallExperiments -j 4
+./build-local/BallExperiments --segmentation-hough
+```
+
+An optional output directory overrides `output/experiments/segmentation_guided_detection/`.
+Options are in `segmentationGuidedDetection.h`. Foreground and cluster windows are
+created **before the first Hough call**, without Hough seed disks or annotations.
+Known table geometry and the existing radius limits provide a size guide.
+The main application remains unchanged.
+
+The comparison includes:
+
+1. Original standard Hough.
+2. Standard Hough routed outside component-based cluster interiors, with permissive
+   local Hough and radial arc validation inside. A boundary-overlap margin avoids gaps.
+3. The same guided detections with an additional watershed basin-area check.
+
+Standard Hough is calculated on the unmodified table-masked image and routed by
+centre, avoiding artificial image edges at cluster boundaries. Local Hough uses
+accumulator threshold 22, minimum centre distance 12, and modestly widened size
+bounds. It requires radial Canny/Sobel support over at least 30% of the circumference
+and a 75-degree supported arc. Duplicate rejection uses 0.8 times the smaller
+radius, permitting genuinely overlapping neighbours. If a local region accepts
+nothing, available standard circles in that region are retained as an explicit fallback.
+
+Watershed uses the accepted circles as markers and tests local candidates' basin
+foreground area. It does not invent centres or adjust radii; retained standard and
+fallback circles are not rejected by it. Recognition stays fixed to configuration
+2153 plus the selected solid-only CCA rule, using standard circular masks.
+
+Outputs include `summary.md`, `metrics.csv`, `parameters.csv`, `regions.csv`,
+`proposals.csv`, `predictions.csv`, `changes.csv`, and `coverage.csv`. Each image
+has a foreground/routing sheet, a full three-method detection comparison and one
+diagnostic sheet per cluster window. Recovered annotations also have evaluation-only
+close-ups such as `Table4/recovered_ball_10_comparison.png`. The annotation centres
+select these display crops only after all detections finish.
+
+The current guided prototype recovers ball 10 in Table3 and Table4, but its extra
+false detections and lost baseline matches make its overall performance worse.
+Read the aggregate scores as well as the recovered-ball pictures. The initial
+11-pixel boundary-inset engineering run was preserved under
+`output/experiments/segmentation_guided_initial_boundary/`; current defaults use
+a 41-pixel inset to reduce rail/shadow connections before component labelling.
+This was not an exhaustive parameter search or held-out generalisation test.
+
+Refresh the report's result tables and Table4 figure with:
+
+```sh
+python3 experiments/writeSegmentationGuidedReport.py
+make -C report
+```
+
+The detailed discussion is in `report/sections/segmentation_guided_experiment.tex`.
+The snapshot script does not regenerate its run-specific interpretation.
