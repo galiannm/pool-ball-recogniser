@@ -52,6 +52,10 @@ add_executable(BallExperiments
     experiments/watershedDetection.cpp
     experiments/segmentationGuidedDetection.cpp
     experiments/segmentationGuidedExperiment.cpp
+    experiments/clothBackprojection.cpp
+    experiments/backprojectionExperiment.cpp
+    experiments/circularEdgeSupport.cpp
+    experiments/circularEdgeExperiment.cpp
     visualisation/combineImages.cpp
     recognition/connectedComponentAnalysis.cpp
     evaluation/evaluation.cpp

@@ -75,6 +75,12 @@ from two to 16. Its watershed check reduced false detections to 11 but
 also reduced true positives from 86 to 83. These alternatives therefore
 did not justify replacing the standard detector.
 
+The subsequent histogram-backprojection verifier was screened on AllBalls
+and evaluated with a frozen conservative setting. It retained every candidate
+in Table1--Table6, preserving recall but removing neither false detection.
+It was therefore not added to the recommendation. This candidate-verification
+result is distinct from cloth-pixel removal during extraction.
+
 There is a distinction between an experimental recommendation and application
 integration. The main application's current configuration still requests
 K=2 and calls the original type classifier, using the original light and

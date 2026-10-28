@@ -3,6 +3,8 @@
 #include "ccaGridSearch.h"
 #include "watershedDetection.h"
 #include "segmentationGuidedDetection.h"
+#include "clothBackprojection.h"
+#include "circularEdgeSupport.h"
 #include "config.h"
 
 #include <exception>
@@ -16,11 +18,23 @@ int main(int argc, char* argv[]) {
                   << "       BallExperiments --cca-grid [output-directory]\n"
                   << "       BallExperiments --watershed [output-directory]\n"
                   << "       BallExperiments --segmentation-hough [output-directory]\n"
+                  << "       BallExperiments --backprojection [output-directory]\n"
+                  << "       BallExperiments --edge-support [output-directory]\n"
                   << "Defaults: Media/AllBalls.jpeg output/experiments/radius_padding\n";
         return argc > 3 ? 1 : 0;
     }
 
     try {
+        if (argc > 1 && std::string(argv[1]) == "--edge-support") {
+            experiments::runCircularEdgeExperiment(argc > 2
+                ? argv[2] : "output/experiments/circular_edge_support");
+            return 0;
+        }
+        if (argc > 1 && std::string(argv[1]) == "--backprojection") {
+            experiments::runBackprojectionExperiment(argc > 2
+                ? argv[2] : "output/experiments/cloth_backprojection");
+            return 0;
+        }
         if (argc > 1 && std::string(argv[1]) == "--segmentation-hough") {
             experiments::runSegmentationGuidedExperiment(argc > 2
                 ? argv[2] : "output/experiments/segmentation_guided_detection");

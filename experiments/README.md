@@ -291,3 +291,126 @@ make -C report
 
 The detailed discussion is in `report/sections/segmentation_guided_experiment.tex`.
 The snapshot script does not regenerate its run-specific interpretation.
+
+# Cloth histogram backprojection verification
+
+```sh
+cmake --build build-local --target BallExperiments -j 4
+./build-local/BallExperiments --backprojection
+```
+
+An optional second argument overrides `output/experiments/cloth_backprojection/`.
+Reusable experiment-only functions are in `clothBackprojection.h/.cpp`; they
+accept images/masks/candidates and never load annotations. The runner is
+`backprojectionExperiment.cpp`. The main application and recognition remain unchanged.
+
+The runner screens the 36 H/S-bin and threshold configurations on AllBalls,
+requiring every originally matched candidate to remain. Selection uses a fixed
+conservative order: highest similarity threshold, highest allowed cloth fraction,
+fewest H bins, fewest S bins, earlier ID. If no valid recall-safe configuration
+exists, filtering is disabled. `selection.csv` is closed before Table1–6 images
+or labels are evaluated. Only that frozen setting is evaluated on Table1–6.
+AllBalls has no post-pocket false detections, so this is recall screening rather
+than a learned optimum for precision. Previously inspected project images are
+not claimed to be pristine independent test data.
+
+Sampling excludes all raw Hough candidates (four-pixel radius margin), the known
+pocket neighbourhoods and an 11x11 inset of the table boundary. At least 1000
+samples are needed. H/S ranges are [0,180), [0,256). The histogram is normalised
+to [0,255], backprojected with 8-bit HSV, then divided by 255 into a float score.
+There is no subsequent map renormalisation. Scores are similarities, not probabilities.
+
+Scoring uses the original circle intersected with the table/image—not the
+sampling mask. At least 80% circle coverage is required for rejection. Pixels
+with score >= the similarity threshold are cloth-like; a candidate is rejected
+only when their proportion is strictly greater than the maximum cloth fraction.
+Insufficient/flat models and inadequate circle coverage retain candidates.
+Mean score is recorded but is not an extra rejection rule. There is no edge
+criterion in this first experiment. Retained circles keep their order, coordinates
+and radii exactly.
+
+Outputs:
+
+- `grid_search.csv` / `screening_scores.csv`: 36 AllBalls configurations and all
+  candidate-level screening scores. IDs identify this experiment only.
+- `selection.csv`: frozen configuration, fixed mask settings and selection policy.
+- `evaluation.csv`: A (table mask + Hough), B (+ pockets), C (+ verification).
+- `candidate_scores.csv`: original B candidate index, raw candidate index,
+  ground-truth audit label, coverage, mean score, cloth fraction and retention reason.
+- `models.csv`, `rejections.csv`, `predictions.csv`, `changes.csv`: model status,
+  removed matched/unmatched candidates and final annotation matches.
+- `screening/`: similarity and histogram images for the four AllBalls H/S models.
+- `<image-stem>/`: sampling mask, saved histogram YAML, histogram heatmap
+  (H rows/S columns), similarity maps, accepted/rejected overlay and comparison sheets.
+
+Ground-truth labels appear only in screening/evaluation files and overlays.
+In `verification.png`, green means retained and red rejected, independently of
+ground-truth correctness. `detection_comparison.png` separately uses green for
+matched detections, red for unmatched detections and blue for missed annotations.
+
+The current conservative setting preserves all true detections but also both
+remaining false detections. No evaluation threshold was changed to force a gain.
+Refresh the report snapshots with:
+
+```sh
+python3 experiments/writeBackprojectionReport.py
+make -C report
+```
+
+The detailed discussion is in `report/sections/backprojection_experiment.tex`.
+
+# Circular edge support diagnostic
+
+```sh
+cmake --build build-local --target BallExperiments -j 4
+./build-local/BallExperiments --edge-support
+```
+
+An optional second argument overrides `output/experiments/circular_edge_support/`.
+This measures every post-pocket Hough candidate across AllBalls and Table1–6.
+It does not reject, move or resize circles, or change the application/report.
+`circularEdgeSupport.h/.cpp` provides annotation-free measurement functions;
+`circularEdgeExperiment.cpp` handles evaluation and visualisation.
+
+Fixed settings: 72 boundary directions, 2.5-pixel search tolerance, Canny
+37.5/75 after grayscale Gaussian smoothing (5x5, sigma 1.5), and minimum
+absolute radial gradient alignment 0.6. Edge maps use the original image to
+avoid artificial table-mask boundary edges; supporting pixels and sampled
+boundary positions must be inside the table. Opposite gradient polarities
+both count. The search tests proximity and gradient direction, so an edge
+merely near the circumference does not automatically support it.
+
+The score is supported directions / valid directions; coverage records valid
+directions / 72. Arc lengths include wrap-around at zero degrees. The raw arc
+requires uninterrupted support; the bridged arc fills isolated one-sample gaps
+and leaves the support fraction unchanged. These are geometric measurements,
+not probabilities or a trained rejection rule. Settings are not tuned on labels.
+
+Outputs:
+
+- `summary.md`: false detections, overlap with genuine-detection scores, and
+  the weakest genuine detections across Table1–6 (excluding AllBalls).
+- `candidate_scores.csv` and `scores_ranked.csv`: candidate ID, annotation
+  match, original circle, valid coverage, nearby-edge fraction, aligned edge
+  fraction, raw longest arc and bridged longest arc.
+- `angular_samples.csv`: every sampled boundary position, validity, nearby
+  edge flag, aligned support flag, selected edge pixel and gradient alignment.
+- `settings.csv` and `baseline_metrics.csv`: reproducible settings and the
+  unchanged detector's per-image counts and localisation metrics.
+- `Table1_false_candidate_15.png`, `Table2_false_candidate_17.png`: convenient
+  close-ups of both current false detections.
+- `<image-stem>/candidate_N.png`: one comparison per candidate with original
+  crop, coloured circumference and Canny evidence. Green means aligned support,
+  orange a nearby edge without sufficient alignment, red no nearby edge, grey
+  an invalid sample; cyan dots identify the selected supporting edge pixels.
+- `<image-stem>/overview.png`, `canny.png`: overview labels contain candidate
+  IDs and support percentages. Overview green/red mean matched/unmatched
+  against annotations, independently of the boundary-support colours.
+
+Current results: Table1's false candidate scores 33.3%, Table2's false candidate
+(the offset circle around ball 10) scores 45.8%. The weakest genuine detection,
+Table1's crowded orange ball 5, scores 41.7%. A support-only cutoff could remove
+the first false detection without losing an existing true detection on these
+images, but rejecting the second would also reject at least that genuine ball.
+This is exploratory score inspection on already seen images, not independent
+validation of a chosen threshold. No rejection threshold is applied.

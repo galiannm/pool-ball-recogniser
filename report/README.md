@@ -9,6 +9,15 @@ summarises the recommended original detector + tuned K=6 + solid-only CCA.
 The report explicitly records that the main application still runs the original
 K=2 recognition baseline; this report update does not integrate experimental code.
 
+The histogram-only candidate-verification experiment is in
+`sections/backprojection_experiment.tex`. Its outputs are under
+`../output/experiments/cloth_backprojection/`. After running
+`BallExperiments --backprojection`, refresh tables and the diagnostic figure with
+`python3 experiments/writeBackprojectionReport.py`. The selected conservative
+setting is frozen from AllBalls recall screening before Table1--6 evaluation;
+the report does not claim precision optimisation on a reference image with no
+post-pocket false detections.
+
 Build from this directory:
 
 ```sh
