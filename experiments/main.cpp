@@ -2,6 +2,10 @@
 #include "recognitionGridSearch.h"
 #include "recognitionTuner.h"
 #include "ballColourHistograms.h"
+#include "histogramCCA.h"
+#include "identityHeuristics.h"
+#include "chamferRefinement.h"
+#include "hsvPixelRecognition.h"
 #include "ccaGridSearch.h"
 #include "watershedDetection.h"
 #include "segmentationGuidedDetection.h"
@@ -20,6 +24,15 @@ int main(int argc, char* argv[]) {
                   << "       BallExperiments --recognition-final [output-directory]\n"
                   << "       BallExperiments --recognition-tuner [output-directory]\n"
                   << "       BallExperiments --colour-histograms [output-directory]\n"
+                  << "       BallExperiments --histogram-cca [output-directory]\n"
+                  << "       BallExperiments --histogram-k2-cca [output-directory]\n"
+                  << "       BallExperiments --identity-heuristics [output-directory]\n"
+                  << "       BallExperiments --identity-best-effort [output-directory]\n"
+                  << "       BallExperiments --identity-white-expansion [output-directory]\n"
+                  << "       BallExperiments --colour-score-diagnostics [output-directory]\n"
+                  << "       BallExperiments --chamfer-refinement [output-directory]\n"
+                  << "       BallExperiments --row-cue-size [output-directory]\n"
+                  << "       BallExperiments --hsv-pixel-recognition [output-directory]\n"
                   << "       BallExperiments --cca-grid [output-directory]\n"
                   << "       BallExperiments --watershed [output-directory]\n"
                   << "       BallExperiments --segmentation-hough [output-directory]\n"
@@ -30,6 +43,51 @@ int main(int argc, char* argv[]) {
     }
 
     try {
+        if (argc > 1 && std::string(argv[1]) == "--hsv-pixel-recognition") {
+            experiments::runHSVPixelRecognitionExperiment(argc > 2
+                ? argv[2] : "output/experiments/hsv_pixel_recognition");
+            return 0;
+        }
+        if (argc > 1 && std::string(argv[1]) == "--row-cue-size") {
+            experiments::runRowCueSizeExperiment(argc > 2
+                ? argv[2] : "output/experiments/row_cue_size");
+            return 0;
+        }
+        if (argc > 1 && std::string(argv[1]) == "--chamfer-refinement") {
+            experiments::runChamferRefinementExperiment(argc > 2
+                ? argv[2] : "output/experiments/chamfer_refinement");
+            return 0;
+        }
+        if (argc > 1 && std::string(argv[1]) == "--colour-score-diagnostics") {
+            experiments::runColourScoreDiagnostics(argc > 2
+                ? argv[2] : "output/experiments/colour_score_diagnostics");
+            return 0;
+        }
+        if (argc > 1 && std::string(argv[1]) == "--identity-white-expansion") {
+            experiments::runWhiteExpansionIdentityHeuristics(argc > 2
+                ? argv[2] : "output/experiments/identity_white_expansion");
+            return 0;
+        }
+        if (argc > 1 && std::string(argv[1]) == "--identity-best-effort") {
+            experiments::runBestEffortIdentityHeuristics(argc > 2
+                ? argv[2] : "output/experiments/identity_best_effort");
+            return 0;
+        }
+        if (argc > 1 && std::string(argv[1]) == "--identity-heuristics") {
+            experiments::runIdentityHeuristics(argc > 2
+                ? argv[2] : "output/experiments/identity_heuristics");
+            return 0;
+        }
+        if (argc > 1 && std::string(argv[1]) == "--histogram-k2-cca") {
+            experiments::runOriginalK2HistogramCCAExperiment(argc > 2
+                ? argv[2] : "output/experiments/histogram_k2_cca");
+            return 0;
+        }
+        if (argc > 1 && std::string(argv[1]) == "--histogram-cca") {
+            experiments::runHistogramCCAExperiment(argc > 2
+                ? argv[2] : "output/experiments/histogram_cca");
+            return 0;
+        }
         if (argc > 1 && std::string(argv[1]) == "--colour-histograms") {
             experiments::runBallColourHistogramExperiment(argc > 2
                 ? argv[2] : "output/experiments/ball_colour_histograms");

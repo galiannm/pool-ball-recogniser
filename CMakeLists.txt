@@ -61,6 +61,10 @@ add_executable(BallExperiments
     experiments/recognitionTuner.cpp
     experiments/ballColourHistograms.cpp
     experiments/ballHistogramExperiment.cpp
+    experiments/histogramCCA.cpp
+    experiments/identityHeuristics.cpp
+    experiments/chamferRefinement.cpp
+    experiments/hsvPixelRecognition.cpp
     io/finalResults.cpp
     io/output.cpp
     visualisation/combineImages.cpp

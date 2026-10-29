@@ -1,0 +1,296 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=25.4mm]{geometry}
+\usepackage{graphicx,booktabs,amsmath,amssymb,microtype}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption,titlesec}
+\titleformat{\section}{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{8pt}{5pt}
+\captionsetup{font=normalsize,labelfont=bf,skip=4pt,hypcap=false}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlength{\emergencystretch}{2em}
+\graphicspath{{assets/}}
+\newcommand{\fig}[3]{\par\begingroup\centering\includegraphics[width=#1\linewidth]{#2}\captionof{figure}{#3}\par\endgroup\vspace{3pt}}
+\newcommand{\sub}[1]{\par\textbf{#1}\par}
+\begin{document}
+\begin{center}\textbf{Pool-ball localisation and recognition}\\
+Manon Yiqin Galian Ng (23375206)\end{center}
+
+\section*{1. Finding the balls}
+The system finds possible balls, recognises them and converts their centres to
+table coordinates. AllBalls supplies training examples; Table1--Table6 contain
+90 annotated balls. One parameter set processes every image. Later rules followed
+inspection of these six images, so the scores are not an independent test on
+new scenes.
+
+\fig{.92}{pipeline.pdf}{The processing stages. Dashed arrows supply AllBalls models. Position conversion is separate from recognition.}
+
+\sub{Masking and circle detection}
+The camera does not move, so the supplied table corners define a fixed playing
+area: $(337,35)$, $(1570,21)$, $(1888,451)$ and $(38,472)$, written as
+$(\text{column},\text{row})$. Pixels outside this quadrilateral are masked out.
+This prevents the surrounding room from producing ball detections. A
+$5\times5$ Gaussian filter, with standard deviation 1.5 pixels, reduces noise
+in the greyscale image before circular Hough detection.
+
+Hough settings were compared on AllBalls in a 480-combination search. The
+selected accumulator resolution ratio is 1.5, minimum centre spacing 18 pixels,
+upper edge threshold 75 and circle-voting threshold 35; allowed radii are
+15--30 pixels. The circle estimates are candidates: pockets and parts of
+neighbouring balls can also produce circular edges.
+
+\sub{Rejecting pockets}
+Candidate centres are converted to table coordinates and compared with six
+known pocket positions. A candidate within 25 table units of a pocket centre
+is rejected. This uses the table layout to remove predictable false detections,
+but could also remove a genuine ball close to a pocket.
+
+\fig{.83}{detection_stages.pdf}{AllBalls detection stages. Cyan guides mark centre rows used to estimate radius. Recognition uses original colours.}
+
+\newpage
+\section*{2. Recognising ball type and colour}
+Each detected circle defines a square region of interest (ROI). A circular mask
+restricts recognition to pixels inside the estimated ball. The system asks two
+separate questions: \emph{how much of the ball appears white?} and \emph{which
+body colour does it resemble?} This separates type (cue, solid or striped) from
+colour, since solid and striped partners share a colour.
+
+\sub{K-means estimates the amount of white}
+K-means divides the ROI's BGR pixels into two colour groups. Pixels in a group
+need not touch each other. Each group is represented by its average colour,
+which is converted to HSV. Saturation $S$ describes colour strength; value $V$
+describes brightness. Both use the range 0--255 here.
+
+A group is light if $V\geq170$ and $S\leq165$. Otherwise it is dark if
+$V\leq90$, and coloured otherwise. The sizes of these groups give light and
+non-light percentages. At least 85\% light initially suggests cue; at least
+70\% non-light suggests solid; a remaining mixture suggests stripe. Dark pixels
+count as non-light so dark ball bodies are not discarded. Clustering uses three
+initialisations, a fixed seed, and at most 50 iterations or a centre change
+below 0.2. It reduces sensitivity to individual pixels, but may merge a pale
+body colour with white.
+
+\fig{.91}{recognition_stages.pdf}{Solid 1 (top) and striped 9 (bottom). The light-cluster mask estimates white coverage; the body mask supplies colour samples.}
+
+\sub{HSV histograms identify the body colour}
+AllBalls supplies eight colour models: yellow, blue, red, purple, orange, green,
+maroon and black. Solid/striped partners contribute equally to their shared
+model; cue is excluded. Before measuring body colour, the circular mask is
+eroded with a $3\times3$ ellipse and light pixels are removed. This reduces
+white-marking and background influence. Fewer than 12 remaining pixels gives
+no usable body-colour evidence.
+
+Each histogram counts pixels in $18\times8\times8$ hue/saturation/value bins,
+then divides by its total. The bin ranges are $[0,180)$, $[0,256)$ and $[0,256)$.
+Neighbouring bins are smoothed with weights $(1,2,1)/4$; hue wraps around.
+For nearly grey pixels (BGR channel range below 15), hue is set to zero.
+A crop is compared with each trained histogram using one minus Bhattacharyya
+distance: a higher score means a closer colour distribution~\cite{colour}.
+Backprojection shows where a model responds in the crop; its brightness is
+scaled for display and is not the score used to choose an identity.
+
+\newpage
+\section*{3. Combining evidence and producing positions}
+\sub{Avoiding conflicting identities}
+The initial type is useful but can be wrong near a threshold. For example, a
+mostly white stripe may be labelled cue. We therefore keep scores for possible
+identities instead of immediately accepting one label. A numbered-ball score
+multiplies colour similarity by agreement with the expected white coverage:
+cue 85--100\%, solid 0--30\%, stripe 30--85\%. Agreement is highest inside its
+range and falls smoothly outside it, using a Gaussian width of 0.10 in light
+fraction. Cue's score uses light fraction in place of histogram similarity;
+black supports ball 8 only. These scores are not calibrated probabilities.
+
+The Hungarian method~\cite{assignment} maximises total score while using each
+identity at most once. If two candidates prefer cue, one may receive its
+next-best striped identity. Balls need not all be present. Unknown has effectively
+zero score and is available when evidence is missing or uniqueness leaves no
+supported choice. Receiving an identity requires usable body colour or an
+initial cue label. Unknown retains the detection, including a false circle.
+
+\sub{Padding white candidates and selecting the cue}
+Hough sometimes follows a stripe's inner white region rather than its full
+boundary. Every ROI initially labelled cue is therefore expanded by one pixel,
+and its type and histogram evidence are recomputed. This may expose a coloured
+rim, but also admits cloth. Other ROIs are unchanged.
+
+The full cue should generally be larger than an internal white patch, after
+accounting for depth. A median-slope line~\cite{sen} fits the 16 AllBalls centre
+rows and radii (Appendix B):
+\[
+ \hat r(y)=\max(1,20.274+0.009677y).
+\]
+With at least two original cue-like candidates, cue is reserved for the largest
+original-radius-to-expected-radius ratio, $r_i/\hat r(y_i)$. Padding does not
+increase this ratio. This is a forced rule, not proof that the chosen ball is cue.
+
+\fig{.82}{row_radius_fit.pdf}{The radius model uses a narrow training band. Dashed sections estimate sizes beyond the observed rows. Source measurements appear in Appendix B.}
+
+\sub{Converting centres to table coordinates}
+A homography maps the supplied corners onto a $1434\times683$ image, matching
+the table dimensions in millimetres. The same perspective correction converts
+detected centres. Pixel endpoints are 0--1433 and 0--682. Recognition leaves
+positions unchanged. Appendix A shows the final views.
+
+\newpage
+\section*{4. Measuring performance}
+Predicted centres are matched one-to-one with annotated centres within 15 table
+units, without using ball identities. The matching finds as many valid pairs
+as possible, considering nearby alternatives first. A matched detection is a
+true positive (TP); an unmatched detection is a false positive (FP); an unmatched
+annotation is a false negative (FN). The matching does not guarantee the lowest
+possible total position error in a crowded group.
+\[
+ P=\frac{TP}{TP+FP},\qquad R=\frac{TP}{TP+FN},\qquad F1=\frac{2PR}{P+R}.
+\]
+Precision measures how many detections are real balls; recall measures how many
+annotated balls were found. Mean position error averages distances over matched
+pairs. Identity accuracy counts correct identities among those matches. Unknown
+counts as an error on a genuine ball. End-to-end identification also includes
+missed balls, using all annotations as its denominator.
+
+\begin{center}
+\captionof{table}{Results for each image. Error is in table units (approximately mm); identity accuracy considers matched detections only.}
+\input{tables/per_image.tex}
+\end{center}
+
+Detection precision is $86/88=97.73\%$, recall $86/90=95.56\%$ and F1
+$96.63\%$. Mean error is 4.91 units, averaged over all 86 matches. Type and
+identity totals both equal 80/86 (93.02\%). End-to-end identification is
+$80/90=88.89\%$. The two Unknowns are Table1's real stripe 14 and Table2's
+unmatched extra circle. AllBalls obtains 16/16 identities, but it supplied the
+training examples, so this is not an independent test result.
+
+\begin{center}
+\captionof{table}{Adding recognition stages while keeping the same detections.}
+\begin{tabular}{lr}
+\toprule Configuration & Correct identities\\\midrule
+K=2 with fixed colour rules & 68/86\\
+K=2 with HSV histograms & 72/86\\
+Add unique assignment & 75/86\\
+Add selective +1 pixel padding & 79/86\\
+Reserve largest depth-adjusted cue & 80/86\\
+\bottomrule\end{tabular}
+\end{center}
+
+These gains change recognition, not detection counts. The same settings were
+used throughout each run, and annotations were loaded after predictions were
+made. However, choosing rules after inspecting Table1--Table6 still influences
+the method. New images would be needed to estimate performance independently.
+
+\newpage
+\section*{5. Explaining the results}
+\fig{.92}{recognition_cases.pdf}{Examples of corrections and remaining errors. Arrows show earlier-to-selected identities; circles show original detections.\label{fig:cases}}
+
+Padding corrects cue/stripe conflicts in Tables3 and 6. Extra colour lets the
+striped candidate take another identity, releasing cue for the real cue ball.
+Two corrected pairs give four correct identities. The crop alone may still
+prefer cue; the joint assignment resolves the conflict.
+
+Table1's real cue includes misleading green cloth. Stripe 14 has only eight
+usable coloured pixels after padding, below the required 12. Reserving cue
+restores the real cue but leaves stripe 14 Unknown. Table1 also swaps solid 5
+and stripe 9.
+
+Tables5 and 6 confuse blue stripes with solid 4; Table6 calls solid 3 stripe 11.
+Orientation and highlights change white coverage; inaccurate circles include
+cloth or neighbours. Uniqueness can also create wrong swaps or give a false
+circle a plausible identity (Figure~\ref{fig:cases}(f)).
+
+\fig{.70}{detection_failures.pdf}{Yellow circles are detections; red crosses are supplied centres projected into the source image.}
+
+Four balls are missed: 6 and 7 (Table1), and 10 (Tables3/4). Occlusion and merged
+boundaries weaken circular evidence; minimum spacing may suppress close centres.
+
+\newpage
+\section*{6. Alternatives and limitations}
+\sub{Why additional segmentation was not retained}
+Watershed separates regions by growing them from starting markers~\cite{watershed}.
+It was tested to separate overlapping balls. Starting from Hough markers did
+not recover any misses: a missing ball often also lacked a useful marker.
+Finding clusters first and applying more permissive local Hough searches
+recovered three annotations, but lost three previous matches and increased
+false positives from 2 to 16. F1 fell from 96.63\% to 89.58\%.
+
+Connected-component analysis (CCA) measured connected white/coloured areas and
+how much of the crop boundary they reached. The aim was to distinguish a stripe
+from a small white number patch. With the same HSV colour models, the tested
+rules reduced correct identities from 72 to 69. White-region shape changes with
+orientation, and highlights or shadows can split one region into several.
+
+Chamfer matching compares a proposed circle boundary with nearby image
+edges~\cite{chamfer}. Searching centre shifts up to two pixels and radius growth
+up to eight fixed the Table1 cue/14 swap when an outer supported circle was
+preferred. However, it scored 77/86 overall, below padding's 79/86. A one-pixel
+shift exposed 15 body pixels instead of eight: a useful correction, but sensitive
+to crop placement and the 12-pixel cutoff. Direct HSV pixel counting also scored
+79/86 in the final combination, compared with K-means' 80/86.
+
+\fig{.91}{alternatives.pdf}{Watershed and chamfer examples. A plausible region boundary does not necessarily improve the final detection or identity.}
+
+\sub{Ground truth and generalisation}
+Annotations supply centres and identities, not visible masks or true image
+radii. They cannot establish whether a segmentation boundary is correct.
+Occlusion and shadows make some centres difficult to judge; no specific
+annotation has been shown incorrect. The homography describes the cloth plane,
+whereas balls extend above it. The 15-unit tolerance is about 35\% of the 43 mm
+ball diameter, so checking other tolerances would help assess the results.
+
+The fixed camera, narrow radius range and limited lighting variation favour
+this system. AllBalls covers only rows 143--197, making much of the radius
+model an extrapolation. Cue reservation can fail if a striped patch is larger
+or the real cue was not initially labelled white. Repeated positions and a
+shared viewpoint also limit the diversity of the six images. More varied
+training views and new test scenes are needed. The observed 80/86 is promising,
+but does not demonstrate the same accuracy under different conditions.
+
+\newpage
+\section*{Appendix A: final results for all six tables}
+\label{app:results}
+These are the final rectified views from the selected configuration, using the
+same parameters for every image. Labels show predictions, including Unknown;
+they have not been replaced with the annotated identities. Positions use the
+original Hough centres. Individual full-resolution images accompany the report
+source; the overview below retains all six images for comparison.
+
+\fig{1}{final_tables.pdf}{Final predicted identities and positions for Table1--Table6. Read together with the per-image metrics and failure examples in the main text.}
+
+All six real cue balls are correctly identified. Table1 contains three identity
+errors among its 14 matched detections; Table5 contains one, and Table6 two.
+Tables2--4 correctly identify every matched detection, although Tables3 and 4
+each miss one ball. The extra Table2 detection remains Unknown and still counts
+as a false positive.
+
+\newpage
+\section*{Appendix B: radius measurements and resources}
+\fig{.92}{row_radius_samples.pdf}{The AllBalls centre-row band and enlarged measured circles. Crosses mark centres; numbers identify detections rather than ball identities. Circles supply the row/radius pairs used in the model.}
+
+The slope is the median of 71 pairwise slopes with centre rows at least ten
+pixels apart. The intercept is the median of the 16 values $r_i-by_i$. Medians
+reduce the influence of unusually large or small detections, but cannot remove
+a shared detection bias or create evidence at unobserved depths.
+
+\sub{Resources and generative AI acknowledgement}
+Images, dimensions, corners and annotations are supplied module materials.
+OpenAI ChatGPT/Codex assisted with design, C++ experiment/evaluation code,
+debugging, comparisons, figure scripts, diagrams and this report's prose.
+AI-generated contributions include histogram, identity, padding, cue-size and
+alternative-method experiments, numerical summaries and draft illustrations.
+
+\begin{thebibliography}{5}
+\raggedright
+\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}
+\bibitem{colour} M. Swain and D. Ballard. Color indexing. \emph{IJCV} 7, 11--32 (1991).
+\href{https://doi.org/10.1007/BF00130487}{doi:10.1007/BF00130487}.
+\bibitem{assignment} H. Kuhn. The Hungarian method for the assignment problem.
+\emph{Naval Research Logistics Quarterly} 2, 83--97 (1955).
+\bibitem{sen} P. Sen. Estimates of the regression coefficient based on Kendall's tau.
+\emph{JASA} 63, 1379--1389 (1968).
+\bibitem{watershed} L. Vincent and P. Soille. Watersheds in digital spaces.
+\emph{IEEE TPAMI} 13, 583--598 (1991).
+\bibitem{chamfer} G. Borgefors. Hierarchical chamfer matching: a parametric edge
+matching algorithm. \emph{IEEE TPAMI} 10, 849--865 (1988).
+\end{thebibliography}
+\end{document}

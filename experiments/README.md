@@ -595,3 +595,547 @@ No evaluation labels train these histograms or select thresholds. The six images
 have nevertheless been inspected in earlier project work, so they should not be
 described as pristine unseen data. Scores from these three predefined methods
 must not be used to retrospectively claim a newly selected independent test result.
+
+# Frozen HSV colour models with K=6 and solid-only CCA
+
+```sh
+cmake --build build-local --target BallExperiments -j 4
+./build-local/BallExperiments --histogram-cca
+```
+
+The optional output argument defaults to `output/experiments/histogram_cca/`.
+Run `--colour-histograms` first if its model file does not exist. This experiment
+loads the exact saved HSV model from
+`output/experiments/ball_colour_histograms/training/models.yml`; it does not
+retrain, rerun a search, or change the main application. It validates the eight
+colour models, dimensions, example counts and normalisation, then snapshots
+the source file as `frozen_models.yml` before evaluation.
+
+The three fixed profiles are:
+
+| Profile | Type classifier | Number classifier |
+| --- | --- | --- |
+| `k2_hsv` | Current K=2 rules | Frozen AllBalls HSV histogram |
+| `k6_hsv` | Tuned K=6 type rules from 2153 | Same histogram |
+| `k6_cca_hsv` | Same K=6 rules plus solid-only CCA 20242 | Same histogram |
+
+All profiles share identical detections, crops, histogram query masks, colour
+scores and transformed centres. Scores are computed only once per candidate.
+The histogram body mask retains its original pixel-level V>=170,S<=165 light
+exclusion and 3×3 erosion, while K=6 type/CCA uses the separate cluster-level
+V>=170,S<=125 light definition. These deliberately remain distinct so the colour
+models and query extraction match the preceding histogram experiment.
+
+K=6 uses cue light>=85%, solid non-light>=80%. CCA uses eight-connectivity,
+a 2% ball-area component cutoff and a 5×5 ellipse boundary band. Only the solid
+override is enabled: non-light>=70%, light-boundary coverage<=20%, exactly one
+eligible non-light component; otherwise retain the K=6 base type. Cue and stripe
+overrides are disabled. Histogram numbering uses no hand-written hue boundary
+or black saturation/brightness cutoff.
+
+Outputs:
+
+- `summary.md`, `metrics.csv`: per-image and pooled counts/accuracies, oracle
+  number scores, detection counts and number recall/precision. AllBalls is labelled
+  training resubstitution and excluded from pooled Table1–6 results.
+- `predictions.csv`: all three profile predictions, shared colour and score,
+  margin, body-pixel count and annotation correctness.
+- `changes.csv`: every candidate under K2→K6, K6→CCA and K2→CCA comparisons,
+  separately identifying type and number corrections/regressions.
+- `colour_scores.csv`: one shared set of all eight colour scores per candidate.
+- `cca_features.csv`: K=6/CCA types, decision reason, light/non-light proportions,
+  connected-component measurements and light-boundary coverage.
+- `confusion.csv`: type and number matrices for spatially matched detections.
+- `final_results/<profile>/<image-stem>/`: the usual four PNGs and `balls.csv`.
+- `<image-stem>/candidate_N.png`: three prediction crops plus K=6 light,
+  non-light and boundary masks. Green/red text indicates correct/incorrect number;
+  grey means unmatched detection. The annotation label is separate from inference.
+- `<image-stem>/table_comparison.png`: the three overhead prediction views.
+- `configuration.txt`, `frozen_models.yml`: settings and original model snapshot.
+
+Current Table1–6 results:
+
+| Profile | Correct types | Correct numbers |
+| --- | ---: | ---: |
+| K=2 + HSV histogram | 76/86 | 72/86 |
+| K=6 + HSV histogram | 81/86 | 77/86 |
+| K=6 + solid-only CCA + HSV histogram | 82/86 | 78/86 |
+
+K2→K6 corrects five numbers without regressions. CCA corrects one further number:
+Table1 candidate 10, true orange ball 5, changes from striped 13 to solid 5.
+All three obtain 16/16 on AllBalls. The shared true-type number diagnostic is
+79/86, so type-only changes can recover at most one further number at these fixed
+colour predictions. Detection remains 86 TP, 2 FP and 4 FN; combined number recall
+over all 90 annotations is 78/90. The earlier tuned rule-based K=6+CCA classifier
+scored 75/86, but is not another profile in this isolated comparison.
+
+Colour models were trained only on AllBalls. K=6/CCA settings were selected using
+Table1–6 in earlier experiments, so these combined results remain exploratory.
+They are not independent test accuracy, and no settings were adjusted in this run.
+
+# K=2 histograms with the original CCA rules
+
+```sh
+./build-local/BallExperiments --histogram-k2-cca
+```
+
+The optional output argument defaults to `output/experiments/histogram_k2_cca/`.
+This is a separate two-profile comparison: `k2_hsv` versus
+`k2_original_cca_hsv`. It reuses the frozen AllBalls HSV models and the shared
+histogram/CCA exporter, but calls the original production
+`analyseConnectedComponents()` and `classifyBallTypeWithCCA()` directly with K=2.
+The K=6 settings and tuned CCA winner are not applied.
+
+Original CCA enables all cue, stripe and solid overrides, retaining their
+existing thresholds and fallback order. Light is V>=170,S<=165; components use
+eight-connectivity and a 2% area cutoff; the boundary uses a 5×5 ellipse.
+Cue requires light>=85%, largest light>=80%, light boundary>=75% and no eligible
+non-light component. Stripe requires largest light>=20%, light boundary>=20%
+and non-light>=10%. Solid requires non-light>=70%, light boundary<=12% and one
+eligible non-light component. No thresholds are adjusted from this evaluation.
+
+The output schema matches `--histogram-cca`, with two profiles, one pairwise
+comparison, and `k2Type` instead of `k6Type` in `cca_features.csv`. Final results,
+per-ball mask/prediction comparisons, frozen model snapshot, metrics, scores,
+confusion matrices and corrections/regressions are all saved.
+
+On Table1–6, original CCA reduces correct types from 76/86 to 73/86 and correct
+numbers from 72/86 to 69/86. It corrects no numbers and loses three previously
+correct ones. AllBalls remains 16/16 for both profiles. Detection and histogram
+scores are identical. This comparison therefore supports retaining K=2+HSV
+histograms without the original CCA overrides. The main application is unchanged.
+These are fixed existing rules, not a newly tuned CCA configuration; that does
+not independently certify the provenance of every historical baseline threshold.
+
+# A/B/C/D identity and geometric-size heuristics
+
+```sh
+cmake --build build-local --target BallExperiments -j 4
+./build-local/BallExperiments --identity-heuristics
+```
+
+The optional output argument defaults to `output/experiments/identity_heuristics/`.
+All four related variants are implemented together in `identityHeuristics.cpp`;
+the header only exposes the runner. It loads the existing AllBalls HSV histogram
+file (run `--colour-histograms` first if absent), snapshots it, and uses K=2.
+No K=6 settings or tuned CCA parameters are applied. The main pipeline is unchanged.
+
+| Stage | Inference |
+| --- | --- |
+| A | Existing hard K=2 type + winning frozen HSV body-colour histogram |
+| B | Independent best identity from soft type/colour compatibility scores |
+| C | Same scores, with unique identity assignment and Unknown options |
+| D | Same assignment, with a weak geometric size multiplier |
+
+The original K=2 light-fraction intervals motivate the type scores: cue [.85,1],
+solid [0,.30], stripe [.30,.85]. Compatibility is exp(-.5*(distance/.10)^2),
+where distance is zero inside the interval. Numbered identity scores multiply
+type compatibility by the corresponding colour-histogram similarity. Cue uses
+light fraction times cue compatibility. These scores are not calibrated
+probabilities. `relativeSupport` divides by the sum over the 16 identities only
+for inspection; it is not used by the assignment.
+
+B takes the best score if strictly above the predeclared Unknown score .35.
+C/D use a rectangular Hungarian assignment with columns for identities 0–15 and
+one additional Unknown column per candidate. Any number of identities can be
+absent, including cue. Multiple candidates may be Unknown. Only alternatives
+within an absolute .15 of that candidate's local best, and above .35, are allowed.
+Unknown has a 1e-9 tie preference. Overlapping circles are not removed: uniqueness
+of identities is distinct from physical circle deduplication. No identity score
+uses evaluation annotations.
+
+Geometry uses the inverse homography Jacobian, expressed in source pixels per
+physical table millimetre. A 43mm circle projects locally to an ellipse; its major
+semiaxis approximates a sphere's source-image radius. The minor axis/angle remain
+available for diagnostics. A single median scale correction is estimated from
+AllBalls Hough radii, without annotations or evaluation-image radius fitting.
+The endpoint convention of the existing table transform is preserved.
+
+D uses the multiplier .75+.25*exp(-.5*(log(detected/expected)/log(1.5))^2).
+This can reduce identity scores by at most 25%; it does not modify coordinates,
+radii or the Unknown score. Invalid geometry has neutral multiplier 1. The model
+is approximate because balls extend above the cloth plane and camera intrinsics
+are unknown. The initial multiplier range over these images is about .950–1.000;
+both true and false circles can have plausible sizes. There is no hard size filter.
+
+Outputs:
+
+- `final_results/<stage>/<image-stem>/`: usual four PNGs and `balls.csv` for A–D.
+- `<image-stem>/candidate_N.png`: four predictions, expected/detected geometry,
+  body mask and all 16 identity-score bars. B/C/D markers identify selected scores.
+  Green/red text means correct/wrong number; grey means unmatched detection.
+- `<image-stem>/table_comparison.png`: four overhead prediction images.
+- `<image-stem>/geometry.png`: detected orange circles, expected cyan circles,
+  projected plane ellipses in grey and candidate IDs.
+- `evidence.csv`: all identity scores, colour/type factors, normalised relative
+  support, shortlist eligibility and D's weighted scores.
+- `type_scores.csv`, `geometry.csv`: measured light fractions, type scores,
+  geometric radii/angles, size ratios, compatibility and weighting factors.
+- `predictions.csv`, `metrics.csv`, `changes.csv`, `confusion.csv`: all predictions,
+  per-image/pooled metrics, incremental and baseline comparisons, and matched-number
+  confusion matrices. Unknowns remain errors on matched annotations.
+- `duplicate_claims.csv`: repeated identities in each image/stage; counts in
+  `metrics.csv` are extra claims beyond one, not numbers of physical duplicate balls.
+- `configuration.txt`, `frozen_models.yml`, `training_geometry.csv`,
+  `geometry_calibration.txt`, `summary.md`: reproducibility and result summary.
+
+Initial Table1–6 results (parameters were fixed before this run):
+
+| Stage | Correct types | Correct numbers | Extra duplicate claims |
+| --- | ---: | ---: | ---: |
+| A | 76/86 | 72/86 | 10 |
+| B | 73/86 | 72/86 | 13 |
+| C | 72/86 | 69/86 | 0 |
+| D | 72/86 | 69/86 | 0 |
+
+All stages obtain 16/16 on AllBalls. Across the six images, A→B fixes one number
+and loses one. B→C fixes three and loses six; A→C fixes two and loses five.
+D changes no assignment relative to C. For example, Table6's real cue has local
+cue score .947, while a light striped 12 has cue score .979; uniqueness awards
+cue to the wrong candidate and leaves the real cue Unknown. This illustrates why
+a correct uniqueness constraint cannot repair unreliable evidence by itself.
+
+These particular heuristics do not improve the baseline. All stages keep every
+Hough detection (86 TP, 2 FP, 4 FN); an Unknown identity is not a removed detection.
+No weights were adjusted after examining the results. The six images have been
+inspected in earlier development; this is not pristine unseen-data validation,
+and selecting a method after seeing these scores would itself be method selection.
+
+## Best-effort identity assignment
+
+```sh
+./build-local/BallExperiments --identity-best-effort
+```
+
+This uses the same `identityHeuristics.cpp` implementation with a separate policy
+and output directory, `output/experiments/identity_best_effort/` (optional output
+argument supported). The original conservative results are preserved.
+
+Only abstention/shortlisting changes:
+
+- A remains exactly the K=2+HSV baseline.
+- B returns the strongest supported identity without requiring score >.35.
+- C/D allow every identity with nonzero support; the .15 alternative-score
+  shortlist is removed. Unknown score drops from .35 to zero. A 1e-9 numerical
+  tie preference keeps genuinely unsupported choices Unknown.
+- Candidates must still have usable body-colour evidence or a baseline White
+  classification; lack of image evidence is not replaced by a fabricated colour.
+- Uniqueness is retained. More than 16 candidates, or too few supported identity
+  columns, can still require Unknown. Missing identities remain permitted.
+
+The histogram models, K=2 segmentation, type-compatibility width and geometric
+calibration/weighting do not change. Conservative controls are recomputed from
+the same cached evidence for direct comparison; this is not a new parameter search.
+
+`confidence.csv` flags selected scores at/below the old .35 threshold or farther
+than .15 from the local best (D uses its size-weighted score for the threshold).
+Those labels remain predictions, with `?` on candidate sheets and amber rings in
+`final_results/<stage>/<image>/confidence_overlay.png`. Flags describe old-rule
+violations, not calibrated probabilities. All stages also retain the standard
+four PNGs and `balls.csv`; no flags or settings are applied to the main application.
+`policy_comparison.csv` records conservative/current identities and each correction
+or regression. Existing `changes.csv` still compares stages within this new run.
+
+Current results across Table1–6:
+
+| Stage | Conservative correct numbers | Best-effort correct numbers | Conservative Unknown | Best-effort Unknown |
+| --- | ---: | ---: | ---: | ---: |
+| A | 72/86 | 72/86 | 4 | 4 |
+| B | 72/86 | 73/86 | 1 | 0 |
+| C | 69/86 | 75/86 | 8 | 1 |
+| D | 69/86 | 75/86 | 8 | 1 |
+
+Relative to the conservative policy, C/D correct six numbers and lose none.
+Relative to the plain A baseline, they correct six and lose three (net +3).
+The sole remaining C/D Unknown is Table2 candidate 17, an unmatched false
+detection; all matched balls receive a guess. Seven C/D predictions carry
+low-support flags. D still changes no assignments relative to C. These gains
+are observed on previously inspected evaluation images; they do not establish
+independent generalisation or calibrated confidence. The policy change follows
+inspection of the conservative results and is therefore evaluation-informed.
+No further score weights
+were adjusted from these results.
+
+## White-crop expansion instead of size weighting
+
+```sh
+./build-local/BallExperiments --identity-white-expansion
+```
+
+This keeps A/B/C from the best-effort run and replaces D's radius weighting
+with recognition-crop expansion, still in `identityHeuristics.cpp`. The default
+output is `output/experiments/identity_white_expansion/` (optional override).
+Only candidates classified **White by the original K=2 classifier** are expanded.
+The target is a Hough circle following a striped ball's white patch. The actual
+stored Hough centre/radius, detection counts and transformed positions never change.
+The frozen AllBalls HSV models and best-effort assignment settings also stay fixed.
+
+Two forms are reported:
+
+- `D_raw_pad1` through `D_raw_pad4`: expand each originally White crop and its full
+  circular mask by exactly 1–4 source pixels, recompute K=2 type/query-colour scores,
+  and rerun unique assignment. Non-white candidates keep their original evidence.
+  All four fixed padding variants are exported; no per-image padding is selected.
+- `D_white_expansion`: guarded growth admitting only coloured connected extensions,
+  with cloth-hue and neighbouring-circle exclusions. It requires two consecutive
+  paddings agreeing on a non-cue type/body colour and uses the first confirming
+  padding; otherwise it keeps the original crop. Exact thresholds are recorded
+  in `configuration.txt`. This guard was evaluated first; its thresholds were not
+  retuned when it failed. The direct-padding ablations were then added to distinguish
+  that guard from the underlying padding idea. An existing guarded report is kept
+  as `guarded_initial_summary.md`.
+
+Guarded sampling estimates cloth hue per image from the inset table excluding raw
+Hough disks. Coloured extensions require S>=80,V>=40, exclusion of light clusters
+and cloth-like hue, boundary contact and a minimum new area. This can remove dark
+purple or genuine green-body evidence while still admitting cue-ball shadows.
+Three genuine cues passed the guard and became locally striped/green; none of the
+false-white examples passed. Their final global assignments stayed unchanged.
+
+Results on Table1–6:
+
+| Variant | Correct numbers | Corrections vs C | Regressions vs C |
+| --- | ---: | ---: | ---: |
+| C, no expansion | 75/86 | — | — |
+| Guarded D | 75/86 | 0 | 0 |
+| Raw +1 | 79/86 | 4 | 0 |
+| Raw +2 | 77/86 | 2 | 0 |
+| Raw +3 | 79/86 | 4 | 0 |
+| Raw +4 | 79/86 | 5 | 1 |
+
+Raw +1/+3 fix the false cue claims for striped 12 in Table3 and Table6, and restore
+the two corresponding real cue identities. +4 additionally fixes Table1 striped
+14 but causes another Table1 candidate (true striped 12) to receive cue. The raw
+variants illustrate that extra colour evidence and global assignment interact;
+local type need not become striped for the global identity to improve. Padding
+also includes cloth and shadows, so performance is not monotonic in radius.
+All variants retain 16/16 training-resubstitution numbers on AllBalls, 86 TP/2 FP/
+4 FN on Table1–6, and one Unknown identity in the unique-assignment results.
+
+Outputs include the usual `final_results/<stage>/<image>/`, `metrics.csv`,
+`predictions.csv`, `changes.csv` (each D vs A/C), and `summary.md`. Additional files:
+
+- `white_expansion.csv`: every guarded padding, support measurements and selection.
+- `raw_padding.csv`: local measurements for all four raw paddings.
+- `applied_expansions.csv`: accepted guarded updates, with evaluation labels added
+  only after inference for diagnosis.
+- `cloth_models.csv`: per-image hue/sample counts for the guarded method.
+- `d_evidence.csv`: original and updated scores for all identities and D variants.
+- `white_expansion/<image>/candidate_N.png`: guarded crops/masks and raw crops for
+  every triggered candidate, in one sheet per candidate.
+- `<image>/candidate_N.png`, `table_comparison.png`: all stage predictions together.
+
+This is an evaluation-informed follow-up to observed errors, not independent test
+validation. Raw variants were added after inspecting the guarded failure, without
+choosing a winner from the four or changing their fixed padding values. The main
+application and previous experiment outputs remain unchanged.
+
+## Colour-score weighting diagnostics
+
+```sh
+./build-local/BallExperiments --colour-score-diagnostics
+```
+
+Outputs default to `output/experiments/colour_score_diagnostics/`. This compares
+ten explicit diagnostic settings in `identityHeuristics.cpp`: unpadded, +1 and +4
+controls; +1 with query minimum body pixels 12 -> 6; cue-score multipliers .75 and
+.50; Gaussian type width .10 -> .15; and three combinations of those changes.
+Only originally White candidates receive padding. The minimum query sample
+requirement and score weights apply to all candidates. Frozen training histograms,
+white thresholds and detection geometry stay fixed. These comparisons investigate
+an observed evaluation error; they are parameter experiments, not independent
+validation or settings selected on AllBalls.
+
+The unpadded/+1/+4 controls exactly reproduce the earlier 75/79/79 correct
+identities. Lowering the pixel minimum and reducing cue weight do not change any
+identities relative to +1. Increasing type width reduces 79 to 77, including two
+Table1 regressions. None resolves the Table1 cue/14 conflict.
+
+The Table1 diagnostic exposes why. With +1, the real cue (#6) has cue support .863
+but also false green-stripe support .363 from a cloth rim in its crop. Ball14 (#7)
+has cue support .940 and only eight eligible body pixels. Allowing those eight
+pixels admits green support .101, but the assignment still prefers false cue plus
+false green (total1.303) over the correct pair (total.963). Uniformly reducing cue
+weight does not remove the misleading green alternative. Larger padding further
+contaminates the real cue crop with cloth, eventually allowing another striped
+candidate to claim cue. These are heuristic support scores, not probabilities.
+
+`evidence.csv` decomposes every identity score into colour and type terms.
+`cue_counterfactuals.csv` forces each originally White candidate to claim cue in
+turn, reruns assignment, and reports objective loss; this never changes inference.
+`cue_swaps.csv` reports feasible two-candidate swap costs. `changes.csv` compares
+every variant against both unpadded and +1 controls. Per-candidate diagnostic
+sheets show crop, histogram body mask and top five identity scores. Standard
+`final_results/<method>/<image>/` exports are provided for every setting.
+
+## Chamfer boundary-refinement experiment
+
+```sh
+./build-local/BallExperiments --chamfer-refinement
+```
+
+The independent `chamferRefinement.cpp/.h` experiment defaults to
+`output/experiments/chamfer_refinement/`. It uses the same K2/frozen-HSV/best-effort
+unique recognizer as the colour diagnostics. Only original White candidates are
+refined; original stored Hough geometry and detection counts remain fixed.
+
+Candidate crop centres shift by at most two pixels per axis and radii grow by
+0..8 pixels. A circle template has 72 samples; its score is the mean distance to
+a nearby edge agreeing with the radial gradient direction, capped at three
+pixels. Coverage, angular-sector support and neighbour-interior gates reject
+poorly supported proposals. Exact settings are saved in `configuration.txt`.
+One profile takes the minimum-cost supported refinement; another prefers the
+largest supported radius within .15 pixels of the lowest mean cost. All settings
+were declared before this run, with no per-image exceptions.
+
+| Method | Correct identities | Corrections / regressions vs C |
+| --- | ---: | ---: |
+| Unrefined unique control | 75/86 | 0 / 0 |
+| Fixed +1 control | 79/86 | 4 / 0 |
+| Minimum-cost chamfer | 75/86 | 0 / 0 |
+| Outermost supported chamfer | 77/86 | 2 / 0 |
+
+The outer-supported variant fixes both Table1 identities: real cue (#6) and
+striped14 (#7), while it does not reproduce the Table3/6 padding fixes. The real
+cue crop moves down one pixel with unchanged radius; ball14 moves down one pixel
+and grows one pixel. This is a small boundary/ROI correction, rather than proof
+that a full outer ball boundary has been recovered. AllBalls retains16/16 across
+the four profiles. Overall +1 still scores higher; the two methods fix different
+examples and are not combined in this experiment.
+
+Outputs include the standard `final_results`, `predictions.csv`, `metrics.csv`,
+`changes.csv`, per-image edge/distance images and four-panel candidate overlays
+(yellow original, cyan crop). `template_scores.csv` logs all circle proposals;
+`boundaries.csv` separates crop geometry from stored detection geometry.
+`refined_centre_metrics.csv` evaluates hypothetical centre changes separately.
+Built-in synthetic checks cover a shifted/undersized circle, flat background,
+neighbour suppression and clipped image boundaries. These results follow observed
+test errors and remain exploratory. Neither experiment changes the application.
+
+## Row-based radius support for competing cue claims
+
+```sh
+./build-local/BallExperiments --row-cue-size
+```
+
+This final isolated experiment lives in `identityHeuristics.cpp` and defaults to
+`output/experiments/row_cue_size/`. A robust line is fitted once from the 16
+pocket-filtered AllBalls Hough circles, without annotations. Expected radius is
+`max(1,20.274190 + 0.00967744 * originalImageRow)`. Every horizontal location uses
+the same expectation at a given row. The slope is the median pairwise radius
+change per row for samples at least ten rows apart; negative slopes are clamped
+to zero. The intercept is the median residual.
+
+AllBalls covers rows143.25–197.25, so predictions outside this narrow band are
+linear extrapolation. Training mean absolute radius residual is1.04pixels.
+Circle underestimation and horizontal perspective variation can affect the fit;
+the row approximation does not establish that true sizes are identical across a
+row. The model and all inference settings are frozen before loading test labels.
+
+Size rules activate only when an image has at least two candidates originally
+classified White by K2. This activates on Table1, Table3 and Table6 in this run.
+The soft variant multiplies every candidate's cue score by
+`min(1,originalRadius/expectedRadius)^2`, leaving numbered scores unchanged. The
+stronger variant directly reserves cue for the original White candidate with
+the largest depth-adjusted radius and excludes all other cue claims. This is an
+explicit forced heuristic, not a probability. Each is tested with original crops
+and with +1 padding on original White crops. Size always uses original Hough
+geometry; padding does not increase a candidate's size score.
+
+| Method | Correct identities | Fixes / regressions vs +1 |
+| --- | ---: | ---: |
+| Unpadded unique control | 75/86 | 0 / 4 |
+| +1 unique control | 79/86 | 0 / 0 |
+| Soft row cue support | 78/86 | 1 / 2 |
+| +1 and soft row support | 79/86 | 0 / 0 |
+| Reserve largest depth-adjusted cue | 78/86 | 1 / 2 |
+| +1 and reserve largest cue | 80/86 | 1 / 0 |
+
+The last variant correctly identifies all six genuine cues and preserves every
+previously correct +1 identity. In Table1, the real cue changes14->cue, while
+striped14 changescue->Unknown because its eight body pixels remain below the
+unchanged histogram minimum12. Thus this resolves the cue identity but does not
+recognise the striped partner. It produces two Unknowns overall (one genuine
+ball and the existing unmatched Table2 false detection). AllBalls remains16/16;
+detection stays86TP/2FP/4FN. Results are exploratory comparisons on previously
+inspected evaluation images, with no production integration or additional search.
+
+Outputs include `row_model.yml`, `training_samples.csv`, a per-row lookup
+`row_radius.csv`, and `row_radius_model.png` highlighting the training row span.
+`cue_size_scores.csv` records original radius, expected radius, activation,
+extrapolation, applied multiplier and original/weighted cue scores. Standard
+metrics/predictions/changes, one comparison sheet per relevant candidate, and
+`final_results/<method>/<image>/` are provided. Synthetic checks cover outlier-
+robust fitting, same-row fallback, the positive-depth prior, factor monotonicity
+and a cue conflict with preserved stripe alternatives.
+
+## Direct HSV pixel recognition
+
+```sh
+./build-local/BallExperiments --hsv-pixel-recognition
+```
+
+This independent experiment in `hsvPixelRecognition.cpp/.h` replaces K2 type
+evidence with direct per-pixel HSV counts. It uses the existing thresholds without
+searching: light V>=170/S<=165, dark V<=90 outside light, and coloured pixels as
+the remainder. Masks are disjoint and exhaust the circular ROI. Type proportions
+use the full mask; the frozen histogram query still uses its separate erosion3
+and minimum12 body pixels. Cue requires85% light; solid requires70% nonlight;
+otherwise a mixed crop is striped.
+
+The experiment compares K2 and direct HSV at each stage, with the same AllBalls
+histograms and assignment backend. Each frontend's own original White labels
+control its padding and ambiguous-cue triggers; the HSV frontend does not rely
+on K2 labels. The optional size rule loads the previous AllBalls row model
+unchanged. No training images, thresholds or detection geometry are changed.
+
+| Stage | K2 correct identities | Direct HSV correct identities |
+| --- | ---: | ---: |
+| Local type + histogram colour | 72/86 | 74/86 |
+| Unique assignment | 75/86 | 74/86 |
+| +1 padding and unique assignment | 79/86 | 78/86 |
+| +1 padding and largest depth-adjusted cue | 80/86 | 79/86 |
+
+Direct HSV fixes Table6's red solid (11->3), but turns Table1's maroon stripe
+(15) into solid7. Its light fraction drops from41.66% under clustered evidence
+to25.10% under pixel thresholds, crossing the solid boundary. In the global
+variants, this also allows another Table1 candidate (actual12) to claim15.
+Thus the final HSV variant corrects one identity and loses two relative to its
+paired K2 control. AllBalls remains16/16 for all eight methods. This is a fixed-
+threshold exploratory comparison; no further tuning or production integration
+is performed.
+
+Default outputs are in `output/experiments/hsv_pixel_recognition/`, including
+`summary.md`, automatic metrics/predictions/changes, `mask_counts.csv`, frozen
+models, and standard `final_results/<method>/<image>/`. Each ball has one
+`candidate_comparisons/<image>/candidate_N.png` sheet and one
+`pixel_masks/<image>/candidate_N.png` sheet for original/padded crops and all
+three pixel masks. Synthetic checks verify partitioning, exact fractions, mask
+exclusions and empty/white cases. K2 controls exactly reproduce previous outputs.
+
+## Report figures for the row/radius model
+
+```sh
+MPLCONFIGDIR=/tmp/pool-matplotlib python3 experiments/plotRowRadius.py
+```
+
+This reads the saved AllBalls training samples from `--row-cue-size`, rather
+than fitting to evaluation data. Matplotlib/Python are used only for offline
+report graphics; application and recognition implementations remain C++/OpenCV.
+Optional `--data-directory`, `--output-directory` and `--image` arguments are
+available. Defaults create three figures in `report/assets/row_radius/`, each
+as a 300dpi PNG and vector PDF:
+
+- `row_radius_samples`: full image with the training-row band, plus a zoom with
+  circle outlines, centre crosses, detection IDs and horizontal row guides.
+- `row_radius_fit`: radius-versus-row samples and fitted line, beside the model
+  over the full image height; dashed segments explicitly mark extrapolation.
+- `row_radius_estimation`: all71 eligible pairwise slopes and their median, plus
+  the16 individual intercept estimates and their median.
+
+The sample and fit figures provide the clearest main-report explanation. The
+estimator figure is useful when space permits more mathematical detail. Captions
+are supplied in `captions.md`; `pair_slopes.csv` and `intercept_samples.csv`
+preserve the plotted calculations. Figures contain no code/library names.
+Plots reconstruct the model from six-decimal saved samples and verify agreement
+with saved expected radii within1e-4pixels. Report pages are not modified.

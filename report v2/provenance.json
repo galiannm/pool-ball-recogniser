@@ -1,0 +1,7 @@
+{
+  "selectedMethod": "pad1_row_largest_cue",
+  "metrics": "output/experiments/row_cue_size/metrics.csv",
+  "predictions": "output/experiments/row_cue_size/predictions.csv",
+  "recognitionFigure": "Reconstructed K2 light fractions verified against saved C++ evidence",
+  "figures": "Own visualisations of supplied images and saved experiment outputs; not new evaluation runs"
+}
