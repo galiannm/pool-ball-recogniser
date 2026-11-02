@@ -15,11 +15,8 @@ struct RadiusPaddingOptions {
     int valueTolerance = 70;
 };
 
-BallROI extractPaddedBall(const cv::Mat& image,
-                          const cv::Vec3f& circle,
-                          const RadiusPaddingOptions& options);
+BallROI extractPaddedBall(const cv::Mat& image, const cv::Vec3f& circle, const RadiusPaddingOptions& options);
 
-void runRadiusPaddingExperiment(const std::filesystem::path& imagePath,
-                                const std::filesystem::path& outputDirectory);
+void runRadiusPaddingExperiment(const std::filesystem::path& imagePath, const std::filesystem::path& outputDirectory);
 
 } // namespace experiments

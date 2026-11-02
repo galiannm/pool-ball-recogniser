@@ -19,8 +19,7 @@
 
 namespace experiments {
 
-BallTypeResult classifyExperimentalType(const KMeansResult& segmentation,
-                                       const RecognitionParameters& p) {
+BallTypeResult classifyExperimentalType(const KMeansResult& segmentation, const RecognitionParameters& p) {
     BallTypeResult result;
     if (segmentation.regions.empty())
         return result;
@@ -41,8 +40,7 @@ BallTypeResult classifyExperimentalType(const KMeansResult& segmentation,
     return result;
 }
 
-int classifyExperimentalNumber(const KMeansResult& segmentation, const std::string& type,
-                               const RecognitionParameters& p) {
+int classifyExperimentalNumber(const KMeansResult& segmentation, const std::string& type, const RecognitionParameters& p) {
     if (segmentation.regions.empty())
         return -1;
     if (type == "White")
@@ -132,8 +130,7 @@ const KMeansResult& segmentation(const Candidate& c, const RecognitionParameters
 
 // Detect once and cache only cluster features, rather than retaining thousands
 // of cluster masks/segmented images that threshold evaluation never uses.
-std::vector<ImageData> prepare(const RecognitionSearchGrid& grid,
-                               const std::filesystem::path& directory) {
+std::vector<ImageData> prepare(const RecognitionSearchGrid& grid, const std::filesystem::path& directory) {
     std::vector<ImageData> data;
     auto detectionCSV = outputFile(directory / "detection_counts.csv");
     detectionCSV << "image,split,groundTruth,matched,falsePositives,missed\n";
@@ -152,8 +149,7 @@ std::vector<ImageData> prepare(const RecognitionSearchGrid& grid,
         std::vector<cv::Point2f> centres;
         for (const auto& ball : truth)
             centres.push_back(ball.centre);
-        const auto matching = evaluateDetections(transformCentres(detection.filteredCircles),
-                                                 centres, config::matchTolerance);
+        const auto matching = evaluateDetections(transformCentres(detection.filteredCircles), centres, config::matchTolerance);
         ImageData entry;
         entry.name = filename;
         entry.tuning = filename != config::tuningImage;
@@ -161,8 +157,7 @@ std::vector<ImageData> prepare(const RecognitionSearchGrid& grid,
         entry.matched = matching.TP;
         entry.falsePositives = matching.FP;
         entry.missed = matching.FN;
-        detectionCSV << filename << ',' << (entry.tuning ? "tuning" : "reference") << ','
-                     << entry.gt << ',' << matching.TP << ',' << matching.FP << ',' << matching.FN << '\n';
+        detectionCSV << filename << ',' << (entry.tuning ? "tuning" : "reference") << ',' << entry.gt << ',' << matching.TP << ',' << matching.FP << ',' << matching.FN << '\n';
         for (size_t i = 0; i < detection.filteredCircles.size(); ++i) {
             Candidate c;
             c.id = static_cast<int>(i + 1);
@@ -174,27 +169,21 @@ std::vector<ImageData> prepare(const RecognitionSearchGrid& grid,
                 RadiusPaddingOptions options;
                 options.filterCloth = cloth;
                 c.balls[cloth] = extractPaddedBall(image, c.circle, options);
-                masksCSV << filename << ',' << c.id << ',' << c.truth << ',' << cloth
-                         << ',' << cv::countNonZero(c.balls[cloth].mask) << '\n';
+                masksCSV << filename << ',' << c.id << ',' << c.truth << ',' << cloth << ',' << cv::countNonZero(c.balls[cloth].mask) << '\n';
                 for (int k : grid.ks) {
                     auto result = segmentBallKMeans(c.balls[cloth], k);
                     // Verify the parameterised rules reproduce production before searching.
                     RecognitionParameters defaults;
                     const auto expectedType = classifyBallType(result);
                     const auto actualType = classifyExperimentalType(result, defaults);
-                    if (actualType.type != expectedType.type ||
-                        actualType.lightPercent != expectedType.lightPercent ||
-                        actualType.darkPercent != expectedType.darkPercent ||
-                        actualType.colouredPercent != expectedType.colouredPercent ||
-                        classifyExperimentalNumber(result, actualType.type, defaults) !=
-                            classifyBallNumber(result, expectedType))
+                    if (actualType.type != expectedType.type || actualType.lightPercent != expectedType.lightPercent || actualType.darkPercent != expectedType.darkPercent || actualType.colouredPercent != expectedType.colouredPercent ||
+                        classifyExperimentalNumber(result, actualType.type, defaults) != classifyBallNumber(result, expectedType))
                         throw std::runtime_error("Experimental default rules differ from production");
                     result.segmentedImage.release();
                     for (size_t r = 0; r < result.regions.size(); ++r) {
                         auto& region = result.regions[r];
                         region.mask.release();
-                        cacheCSV << filename << ',' << c.id << ',' << c.truth << ',' << k << ','
-                                 << cloth << ',' << r + 1 << ',' << region.percentage;
+                        cacheCSV << filename << ',' << c.id << ',' << c.truth << ',' << k << ',' << cloth << ',' << r + 1 << ',' << region.percentage;
                         for (int channel = 0; channel < 3; ++channel)
                             cacheCSV << ',' << int(region.colour[channel]);
                         for (int channel = 0; channel < 3; ++channel)
@@ -207,14 +196,12 @@ std::vector<ImageData> prepare(const RecognitionSearchGrid& grid,
             entry.candidates.push_back(std::move(c));
         }
         data.push_back(std::move(entry));
-        std::cout << "Cached " << filename << ": " << matching.TP << " matched, "
-                  << matching.FP << " unmatched candidates\n" << std::flush;
+        std::cout << "Cached " << filename << ": " << matching.TP << " matched, " << matching.FP << " unmatched candidates\n" << std::flush;
     }
     return data;
 }
 
-Score score(const std::vector<ImageData>& data, const RecognitionParameters& p,
-            bool tuning, const std::string& imageName = "") {
+Score score(const std::vector<ImageData>& data, const RecognitionParameters& p, bool tuning, const std::string& imageName = "") {
     Score result;
     for (const auto& image : data) {
         if (image.tuning != tuning || (!imageName.empty() && image.name != imageName))
@@ -236,47 +223,32 @@ Score score(const std::vector<ImageData>& data, const RecognitionParameters& p,
 }
 
 bool valid(const RecognitionParameters& p) {
-    return 0 < p.redUpper && p.redUpper < p.orangeUpper && p.orangeUpper < p.yellowUpper &&
-           p.yellowUpper < p.greenLower && p.greenLower < p.greenUpper &&
-           p.greenUpper < p.blueLower && p.blueLower < p.bluePurple &&
+    return 0 < p.redUpper && p.redUpper < p.orangeUpper && p.orangeUpper < p.yellowUpper && p.yellowUpper < p.greenLower && p.greenLower < p.greenUpper && p.greenUpper < p.blueLower && p.blueLower < p.bluePurple &&
            p.bluePurple < p.purpleUpper && p.purpleUpper < p.redWrap && p.redWrap < 180;
 }
 
 // Resolve equal measured scores by preferring smaller departures from the
 // baseline, expressed in the grid's step units. Trial ID breaks remaining ties.
 double departure(const RecognitionParameters& p) {
-    return (p.k - 2) + int(p.cloth) + std::abs(p.lightMinV - 170) / 20.0 +
-        std::abs(p.lightMaxS - 165) / 20.0 + std::abs(p.whiteMinPercent - 85) / 5.0 +
-        std::abs(p.solidMinPercent - 70) / 5.0 + std::abs(p.redUpper - 6) / 2.0 +
-        std::abs(p.orangeUpper - 15) / 3.0 + std::abs(p.yellowUpper - 35) / 5.0 +
-        std::abs(p.greenLower - 45) / 5.0 + std::abs(p.greenUpper - 90) / 5.0 +
-        std::abs(p.blueLower - 100) / 5.0 + std::abs(p.bluePurple - 130) / 5.0 +
-        std::abs(p.purpleUpper - 165) / 5.0 + std::abs(p.redWrap - 170) / 2.0 +
-        std::abs(p.maroonMaxV - 150) / 20.0 + std::abs(p.blackMaxS - 60) / 20.0 +
-        std::abs(p.blackMaxV - 90) / 20.0 + std::abs(p.bodyMinPercent - 2);
+    return (p.k - 2) + int(p.cloth) + std::abs(p.lightMinV - 170) / 20.0 + std::abs(p.lightMaxS - 165) / 20.0 + std::abs(p.whiteMinPercent - 85) / 5.0 + std::abs(p.solidMinPercent - 70) / 5.0 + std::abs(p.redUpper - 6) / 2.0 +
+           std::abs(p.orangeUpper - 15) / 3.0 + std::abs(p.yellowUpper - 35) / 5.0 + std::abs(p.greenLower - 45) / 5.0 + std::abs(p.greenUpper - 90) / 5.0 + std::abs(p.blueLower - 100) / 5.0 + std::abs(p.bluePurple - 130) / 5.0 +
+           std::abs(p.purpleUpper - 165) / 5.0 + std::abs(p.redWrap - 170) / 2.0 + std::abs(p.maroonMaxV - 150) / 20.0 + std::abs(p.blackMaxS - 60) / 20.0 + std::abs(p.blackMaxV - 90) / 20.0 + std::abs(p.bodyMinPercent - 2);
 }
 
 bool better(const Trial& a, const Trial& b, bool typeFirst = false) {
     const auto key = [typeFirst](const Trial& t) {
-        return std::make_tuple(typeFirst ? t.score.type : t.score.number,
-                               typeFirst ? t.score.number : t.score.type,
-                               t.score.oracle, -departure(t.parameters), -t.id);
+        return std::make_tuple(typeFirst ? t.score.type : t.score.number, typeFirst ? t.score.number : t.score.type, t.score.oracle, -departure(t.parameters), -t.id);
     };
     return key(a) > key(b);
 }
 
-const char* parameterHeader =
-    "k,cloth,lightMinV,lightMaxS,darkMaxV,whiteMinPercent,solidMinPercent,"
-    "redUpper,orangeUpper,yellowUpper,greenLower,greenUpper,blueLower,bluePurple,"
-    "purpleUpper,redWrap,maroonMaxV,blackMaxS,blackMaxV,bodyMinPercent";
+const char* parameterHeader = "k,cloth,lightMinV,lightMaxS,darkMaxV,whiteMinPercent,solidMinPercent,"
+                              "redUpper,orangeUpper,yellowUpper,greenLower,greenUpper,blueLower,bluePurple,"
+                              "purpleUpper,redWrap,maroonMaxV,blackMaxS,blackMaxV,bodyMinPercent";
 
 void writeParameters(std::ostream& out, const RecognitionParameters& p) {
-    out << p.k << ',' << p.cloth << ',' << p.lightMinV << ',' << p.lightMaxS << ','
-        << p.darkMaxV << ',' << p.whiteMinPercent << ',' << p.solidMinPercent << ','
-        << p.redUpper << ',' << p.orangeUpper << ',' << p.yellowUpper << ','
-        << p.greenLower << ',' << p.greenUpper << ',' << p.blueLower << ','
-        << p.bluePurple << ',' << p.purpleUpper << ',' << p.redWrap << ','
-        << p.maroonMaxV << ',' << p.blackMaxS << ',' << p.blackMaxV << ',' << p.bodyMinPercent;
+    out << p.k << ',' << p.cloth << ',' << p.lightMinV << ',' << p.lightMaxS << ',' << p.darkMaxV << ',' << p.whiteMinPercent << ',' << p.solidMinPercent << ',' << p.redUpper << ',' << p.orangeUpper << ',' << p.yellowUpper << ','
+        << p.greenLower << ',' << p.greenUpper << ',' << p.blueLower << ',' << p.bluePurple << ',' << p.purpleUpper << ',' << p.redWrap << ',' << p.maroonMaxV << ',' << p.blackMaxS << ',' << p.blackMaxV << ',' << p.bodyMinPercent;
 }
 
 double ratio(int numerator, int denominator) {
@@ -284,9 +256,7 @@ double ratio(int numerator, int denominator) {
 }
 
 void writeScore(std::ostream& out, const Score& s) {
-    out << s.gt << ',' << s.matched << ',' << s.type << ',' << s.number << ',' << s.oracle
-        << ',' << ratio(s.type, s.matched) << ',' << ratio(s.number, s.matched)
-        << ',' << ratio(s.oracle, s.matched) << ',' << ratio(s.number, s.gt);
+    out << s.gt << ',' << s.matched << ',' << s.type << ',' << s.number << ',' << s.oracle << ',' << ratio(s.type, s.matched) << ',' << ratio(s.number, s.matched) << ',' << ratio(s.oracle, s.matched) << ',' << ratio(s.number, s.gt);
 }
 
 const char* scoreHeader = "groundTruth,matched,typeCorrect,numberCorrect,oracleNumberCorrect,"
@@ -313,9 +283,7 @@ void leaderboard(const std::filesystem::path& path, std::vector<Trial> trials) {
 // decisions after later thresholds change. This is not a global exhaustive grid.
 using Field = std::pair<int RecognitionParameters::*, const std::vector<int>*>;
 
-int searchGroup(const std::vector<ImageData>& data, std::vector<Trial>& trials,
-                int startingIndex, const std::vector<Field>& fields,
-                const std::string& stage) {
+int searchGroup(const std::vector<ImageData>& data, std::vector<Trial>& trials, int startingIndex, const std::vector<Field>& fields, const std::string& stage) {
     const Trial start = trials.at(startingIndex);
     int best = startingIndex;
     RecognitionParameters p = start.parameters;
@@ -342,9 +310,7 @@ int searchGroup(const std::vector<ImageData>& data, std::vector<Trial>& trials,
     return best;
 }
 
-void exportFinalists(const std::filesystem::path& directory,
-                     const std::vector<ImageData>& data,
-                     const std::vector<std::pair<std::string, Trial>>& finalists) {
+void exportFinalists(const std::filesystem::path& directory, const std::vector<ImageData>& data, const std::vector<std::pair<std::string, Trial>>& finalists) {
     auto configs = outputFile(directory / "finalists.csv");
     configs << "label,configId," << parameterHeader << '\n';
     auto metrics = outputFile(directory / "metrics.csv");
@@ -384,14 +350,10 @@ void exportFinalists(const std::filesystem::path& directory,
                     const auto& clusters = segmentation(c, trial.parameters);
                     const auto predicted = classifyExperimentalType(clusters, trial.parameters);
                     const int number = classifyExperimentalNumber(clusters, predicted.type, trial.parameters);
-                    const int oracle = c.truth < 0 ? -1
-                        : classifyExperimentalNumber(clusters, trueType(c.truth), trial.parameters);
-                    predictions << label << ',' << trial.id << ',' << image.name << ',' << c.id
-                                << ',' << c.truth << ',' << trueType(c.truth) << ',' << predicted.type
-                                << ',' << number << ',' << oracle << ',';
+                    const int oracle = c.truth < 0 ? -1 : classifyExperimentalNumber(clusters, trueType(c.truth), trial.parameters);
+                    predictions << label << ',' << trial.id << ',' << image.name << ',' << c.id << ',' << c.truth << ',' << trueType(c.truth) << ',' << predicted.type << ',' << number << ',' << oracle << ',';
                     if (c.truth >= 0) {
-                        predictions << (predicted.type == trueType(c.truth)) << ','
-                                    << (number == c.truth) << ',' << (oracle == c.truth);
+                        predictions << (predicted.type == trueType(c.truth)) << ',' << (number == c.truth) << ',' << (oracle == c.truth);
                         ++counts[{"type", trueType(c.truth), predicted.type}];
                         ++counts[{"number", std::to_string(c.truth), std::to_string(number)}];
                         ++counts[{"oracleNumber", std::to_string(c.truth), std::to_string(oracle)}];
@@ -402,9 +364,7 @@ void exportFinalists(const std::filesystem::path& directory,
                 }
             }
             for (const auto& count : counts)
-                confusion << label << ',' << trial.id << ',' << split << ','
-                          << std::get<0>(count.first) << ',' << std::get<1>(count.first) << ','
-                          << std::get<2>(count.first) << ',' << count.second << '\n';
+                confusion << label << ',' << trial.id << ',' << split << ',' << std::get<0>(count.first) << ',' << std::get<1>(count.first) << ',' << std::get<2>(count.first) << ',' << count.second << '\n';
         }
     }
 
@@ -418,13 +378,9 @@ void exportFinalists(const std::filesystem::path& directory,
         const auto imageDirectory = directory / std::filesystem::path(image.name).stem();
         std::filesystem::create_directories(imageDirectory);
         for (const auto& c : image.candidates) {
-            cv::Mat comparison(header + height, width * static_cast<int>(visualFinalists.size()),
-                               CV_8UC3, cv::Scalar(35, 35, 35));
-            const std::string expected = c.truth < 0 ? "No ground-truth match"
-                : "Expected: " + trueType(c.truth) + " #" + std::to_string(c.truth);
-            cv::putText(comparison, image.name + " / candidate " + std::to_string(c.id)
-                        + " / " + expected, {10, 26}, cv::FONT_HERSHEY_SIMPLEX,
-                        0.55, {255, 255, 255}, 1);
+            cv::Mat comparison(header + height, width * static_cast<int>(visualFinalists.size()), CV_8UC3, cv::Scalar(35, 35, 35));
+            const std::string expected = c.truth < 0 ? "No ground-truth match" : "Expected: " + trueType(c.truth) + " #" + std::to_string(c.truth);
+            cv::putText(comparison, image.name + " / candidate " + std::to_string(c.id) + " / " + expected, {10, 26}, cv::FONT_HERSHEY_SIMPLEX, 0.55, {255, 255, 255}, 1);
             for (size_t j = 0; j < visualFinalists.size(); ++j) {
                 const auto& item = visualFinalists[j];
                 const auto& p = item.second.parameters;
@@ -434,29 +390,23 @@ void exportFinalists(const std::filesystem::path& directory,
                 ball.image.copyTo(isolated, ball.mask);
                 const double scale = double(previewSize) / std::max(isolated.cols, isolated.rows);
                 cv::resize(isolated, preview, {}, scale, scale, cv::INTER_NEAREST);
-                preview.copyTo(comparison(cv::Rect(left + (width - preview.cols) / 2,
-                                                   header + 60, preview.cols, preview.rows)));
+                preview.copyTo(comparison(cv::Rect(left + (width - preview.cols) / 2, header + 60, preview.cols, preview.rows)));
                 const auto& clusters = segmentation(c, p);
                 const auto type = classifyExperimentalType(clusters, p);
                 const int number = classifyExperimentalNumber(clusters, type.type, p);
                 const auto text = [&](const std::string& value, int y, cv::Scalar colour) {
-                    cv::putText(comparison, value, {left + 10, header + y},
-                                cv::FONT_HERSHEY_SIMPLEX, 0.5, colour, 1);
+                    cv::putText(comparison, value, {left + 10, header + y}, cv::FONT_HERSHEY_SIMPLEX, 0.5, colour, 1);
                 };
                 text(item.first + " (" + std::to_string(item.second.id) + ")", 5, {255, 255, 255});
-                text("K=" + std::to_string(p.k) + (p.cloth ? " / cloth on" : " / cloth off"),
-                     30, {220, 220, 220});
+                text("K=" + std::to_string(p.k) + (p.cloth ? " / cloth on" : " / cloth off"), 30, {220, 220, 220});
                 const auto status = [&](bool correct) {
                     return c.truth < 0 ? " N/A" : correct ? " OK" : " WRONG";
                 };
                 const auto colour = [&](bool correct) {
-                    return c.truth < 0 ? cv::Scalar(180, 180, 180)
-                        : correct ? cv::Scalar(90, 220, 90) : cv::Scalar(80, 80, 255);
+                    return c.truth < 0 ? cv::Scalar(180, 180, 180) : correct ? cv::Scalar(90, 220, 90) : cv::Scalar(80, 80, 255);
                 };
-                text("Type: " + type.type + status(type.type == trueType(c.truth)),
-                     245, colour(type.type == trueType(c.truth)));
-                text("Number: " + std::to_string(number) + status(number == c.truth),
-                     275, colour(number == c.truth));
+                text("Type: " + type.type + status(type.type == trueType(c.truth)), 245, colour(type.type == trueType(c.truth)));
+                text("Number: " + std::to_string(number) + status(number == c.truth), 275, colour(number == c.truth));
             }
             const auto path = imageDirectory / ("ball_" + std::to_string(c.id) + "_comparison.png");
             if (!cv::imwrite(path.string(), comparison))
@@ -485,8 +435,7 @@ void runRecognitionGridSearch(const std::filesystem::path& directory) {
                             p.lightMaxS = s;
                             p.whiteMinPercent = white;
                             p.solidMinPercent = solid;
-                            trials.push_back({static_cast<int>(trials.size() + 1), "type_grid", 0,
-                                              p, score(data, p, true)});
+                            trials.push_back({static_cast<int>(trials.size() + 1), "type_grid", 0, p, score(data, p, true)});
                         }
     const int stageOneCount = static_cast<int>(trials.size());
     if (!stageOneCount)
@@ -503,14 +452,12 @@ void runRecognitionGridSearch(const std::filesystem::path& directory) {
                     continue;
                 if (best < 0 || better(trials[i], trials[best]))
                     best = i;
-                if (p.lightMinV == 170 && p.lightMaxS == 165 &&
-                    p.whiteMinPercent == 85 && p.solidMinPercent == 70)
+                if (p.lightMinV == 170 && p.lightMaxS == 165 && p.whiteMinPercent == 85 && p.solidMinPercent == 70)
                     defaults = i;
             }
             if (best < 0 || defaults < 0)
                 throw std::runtime_error("Each K/filter pair must include default thresholds");
-            for (const auto& choice : {std::make_pair("default_thresholds", defaults),
-                                       std::make_pair("best_type_grid", best)}) {
+            for (const auto& choice : {std::make_pair("default_thresholds", defaults), std::make_pair("best_type_grid", best)}) {
                 kCSV << choice.first << ',' << trials[choice.second].id << ',';
                 writeParameters(kCSV, trials[choice.second].parameters);
                 kCSV << ',';
@@ -543,8 +490,7 @@ void runRecognitionGridSearch(const std::filesystem::path& directory) {
     int baseline = -1, baselineCloth = -1;
     for (int i = 0; i < stageOneCount; ++i) {
         const auto& p = trials[i].parameters;
-        if (p.k == 2 && p.lightMinV == 170 && p.lightMaxS == 165 &&
-            p.whiteMinPercent == 85 && p.solidMinPercent == 70) {
+        if (p.k == 2 && p.lightMinV == 170 && p.lightMaxS == 165 && p.whiteMinPercent == 85 && p.solidMinPercent == 70) {
             (p.cloth ? baselineCloth : baseline) = i;
             add(i);
         }
@@ -557,28 +503,18 @@ void runRecognitionGridSearch(const std::filesystem::path& directory) {
     for (int seed : seeds) {
         int best = seed;
         for (int pass = 1; pass <= grid.colourPasses; ++pass) {
-            const std::string prefix = "seed" + std::to_string(trials[seed].id)
-                + "_pass" + std::to_string(pass) + '_';
+            const std::string prefix = "seed" + std::to_string(trials[seed].id) + "_pass" + std::to_string(pass) + '_';
             using P = RecognitionParameters;
-            best = searchGroup(data, trials, best, {
-                {&P::redUpper, &grid.redUpper}, {&P::orangeUpper, &grid.orangeUpper},
-                {&P::yellowUpper, &grid.yellowUpper}, {&P::redWrap, &grid.redWrap},
-                {&P::maroonMaxV, &grid.maroonMaxV}}, prefix + "warm");
-            best = searchGroup(data, trials, best, {
-                {&P::greenLower, &grid.greenLower}, {&P::greenUpper, &grid.greenUpper},
-                {&P::blueLower, &grid.blueLower}, {&P::bluePurple, &grid.bluePurple},
-                {&P::purpleUpper, &grid.purpleUpper}}, prefix + "cool");
-            best = searchGroup(data, trials, best, {
-                {&P::blackMaxS, &grid.blackMaxS}, {&P::blackMaxV, &grid.blackMaxV},
-                {&P::bodyMinPercent, &grid.bodyMinPercent}}, prefix + "neutral");
+            best = searchGroup(data, trials, best, {{&P::redUpper, &grid.redUpper}, {&P::orangeUpper, &grid.orangeUpper}, {&P::yellowUpper, &grid.yellowUpper}, {&P::redWrap, &grid.redWrap}, {&P::maroonMaxV, &grid.maroonMaxV}},
+                               prefix + "warm");
+            best = searchGroup(data, trials, best, {{&P::greenLower, &grid.greenLower}, {&P::greenUpper, &grid.greenUpper}, {&P::blueLower, &grid.blueLower}, {&P::bluePurple, &grid.bluePurple}, {&P::purpleUpper, &grid.purpleUpper}},
+                               prefix + "cool");
+            best = searchGroup(data, trials, best, {{&P::blackMaxS, &grid.blackMaxS}, {&P::blackMaxV, &grid.blackMaxV}, {&P::bodyMinPercent, &grid.bodyMinPercent}}, prefix + "neutral");
         }
         shortCSV << trials[seed].id << ',' << trials[best].id << '\n';
-        std::cout << "Colour search seed " << trials[seed].id << " -> " << trials[best].id
-                  << ": " << trials[best].score.number << '/' << trials[best].score.matched
-                  << " numbers correct\n" << std::flush;
+        std::cout << "Colour search seed " << trials[seed].id << " -> " << trials[best].id << ": " << trials[best].score.number << '/' << trials[best].score.matched << " numbers correct\n" << std::flush;
     }
-    leaderboard(directory / "colour_leaderboard.csv",
-                std::vector<Trial>(trials.begin() + stageOneCount, trials.end()));
+    leaderboard(directory / "colour_leaderboard.csv", std::vector<Trial>(trials.begin() + stageOneCount, trials.end()));
     int bestNumber = baseline, bestType = baseline, bestStageOne = baseline;
     for (int i = 0; i < static_cast<int>(trials.size()); ++i) {
         if (better(trials[i], trials[bestNumber]))
@@ -588,35 +524,34 @@ void runRecognitionGridSearch(const std::filesystem::path& directory) {
         if (i < stageOneCount && better(trials[i], trials[bestStageOne]))
             bestStageOne = i;
     }
-    const std::vector<std::pair<std::string, Trial>> finalists = {
-        {"baseline", trials[baseline]}, {"baseline_cloth", trials[baselineCloth]},
-        {"best_type_grid", trials[bestStageOne]}, {"best_number", trials[bestNumber]},
-        {"best_type", trials[bestType]}};
+    const std::vector<std::pair<std::string, Trial>> finalists = {{"baseline", trials[baseline]},
+                                                                  {"baseline_cloth", trials[baselineCloth]},
+                                                                  {"best_type_grid", trials[bestStageOne]},
+                                                                  {"best_number", trials[bestNumber]},
+                                                                  {"best_type", trials[bestType]}};
     exportFinalists(directory, data, finalists);
     auto summary = outputFile(directory / "summary.md");
     summary << "# Recognition grid search\n\n"
-        << "Tuning: Table1-6. Reference only: AllBalls. Zero radius padding; no CCA.\n\n"
-        << "Stage 1 evaluated " << stageOneCount << " configurations. Stage 2 evaluated "
-        << trials.size() - stageOneCount << " valid grouped combinations from " << seeds.size()
-        << " seeds over " << grid.colourPasses << " passes. Repeated trials are retained.\n\n"
-        << "Rank: correct numbers, correct types, oracle numbers, smaller baseline departure, lower trial ID. "
-        << "Best-type rank swaps the first two criteria. AllBalls never influences ranking.\n\n"
-        << "| Configuration | Type (tuning) | Number (tuning) | Oracle number (tuning) | Number (reference) |\n"
-        << "|---|---:|---:|---:|---:|\n";
+            << "Tuning: Table1-6. Reference only: AllBalls. Zero radius padding; no CCA.\n\n"
+            << "Stage 1 evaluated " << stageOneCount << " configurations. Stage 2 evaluated " << trials.size() - stageOneCount << " valid grouped combinations from " << seeds.size() << " seeds over " << grid.colourPasses
+            << " passes. Repeated trials are retained.\n\n"
+            << "Rank: correct numbers, correct types, oracle numbers, smaller baseline departure, lower trial ID. "
+            << "Best-type rank swaps the first two criteria. AllBalls never influences ranking.\n\n"
+            << "| Configuration | Type (tuning) | Number (tuning) | Oracle number (tuning) | Number (reference) |\n"
+            << "|---|---:|---:|---:|---:|\n";
     for (const auto& item : finalists) {
         const auto& s = item.second.score;
         const auto reference = score(data, item.second.parameters, false);
-        summary << '|' << item.first << " (" << item.second.id << ")|" << s.type << '/' << s.matched
-                << '|' << s.number << '/' << s.matched << '|' << s.oracle << '/' << s.matched
-                << '|' << reference.number << '/' << reference.matched << "|\n";
+        summary << '|' << item.first << " (" << item.second.id << ")|" << s.type << '/' << s.matched << '|' << s.number << '/' << s.matched << '|' << s.oracle << '/' << s.matched << '|' << reference.number << '/' << reference.matched
+                << "|\n";
     }
     summary << "\nThese are exploratory tuning results, not independent test accuracy. "
-        << "The supplied images share the camera setup and some unchanged balls. "
-        << "Oracle-number accuracy supplies the true type, including the cue-ball shortcut; "
-        << "it is a diagnostic, not a deployable classifier. Unmatched candidates have N/A correctness "
-        << "and are excluded from recognition accuracy; missed balls remain in end-to-end recall's denominator.\n\n"
-        << "Default experimental rules were checked against production for every cached segmentation. "
-        << "Production files and parameters were not changed.\n";
+            << "The supplied images share the camera setup and some unchanged balls. "
+            << "Oracle-number accuracy supplies the true type, including the cue-ball shortcut; "
+            << "it is a diagnostic, not a deployable classifier. Unmatched candidates have N/A correctness "
+            << "and are excluded from recognition accuracy; missed balls remain in end-to-end recall's denominator.\n\n"
+            << "Default experimental rules were checked against production for every cached segmentation. "
+            << "Production files and parameters were not changed.\n";
     std::cout << "Search complete: " << trials.size() << " trials -> " << directory << '\n';
 }
 

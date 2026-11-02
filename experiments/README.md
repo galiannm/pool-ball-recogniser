@@ -1139,3 +1139,38 @@ are supplied in `captions.md`; `pair_slopes.csv` and `intercept_samples.csv`
 preserve the plotted calculations. Figures contain no code/library names.
 Plots reconstruct the model from six-decimal saved samples and verify agreement
 with saved expected radii within1e-4pixels. Report pages are not modified.
+
+## Raw radius versus row-adjusted cue selection
+
+```sh
+./build-local/BallExperiments --cue-radius-comparison
+```
+
+This controlled comparison keeps K2, frozen AllBalls HSV models, selective +1
+padding and best-effort unique assignment fixed. Only cue reservation changes:
+none; reserve the originally White candidate with greatest raw Hough radius;
+or reserve the candidate with greatest radius/expected(row). Both size rules
+activate only with at least two original White candidates and retain the first
+candidate on an exact tie. They use original radii, so padding cannot inflate
+the comparison. The existing AllBalls row model is loaded unchanged, not refitted.
+
+| Method | Correct identities | Correct cues | Unknown |
+| --- | ---: | ---: | ---: |
+| Padding, no size reservation | 79/86 | 5/6 | 1 |
+| Largest raw radius | 80/86 | 6/6 | 2 |
+| Largest row-adjusted radius | 80/86 | 6/6 | 2 |
+
+Both selectors choose candidates6,2,1 in Table1,Table3,Table6 respectively. There
+are no differing identities across the six images; exported raw/adjusted PNGs
+and CSVs are byte-identical. The fitted line adds no observed prediction benefit
+in this comparison. The simpler raw rule remains a heuristic: perspective or an
+inflated false circle can reverse size ordering on new scenes.
+
+Default outputs: `output/experiments/cue_radius_comparison/`, containing metrics,
+predictions, pairwise changes, `cue_candidates.csv` (radii, rows, ratios and both
+selections), configuration, frozen models, candidate comparison sheets and all
+standard final-results exports. Synthetic checks cover a depth example where
+the selectors differ, ties, non-white exclusion, ambiguous-only activation and
+reservation constraints. Existing padding/adjusted controls reproduce prior
+outputs exactly. These are exploratory results on previously inspected images;
+the main application and report are not changed by this experiment.

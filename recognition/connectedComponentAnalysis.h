@@ -23,7 +23,4 @@ struct CCAFeatures {
     std::vector<cv::Mat> nonLightRegions;
 };
 
-CCAFeatures analyseConnectedComponents(
-    const BallROI& ball,
-    const KMeansResult& segmentation
-);
+CCAFeatures analyseConnectedComponents(const BallROI& ball, const KMeansResult& segmentation);

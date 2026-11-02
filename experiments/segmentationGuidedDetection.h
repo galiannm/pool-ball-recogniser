@@ -66,8 +66,7 @@ struct SegmentationGuidedResult {
 
 // Foreground and cluster windows are constructed before Hough is run.
 // Ground truth is not an input to the detection algorithm.
-SegmentationGuidedResult detectSegmentationGuided(const cv::Mat& image,
-    const SegmentationHoughOptions& options = {});
+SegmentationGuidedResult detectSegmentationGuided(const cv::Mat& image, const SegmentationHoughOptions& options = {});
 
 void runSegmentationGuidedExperiment(const std::filesystem::path& directory);
 

@@ -62,10 +62,7 @@ KMeansResult segmentBallKMeans(const BallROI& ball, int k) {
     vector<Mat> masks(k);
 
     for (int j = 0; j < k; ++j) {
-        masks[j] = Mat::zeros(
-            ball.image.size(),
-            CV_8UC1
-        );
+        masks[j] = Mat::zeros(ball.image.size(), CV_8UC1);
     }
 
     result.segmentedImage = Mat::zeros(ball.image.size(), CV_8UC3);
@@ -76,17 +73,7 @@ KMeansResult segmentBallKMeans(const BallROI& ball, int k) {
         int cluster = labels.at<int>(i, 0);
         Point p = pixels[i];
 
-        Vec3b colour(
-            saturate_cast<uchar>(
-                centres.at<float>(cluster, 0)
-            ),
-            saturate_cast<uchar>(
-                centres.at<float>(cluster, 1)
-            ),
-            saturate_cast<uchar>(
-                centres.at<float>(cluster, 2)
-            )
-        );
+        Vec3b colour(saturate_cast<uchar>(centres.at<float>(cluster, 0)), saturate_cast<uchar>(centres.at<float>(cluster, 1)), saturate_cast<uchar>(centres.at<float>(cluster, 2)));
 
         result.segmentedImage.at<Vec3b>(p) = colour;
 
@@ -107,32 +94,23 @@ KMeansResult segmentBallKMeans(const BallROI& ball, int k) {
 
         region.percentage = 100.0 * area / total;
 
-        region.colour = Vec3b(
-            saturate_cast<uchar>(centres.at<float>(j, 0)),
-            saturate_cast<uchar>(centres.at<float>(j, 1)),
-            saturate_cast<uchar>(centres.at<float>(j, 2))
-        );
+        region.colour = Vec3b(saturate_cast<uchar>(centres.at<float>(j, 0)), saturate_cast<uchar>(centres.at<float>(j, 1)), saturate_cast<uchar>(centres.at<float>(j, 2)));
 
-        Mat bgr(1,1,CV_8UC3);
-        bgr.at<Vec3b>(0,0) = region.colour;
+        Mat bgr(1, 1, CV_8UC3);
+        bgr.at<Vec3b>(0, 0) = region.colour;
 
         Mat hsv;
         cvtColor(bgr, hsv, COLOR_BGR2HSV);
 
-        region.hsv = hsv.at<Vec3b>(0,0);
+        region.hsv = hsv.at<Vec3b>(0, 0);
 
         result.regions.push_back(region);
     }
 
     // Sort largest regions first
-    sort(
-        result.regions.begin(),
-        result.regions.end(),
-        [](const KMeansRegion& a,
-           const KMeansRegion& b) {
-            return a.percentage > b.percentage;
-        }
-    );
+    sort(result.regions.begin(), result.regions.end(), [](const KMeansRegion& a, const KMeansRegion& b) {
+        return a.percentage > b.percentage;
+    });
 
     // compare cluster colours
     if (result.k == 2 && result.regions.size() == 2) {
@@ -146,8 +124,8 @@ KMeansResult segmentBallKMeans(const BallROI& ball, int k) {
         Mat hsv;
         cvtColor(bgr, hsv, COLOR_BGR2HSV);
 
-        Vec3b hsv1 = hsv.at<Vec3b>(0,0);
-        Vec3b hsv2 = hsv.at<Vec3b>(0,1);
+        Vec3b hsv1 = hsv.at<Vec3b>(0, 0);
+        Vec3b hsv2 = hsv.at<Vec3b>(0, 1);
 
         int H1 = hsv1[0];
         int S1 = hsv1[1];
@@ -166,11 +144,7 @@ KMeansResult segmentBallKMeans(const BallROI& ball, int k) {
             result.hueDifference = min(difference, 180 - difference);
         }
 
-        Vec3d difference (
-            double(colour1[0] - colour2[0]),
-            double(colour1[1] - colour2[1]),
-            double(colour1[2] - colour2[2])
-        );
+        Vec3d difference(double(colour1[0] - colour2[0]), double(colour1[1] - colour2[1]), double(colour1[2] - colour2[2]));
 
         result.bgrDistance = norm(difference);
     }

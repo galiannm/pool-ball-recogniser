@@ -40,8 +40,7 @@ void testCurrentParameters() {
     vector<Point2f> groundTruth = loadGroundTruth(CSV_PATH, config::tuningImage);
 
     if (groundTruth.size() != 16) {
-        cerr << "Expected 16 balls, found "
-             << groundTruth.size() << endl;
+        cerr << "Expected 16 balls, found " << groundTruth.size() << endl;
         return;
     }
 
@@ -68,8 +67,7 @@ void testCurrentParameters() {
     cout << "Precision: " << result.precision << endl;
     cout << "Recall: " << result.recall << endl;
     cout << "F1: " << result.f1 << endl;
-    cout << "Mean error: " << result.meanError
-         << " pixels" << endl;
+    cout << "Mean error: " << result.meanError << " pixels" << endl;
 
     // Save a visualisation of the baseline
     Mat visualisation = drawDetectedBalls(maskedImage, circles);
@@ -90,8 +88,7 @@ void runGridSearch() {
     vector<Point2f> groundTruth = loadGroundTruth(CSV_PATH, config::tuningImage);
 
     if (groundTruth.size() != 16) {
-        cerr << "Invalid ground truth: "
-             << groundTruth.size() << " balls" << endl;
+        cerr << "Invalid ground truth: " << groundTruth.size() << " balls" << endl;
         return;
     }
 
@@ -122,8 +119,7 @@ void runGridSearch() {
     EvaluationResult bestResult;
 
     int count = 0;
-    const size_t totalConfigurations = dpValues.size() * minDistValues.size() *
-                                       param1Values.size() * param2Values.size();
+    const size_t totalConfigurations = dpValues.size() * minDistValues.size() * param1Values.size() * param2Values.size();
 
     // ==================================================
     // TEST EVERY PARAMETER COMBINATION
@@ -151,32 +147,17 @@ void runGridSearch() {
                     vector<Point2f> predictions = transformCentres(circles);
 
                     // Evaluate
-                    EvaluationResult result = evaluateDetections( predictions, groundTruth, MATCH_TOLERANCE);
+                    EvaluationResult result = evaluateDetections(predictions, groundTruth, MATCH_TOLERANCE);
 
                     // Save results
-                    file << dp << ","
-                         << minDist << ","
-                         << p1 << ","
-                         << p2 << ","
-                         << params.minRadius << ","
-                         << params.maxRadius << ","
-                         << circles.size() << ","
-                         << result.TP << ","
-                         << result.FP << ","
-                         << result.FN << ","
-                         << result.precision << ","
-                         << result.recall << ","
-                         << result.f1 << ","
-                         << result.meanError << "\n";
+                    file << dp << "," << minDist << "," << p1 << "," << p2 << "," << params.minRadius << "," << params.maxRadius << "," << circles.size() << "," << result.TP << "," << result.FP << "," << result.FN << "," << result.precision
+                         << "," << result.recall << "," << result.f1 << "," << result.meanError << "\n";
 
                     count++;
 
                     // Prioritise recall, then precision
                     // then centre localisation accuracy.
-                    double candidateError =
-                        result.TP > 0
-                        ? result.meanError
-                        : numeric_limits<double>::infinity();
+                    double candidateError = result.TP > 0 ? result.meanError : numeric_limits<double>::infinity();
 
                     bool better = (
                         // 1. Detect more actual balls

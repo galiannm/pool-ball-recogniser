@@ -37,11 +37,15 @@ std::string expectedType(int n) {
 }
 
 std::string change(const Predictions& before, const Predictions& after, size_t i, int truth) {
-    if (before.types[i] == after.types[i] && before.numbers[i] == after.numbers[i]) return "unchanged";
-    if (truth < 0) return "unmatched_detection";
+    if (before.types[i] == after.types[i] && before.numbers[i] == after.numbers[i])
+        return "unchanged";
+    if (truth < 0)
+        return "unmatched_detection";
     const bool wasCorrect = before.numbers[i] == truth, nowCorrect = after.numbers[i] == truth;
-    if (!wasCorrect && nowCorrect) return "number_corrected";
-    if (wasCorrect && !nowCorrect) return "number_regressed";
+    if (!wasCorrect && nowCorrect)
+        return "number_corrected";
+    if (wasCorrect && !nowCorrect)
+        return "number_regressed";
     return before.numbers[i] == after.numbers[i] ? "type_changed" : "number_changed_still_wrong";
 }
 
@@ -53,17 +57,14 @@ void recordConfiguration(const std::filesystem::path& directory, const Recogniti
         << "Cue: light >= " << p.whiteMinPercent << "%; Solid: non-light >= " << p.solidMinPercent << "%\n"
         << "Reporting dark V <= " << p.darkMaxV << "; eligible body cluster >= " << p.bodyMinPercent << "%\n"
         << "Black: S < " << p.blackMaxS << ", V <= " << p.blackMaxV << ", type Solid\n"
-        << "Hue bounds: red < " << p.redUpper << " or >= " << p.redWrap
-        << "; orange < " << p.orangeUpper << "; yellow < " << p.yellowUpper
-        << "; green [" << p.greenLower << ',' << p.greenUpper << "); blue ["
-        << p.blueLower << ',' << p.bluePurple << "); purple [" << p.bluePurple << ',' << p.purpleUpper << ")\n"
+        << "Hue bounds: red < " << p.redUpper << " or >= " << p.redWrap << "; orange < " << p.orangeUpper << "; yellow < " << p.yellowUpper << "; green [" << p.greenLower << ',' << p.greenUpper << "); blue [" << p.blueLower << ','
+        << p.bluePurple << "); purple [" << p.bluePurple << ',' << p.purpleUpper << ")\n"
         << "Maroon: red hue and V < " << p.maroonMaxV << "; striped body number += 8\n\n"
         << "final_results/: K=6 tuned only, original strict black cutoff retained.\n"
         << "final_results_cca/: same recognition + CCA winner 20242: solid override only; "
         << "8-connectivity; component area >= 2%; boundary erosion ellipse 5x5; non-light >= 70%; "
         << "light boundary <= 20%; exactly one eligible non-light component.\n"
-        << "final_results_current/: current application classifier, K=" << config::recognitionKMeansClusters
-        << ", including its recent inclusive black cutoff S <= 60.\n"
+        << "final_results_current/: current application classifier, K=" << config::recognitionKMeansClusters << ", including its recent inclusive black cutoff S <= 60.\n"
         << "All profiles share identical Hough circles and transformations. No new parameters selected.\n";
 }
 } // namespace
@@ -89,7 +90,8 @@ void exportRecognitionFinalResults(const std::filesystem::path& directory) {
     const std::array<std::string, 3> folders = {"final_results_current", "final_results", "final_results_cca"};
     for (const auto& filename : config::allImages()) {
         const cv::Mat image = cv::imread(config::mediaDirectory + filename);
-        if (image.empty()) throw std::runtime_error("Could not load " + filename);
+        if (image.empty())
+            throw std::runtime_error("Could not load " + filename);
         const auto detection = runDetection(image, HoughParams{});
         const auto& circles = detection.filteredCircles;
         const auto tableCentres = transformCentres(circles);
@@ -110,14 +112,15 @@ void exportRecognitionFinalResults(const std::filesystem::path& directory) {
         }
         const std::string stem = std::filesystem::path(filename).stem().string();
         for (size_t p = 0; p < profiles.size(); ++p)
-            saveFinalResults(image, directory / folders[p] / stem, circles, tableCentres,
-                             profiles[p].types, profiles[p].numbers);
+            saveFinalResults(image, directory / folders[p] / stem, circles, tableCentres, profiles[p].types, profiles[p].numbers);
 
         // Annotations are used only after inference and export, to explain changes.
         const auto truth = loadLabelledGroundTruth(config::groundTruthPath, filename);
-        if (truth.empty()) throw std::runtime_error("Missing annotations for " + filename);
+        if (truth.empty())
+            throw std::runtime_error("Missing annotations for " + filename);
         std::vector<cv::Point2f> truthCentres;
-        for (const auto& ball : truth) truthCentres.push_back(ball.centre);
+        for (const auto& ball : truth)
+            truthCentres.push_back(ball.centre);
         const auto matches = evaluateDetections(tableCentres, truthCentres, config::matchTolerance);
         const auto comparisons = directory / "final_comparisons" / stem;
         std::filesystem::create_directories(comparisons);
@@ -130,20 +133,18 @@ void exportRecognitionFinalResults(const std::filesystem::path& directory) {
             }
             const auto k6Change = change(profiles[0], profiles[1], i, actual);
             const auto ccaChange = change(profiles[0], profiles[2], i, actual);
-            changes << filename << ',' << i + 1 << ',' << actual << ',' << profiles[0].types[i] << ','
-                << profiles[0].numbers[i] << ',' << profiles[1].types[i] << ',' << profiles[1].numbers[i]
-                << ',' << k6Change << ',' << profiles[2].types[i] << ',' << profiles[2].numbers[i] << ',' << ccaChange << '\n';
-            if (k6Change == "unchanged" && ccaChange == "unchanged") continue;
+            changes << filename << ',' << i + 1 << ',' << actual << ',' << profiles[0].types[i] << ',' << profiles[0].numbers[i] << ',' << profiles[1].types[i] << ',' << profiles[1].numbers[i] << ',' << k6Change << ','
+                    << profiles[2].types[i] << ',' << profiles[2].numbers[i] << ',' << ccaChange << '\n';
+            if (k6Change == "unchanged" && ccaChange == "unchanged")
+                continue;
             const int half = cvCeil(circles[i][2]) + 12;
-            const cv::Rect crop = cv::Rect(cvRound(circles[i][0]) - half, cvRound(circles[i][1]) - half,
-                2 * half + 1, 2 * half + 1) & cv::Rect(0, 0, image.cols, image.rows);
+            const cv::Rect crop = cv::Rect(cvRound(circles[i][0]) - half, cvRound(circles[i][1]) - half, 2 * half + 1, 2 * half + 1) & cv::Rect(0, 0, image.cols, image.rows);
             cv::Mat enlarged;
             cv::resize(image(crop), enlarged, {}, 4, 4, cv::INTER_NEAREST);
             std::vector<ImagePanel> panels;
             for (size_t p = 0; p < profiles.size(); ++p) {
                 cv::Mat preview = enlarged.clone();
-                const cv::Scalar colour = actual < 0 ? cv::Scalar(180, 180, 180) :
-                    profiles[p].numbers[i] == actual ? cv::Scalar(50, 240, 50) : cv::Scalar(70, 70, 255);
+                const cv::Scalar colour = actual < 0 ? cv::Scalar(180, 180, 180) : profiles[p].numbers[i] == actual ? cv::Scalar(50, 240, 50) : cv::Scalar(70, 70, 255);
                 const std::string predicted = profiles[p].types[i] + " " + numberLabel(profiles[p].numbers[i]);
                 cv::putText(preview, predicted, {8, 25}, cv::FONT_HERSHEY_SIMPLEX, 0.6, {0, 0, 0}, 3, cv::LINE_AA);
                 cv::putText(preview, predicted, {8, 25}, cv::FONT_HERSHEY_SIMPLEX, 0.6, colour, 1, cv::LINE_AA);
@@ -173,29 +174,28 @@ void exportRecognitionFinalResults(const std::filesystem::path& directory) {
     }
     auto summary = output(directory / "final_summary.md");
     summary << "# Final-result recognition comparisons\n\n"
-        << "All profiles use the same detections and rendering as the application. "
-        << "No search was rerun, and no experimental recognition rules were changed.\n\n"
-        << "| Profile | Correct type (Table1–6) | Correct number (Table1–6) |\n|---|---:|---:|\n";
+            << "All profiles use the same detections and rendering as the application. "
+            << "No search was rerun, and no experimental recognition rules were changed.\n\n"
+            << "| Profile | Correct type (Table1–6) | Correct number (Table1–6) |\n|---|---:|---:|\n";
     for (size_t p = 0; p < names.size(); ++p)
-        summary << "| " << names[p] << " | " << totalTypes[p] << '/' << matchedTotal << " | "
-                << totalNumbers[p] << '/' << matchedTotal << " |\n";
+        summary << "| " << names[p] << " | " << totalTypes[p] << '/' << matchedTotal << " | " << totalNumbers[p] << '/' << matchedTotal << " |\n";
     summary << "\nThere are " << fpTotal << " false detections and " << fnTotal << " missed annotations. "
-        << "These are excluded from conditional recognition accuracy, not silently corrected.\n\n"
-        << "- `final_results/<image>/`: tuned K=6 winner 2153, without CCA.\n"
-        << "- `final_results_cca/<image>/`: K=6 plus solid-only CCA winner 20242.\n"
-        << "- `final_results_current/<image>/`: snapshot of the current application.\n"
-        << "- `final_comparisons/<image>/`: whole-table comparison and one labelled crop per changed candidate. "
-        << "Green crop text means correct number, red incorrect, grey unmatched.\n"
-        << "- `final_changes.csv`: all candidates, including corrections, regressions and unchanged predictions.\n"
-        << "- `final_counts.csv`: per-image counts; AllBalls is listed separately.\n"
-        << "- `final_configuration.txt`: frozen settings and the black-threshold distinction.\n\n"
-        << "Each final-result folder contains the same four PNGs and balls.csv as the application. "
-        << "They show predictions only; annotation labels are confined to the comparison outputs.\n\n"
-        << "The current application includes S <= 60 for black. The historical K=6 experiment uses S < 60. "
-        << "Consequently Table2 candidate 16 (black 8) is correct in the current application but remains "
-        << "yellow 1 in these K=6 snapshots. This is shown as a regression.\n\n"
-        << "The winners were selected using Table1–6 during earlier experiments. These remain exploratory "
-        << "results, not independent test estimates. The main application settings are unchanged.\n";
+            << "These are excluded from conditional recognition accuracy, not silently corrected.\n\n"
+            << "- `final_results/<image>/`: tuned K=6 winner 2153, without CCA.\n"
+            << "- `final_results_cca/<image>/`: K=6 plus solid-only CCA winner 20242.\n"
+            << "- `final_results_current/<image>/`: snapshot of the current application.\n"
+            << "- `final_comparisons/<image>/`: whole-table comparison and one labelled crop per changed candidate. "
+            << "Green crop text means correct number, red incorrect, grey unmatched.\n"
+            << "- `final_changes.csv`: all candidates, including corrections, regressions and unchanged predictions.\n"
+            << "- `final_counts.csv`: per-image counts; AllBalls is listed separately.\n"
+            << "- `final_configuration.txt`: frozen settings and the black-threshold distinction.\n\n"
+            << "Each final-result folder contains the same four PNGs and balls.csv as the application. "
+            << "They show predictions only; annotation labels are confined to the comparison outputs.\n\n"
+            << "The current application includes S <= 60 for black. The historical K=6 experiment uses S < 60. "
+            << "Consequently Table2 candidate 16 (black 8) is correct in the current application but remains "
+            << "yellow 1 in these K=6 snapshots. This is shown as a regression.\n\n"
+            << "The winners were selected using Table1–6 during earlier experiments. These remain exploratory "
+            << "results, not independent test estimates. The main application settings are unchanged.\n";
     std::cout << "Saved final recognition comparisons to " << directory << '\n';
 }
 } // namespace experiments

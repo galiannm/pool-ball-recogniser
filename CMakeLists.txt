@@ -44,6 +44,12 @@ target_include_directories(PoolBallDetection PRIVATE
 )
 target_link_libraries(PoolBallDetection PRIVATE ${OpenCV_LIBS})
 
+# Submission check: compiles only the raw C++ file and OpenCV.
+add_executable(PoolBallSubmission myApplication.cpp)
+target_compile_definitions(PoolBallSubmission PRIVATE POOL_BALL_STANDALONE)
+target_include_directories(PoolBallSubmission PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(PoolBallSubmission PRIVATE ${OpenCV_LIBS})
+
 # Independent runner: the main application and recognition code stay unchanged.
 add_executable(BallExperiments
     experiments/main.cpp

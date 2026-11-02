@@ -52,9 +52,7 @@ void runRecognitionValidation() {
 
     for (const string& name : images) {
 
-        Mat image = imread(
-            config::mediaDirectory + name
-        );
+        Mat image = imread(config::mediaDirectory + name);
 
         if (image.empty()) {
             cerr << "Could not load: " << name << endl;
@@ -65,9 +63,7 @@ void runRecognitionValidation() {
         // STEP 1: Create output directory
         // ==========================================
 
-        const filesystem::path outputDir =
-            filesystem::path(config::validationOutputDirectory) /
-            "recognition" / filesystem::path(name).stem();
+        const filesystem::path outputDir = filesystem::path(config::validationOutputDirectory) / "recognition" / filesystem::path(name).stem();
 
         filesystem::create_directories(outputDir);
 
@@ -106,9 +102,7 @@ void runRecognitionValidation() {
             gtCentres.push_back(ball.centre);
         }
 
-        totalGT += static_cast<int>(
-            groundTruth.size()
-        );
+        totalGT += static_cast<int>(groundTruth.size());
 
         // ==========================================
         // STEP 3: Detect and match balls
@@ -136,8 +130,7 @@ void runRecognitionValidation() {
         // STEP 4: Classify matched detections
         for (size_t i = 0; i < circles.size(); ++i) {
 
-            int gtIndex =
-                evaluation.predictionToGroundTruth[i];
+            int gtIndex = evaluation.predictionToGroundTruth[i];
 
             // Ignore unmatched detections:
             // these are detection false positives.
@@ -154,19 +147,18 @@ void runRecognitionValidation() {
             // K-means segmentation
             // --------------------------------------
 
-            KMeansResult segmentation =
-                segmentBallKMeans(roi, config::recognitionKMeansClusters);
+            KMeansResult segmentation = segmentBallKMeans(roi, config::recognitionKMeansClusters);
 
             if (segmentation.regions.empty())
                 continue;
 
-            BallTypeResult baseline =classifyBallType(segmentation);
+            BallTypeResult baseline = classifyBallType(segmentation);
             CCAFeatures cca = analyseConnectedComponents(roi, segmentation);
             BallTypeResult hybrid = classifyBallTypeWithCCA(segmentation, cca);
 
             int number = groundTruth[gtIndex].number;
             int baselineNumber = classifyBallNumber(segmentation, baseline);
-            int hybridNumber = classifyBallNumber(segmentation, hybrid); 
+            int hybridNumber = classifyBallNumber(segmentation, hybrid);
 
             string actual = trueBallType(number);
 
@@ -219,30 +211,10 @@ void runRecognitionValidation() {
 
             // STEP 7: Save CSV results
 
-            csv << name << ","
-                << (i + 1) << ","
-                << number << ","
-                << actual << ","
-                << baseline.type << ","
-                << hybrid.type << ","
-                << (baselineCorrect ? 1 : 0) << ","
-                << (hybridCorrect ? 1 : 0) << ","
-                << baseline.lightPercent << ","
-                << baseline.colouredPercent << ","
-                << baseline.darkPercent << ","
-                << cca.lightComponents << ","
-                << cca.largestLightComponentPercent << ","
-                << cca.lightBoundaryCoverage << ","
-                << cca.nonLightComponents << ","
-                << cca.largestNonLightComponentPercent << ","
-                << segmentation.hueDifference << ","
-                << segmentation.saturationDifference << ","
-                << segmentation.brightnessDifference << ","
-                << segmentation.bgrDistance << ","
-                << baselineNumber << ","
-                << hybridNumber << ","
-                << baselineNumberCorrect << ","
-                << hybridNumberCorrect << ","
+            csv << name << "," << (i + 1) << "," << number << "," << actual << "," << baseline.type << "," << hybrid.type << "," << (baselineCorrect ? 1 : 0) << "," << (hybridCorrect ? 1 : 0) << "," << baseline.lightPercent << ","
+                << baseline.colouredPercent << "," << baseline.darkPercent << "," << cca.lightComponents << "," << cca.largestLightComponentPercent << "," << cca.lightBoundaryCoverage << "," << cca.nonLightComponents << ","
+                << cca.largestNonLightComponentPercent << "," << segmentation.hueDifference << "," << segmentation.saturationDifference << "," << segmentation.brightnessDifference << "," << segmentation.bgrDistance << "," << baselineNumber
+                << "," << hybridNumber << "," << baselineNumberCorrect << "," << hybridNumberCorrect << ","
                 << "\n";
 
             Mat isolated = Mat::zeros(roi.image.size(), roi.image.type());
@@ -254,13 +226,7 @@ void runRecognitionValidation() {
                 segmentation.segmentedImage.copyTo(isolatedSegmentation, roi.mask);
             }
 
-            vector<ImagePanel> panels = {
-                {"Original", isolated},
-                {"Segmented", isolatedSegmentation},
-                {"Light mask", cca.lightMask},
-                {"Non-light mask", cca.nonLightMask},
-                {"Boundary band", cca.boundaryBand}
-            };
+            vector<ImagePanel> panels = {{"Original", isolated}, {"Segmented", isolatedSegmentation}, {"Light mask", cca.lightMask}, {"Non-light mask", cca.nonLightMask}, {"Boundary band", cca.boundaryBand}};
             for (size_t j = 0; j < segmentation.regions.size(); ++j) {
                 panels.push_back({"Cluster " + to_string(j + 1), segmentation.regions[j].mask});
             }
@@ -290,19 +256,11 @@ void runRecognitionValidation() {
         cout << "Baseline Number correct: " << imageHybridNumberCorrect << endl;
         cout << "Hybrid Number correct: " << imageHybridNumberCorrect << endl;
 
-
         if (imageMatched > 0) {
 
+            cout << "Baseline accuracy: " << double(imageBaselineCorrect) / imageMatched << endl;
 
-            cout << "Baseline accuracy: "
-                 << double(imageBaselineCorrect) /
-                    imageMatched
-                 << endl;
-
-            cout << "Hybrid accuracy: "
-                 << double(imageHybridCorrect) /
-                    imageMatched
-                 << endl;
+            cout << "Hybrid accuracy: " << double(imageHybridCorrect) / imageMatched << endl;
         }
 
         cout << "Changed predictions: " << imageChanged << endl;
@@ -330,28 +288,16 @@ void runRecognitionValidation() {
 
         cout << fixed << setprecision(4);
 
-        cout << "Baseline accuracy: "
-             << double(baselineCorrectTotal) /
-                matched
-             << endl;
+        cout << "Baseline accuracy: " << double(baselineCorrectTotal) / matched << endl;
 
-        cout << "Hybrid accuracy: "
-             << double(hybridCorrectTotal) /
-                matched
-             << endl;
+        cout << "Hybrid accuracy: " << double(hybridCorrectTotal) / matched << endl;
     }
 
     if (totalGT > 0) {
 
-        cout << "Baseline end-to-end recall: "
-             << double(baselineCorrectTotal) /
-                totalGT
-             << endl;
+        cout << "Baseline end-to-end recall: " << double(baselineCorrectTotal) / totalGT << endl;
 
-        cout << "Hybrid end-to-end recall: "
-             << double(hybridCorrectTotal) /
-                totalGT
-             << endl;
+        cout << "Hybrid end-to-end recall: " << double(hybridCorrectTotal) / totalGT << endl;
     }
 
     cout << "\n===== CCA IMPACT =====\n";
@@ -362,8 +308,5 @@ void runRecognitionValidation() {
 
     cout << "New errors introduced by CCA: " << worsenedByCCA << endl;
 
-    cout << "Net improvement: "
-         << correctedByCCA - worsenedByCCA
-         << " correctly classified balls"
-         << endl;
+    cout << "Net improvement: " << correctedByCCA - worsenedByCCA << " correctly classified balls" << endl;
 }

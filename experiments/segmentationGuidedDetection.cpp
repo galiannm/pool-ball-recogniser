@@ -20,7 +20,9 @@ double median(std::vector<double> values) {
     return values[middle];
 }
 
-cv::Point centre(const cv::Vec3f& c) { return {cvRound(c[0]), cvRound(c[1])}; }
+cv::Point centre(const cv::Vec3f& c) {
+    return {cvRound(c[0]), cvRound(c[1])};
+}
 
 // A perspective-aware size guide using only known geometry and configured
 // Hough size bounds. No circles or annotations are needed to locate clusters.
@@ -42,8 +44,7 @@ struct ClothModel {
     bool valid = false;
 };
 
-ClothModel clothModel(const cv::Mat& hsv, const cv::Mat& lab, const cv::Mat& table,
-                      const cv::Rect& crop, const SegmentationHoughOptions& p) {
+ClothModel clothModel(const cv::Mat& hsv, const cv::Mat& lab, const cv::Mat& table, const cv::Rect& crop, const SegmentationHoughOptions& p) {
     std::vector<cv::Vec3b> samples;
     std::vector<double> channels[3];
     for (int y = crop.y; y < crop.br().y; y += 2)
@@ -67,8 +68,7 @@ ClothModel clothModel(const cv::Mat& hsv, const cv::Mat& lab, const cv::Mat& tab
     const double middle = median(distances);
     for (double d : distances)
         deviations.push_back(std::abs(d - middle));
-    model.threshold = std::clamp(middle + p.clothMADMultiplier * median(deviations),
-                                 p.clothMinimumDistance, p.clothMaximumDistance);
+    model.threshold = std::clamp(middle + p.clothMADMultiplier * median(deviations), p.clothMinimumDistance, p.clothMaximumDistance);
     return model;
 }
 
@@ -83,19 +83,16 @@ cv::Mat foreground(const cv::Mat& image, const cv::Mat& table, const Segmentatio
         return mask; // No usable cloth model: the algorithm falls back to standard Hough everywhere.
     for (int top = 0; top < image.rows; top += p.clothTileSize)
         for (int left = 0; left < image.cols; left += p.clothTileSize) {
-            const cv::Rect tile(left, top, std::min(p.clothTileSize, image.cols - left),
-                                std::min(p.clothTileSize, image.rows - top));
+            const cv::Rect tile(left, top, std::min(p.clothTileSize, image.cols - left), std::min(p.clothTileSize, image.rows - top));
             auto local = clothModel(hsv, lab, inset, tile, p);
             if (!local.valid)
                 local = fallback;
             for (int y = tile.y; y < tile.br().y; ++y)
                 for (int x = tile.x; x < tile.br().x; ++x)
-                    if (inset.at<uchar>(y, x) &&
-                        cv::norm(cv::Vec3d(lab.at<cv::Vec3b>(y, x)) - local.colour) > local.threshold)
+                    if (inset.at<uchar>(y, x) && cv::norm(cv::Vec3d(lab.at<cv::Vec3b>(y, x)) - local.colour) > local.threshold)
                         mask.at<uchar>(y, x) = 255;
         }
-    cv::morphologyEx(mask, mask, cv::MORPH_CLOSE,
-        cv::getStructuringElement(cv::MORPH_ELLIPSE, {p.closingKernel, p.closingKernel}));
+    cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_ELLIPSE, {p.closingKernel, p.closingKernel}));
     cv::Mat holes;
     cv::copyMakeBorder(mask, holes, 1, 1, 1, 1, cv::BORDER_CONSTANT, cv::Scalar(0));
     cv::floodFill(holes, {0, 0}, cv::Scalar(255));
@@ -110,8 +107,7 @@ cv::Mat foreground(const cv::Mat& image, const cv::Mat& table, const Segmentatio
     return clean;
 }
 
-std::vector<GuidedCluster> clusterWindows(const cv::Mat& mask, const cv::Mat& table,
-                                         const SegmentationHoughOptions& p) {
+std::vector<GuidedCluster> clusterWindows(const cv::Mat& mask, const cv::Mat& table, const SegmentationHoughOptions& p) {
     cv::Mat labels, stats, centres, inner, border;
     const int count = cv::connectedComponentsWithStats(mask, labels, stats, centres, 8, CV_32S);
     cv::erode(table, inner, cv::getStructuringElement(cv::MORPH_ELLIPSE, {41, 41}));
@@ -120,8 +116,7 @@ std::vector<GuidedCluster> clusterWindows(const cv::Mat& mask, const cv::Mat& ta
     const double tableArea = cv::countNonZero(table);
     for (int label = 1; label < count; ++label) {
         const int area = stats.at<int>(label, cv::CC_STAT_AREA);
-        const cv::Rect bounds(stats.at<int>(label, cv::CC_STAT_LEFT), stats.at<int>(label, cv::CC_STAT_TOP),
-                              stats.at<int>(label, cv::CC_STAT_WIDTH), stats.at<int>(label, cv::CC_STAT_HEIGHT));
+        const cv::Rect bounds(stats.at<int>(label, cv::CC_STAT_LEFT), stats.at<int>(label, cv::CC_STAT_TOP), stats.at<int>(label, cv::CC_STAT_WIDTH), stats.at<int>(label, cv::CC_STAT_HEIGHT));
         const double radius = expectedRadius(centres.at<double>(label, 1));
         const double ratio = area / (CV_PI * radius * radius);
         const double aspect = double(std::max(bounds.width, bounds.height)) / std::min(bounds.width, bounds.height);
@@ -135,9 +130,7 @@ std::vector<GuidedCluster> clusterWindows(const cv::Mat& mask, const cv::Mat& ta
         region.core = bounds;
         region.expectedRadius = radius;
         const int padding = cvRound(p.cropPaddingRadii * radius);
-        region.crop = cv::Rect(bounds.x - padding, bounds.y - padding,
-                               bounds.width + 2 * padding, bounds.height + 2 * padding)
-                      & cv::Rect(0, 0, mask.cols, mask.rows);
+        region.crop = cv::Rect(bounds.x - padding, bounds.y - padding, bounds.width + 2 * padding, bounds.height + 2 * padding) & cv::Rect(0, 0, mask.cols, mask.rows);
         result.push_back(region);
     }
     bool merged = true;
@@ -157,9 +150,7 @@ std::vector<GuidedCluster> clusterWindows(const cv::Mat& mask, const cv::Mat& ta
     return result;
 }
 
-void edgeEvidence(GuidedProposal& proposal, const GuidedCluster& region,
-                   const cv::Mat& edges, const cv::Mat& gx, const cv::Mat& gy,
-                   const cv::Mat& foregroundMask, const SegmentationHoughOptions& p) {
+void edgeEvidence(GuidedProposal& proposal, const GuidedCluster& region, const cv::Mat& edges, const cv::Mat& gx, const cv::Mat& gy, const cv::Mat& foregroundMask, const SegmentationHoughOptions& p) {
     const auto& c = proposal.circle;
     const double cx = c[0] - region.crop.x, cy = c[1] - region.crop.y, radius = c[2];
     std::vector<bool> supported(p.angularSamples, false);
@@ -171,8 +162,7 @@ void edgeEvidence(GuidedProposal& proposal, const GuidedCluster& region,
         for (int oy = -tolerance; oy <= tolerance && !supported[i]; ++oy)
             for (int ox = -tolerance; ox <= tolerance; ++ox) {
                 const int ex = cvRound(x) + ox, ey = cvRound(y) + oy;
-                if (ex < 0 || ey < 0 || ex >= edges.cols || ey >= edges.rows || !edges.at<uchar>(ey, ex) ||
-                    std::hypot(ex - x, ey - y) > p.edgeTolerance)
+                if (ex < 0 || ey < 0 || ex >= edges.cols || ey >= edges.rows || !edges.at<uchar>(ey, ex) || std::hypot(ex - x, ey - y) > p.edgeTolerance)
                     continue;
                 const double sx = gx.at<float>(ey, ex), sy = gy.at<float>(ey, ex);
                 const double strength = std::hypot(sx, sy);
@@ -185,8 +175,7 @@ void edgeEvidence(GuidedProposal& proposal, const GuidedCluster& region,
     proposal.edgeSupport = double(std::count(supported.begin(), supported.end(), true)) / p.angularSamples;
     auto closed = supported;
     for (int i = 0; i < p.angularSamples; ++i)
-        if (!supported[i] && supported[(i + p.angularSamples - 1) % p.angularSamples] &&
-            supported[(i + 1) % p.angularSamples])
+        if (!supported[i] && supported[(i + p.angularSamples - 1) % p.angularSamples] && supported[(i + 1) % p.angularSamples])
             closed[i] = true; // Bridge one missing sample, without changing raw support fraction.
     int longest = 0, run = 0;
     for (int i = 0; i < 2 * p.angularSamples; ++i) {
@@ -203,14 +192,12 @@ void edgeEvidence(GuidedProposal& proposal, const GuidedCluster& region,
 
 bool duplicate(const cv::Vec3f& a, const std::vector<cv::Vec3f>& selected, const SegmentationHoughOptions& p) {
     for (const auto& b : selected)
-        if (cv::norm(cv::Point2f(a[0], a[1]) - cv::Point2f(b[0], b[1])) <
-            p.duplicateDistanceRadii * std::min(a[2], b[2]))
+        if (cv::norm(cv::Point2f(a[0], a[1]) - cv::Point2f(b[0], b[1])) < p.duplicateDistanceRadii * std::min(a[2], b[2]))
             return true;
     return false;
 }
 
-void watershedCheck(const cv::Mat& image, const cv::Mat& table,
-                    SegmentationGuidedResult& result, const SegmentationHoughOptions& p) {
+void watershedCheck(const cv::Mat& image, const cv::Mat& table, SegmentationGuidedResult& result, const SegmentationHoughOptions& p) {
     std::vector<bool> keep(result.guided.size(), true);
     for (size_t r = 0; r < result.clusters.size(); ++r) {
         auto& region = result.clusters[r];
@@ -218,8 +205,7 @@ void watershedCheck(const cv::Mat& image, const cv::Mat& table,
         for (size_t i = 0; i < result.guided.size(); ++i)
             if (region.crop.contains(centre(result.guided[i]))) {
                 region.seedIndices.push_back(static_cast<int>(i));
-                cv::circle(foreground, centre(result.guided[i]) - region.crop.tl(),
-                           cvRound(0.5 * result.guided[i][2]), cv::Scalar(255), cv::FILLED);
+                cv::circle(foreground, centre(result.guided[i]) - region.crop.tl(), cvRound(0.5 * result.guided[i][2]), cv::Scalar(255), cv::FILLED);
             }
         if (region.seedIndices.empty())
             continue;
@@ -245,8 +231,7 @@ void watershedCheck(const cv::Mat& image, const cv::Mat& table,
             cv::compare(region.labels, static_cast<int>(index - region.seedIndices.begin()) + 2, basin, cv::CMP_EQ);
             cv::bitwise_and(basin, foreground, supported);
             candidate.watershedAreaRatio = cv::countNonZero(supported) / (CV_PI * candidate.circle[2] * candidate.circle[2]);
-            candidate.watershedAccepted = candidate.watershedAreaRatio >= p.watershedMinimumAreaRatio &&
-                candidate.watershedAreaRatio <= p.watershedMaximumAreaRatio;
+            candidate.watershedAccepted = candidate.watershedAreaRatio >= p.watershedMinimumAreaRatio && candidate.watershedAreaRatio <= p.watershedMaximumAreaRatio;
             candidate.watershedReason = candidate.watershedAccepted ? "accepted" : "basin_area";
             keep[candidate.guidedIndex] = candidate.watershedAccepted;
         }
@@ -262,8 +247,7 @@ SegmentationGuidedResult detectSegmentationGuided(const cv::Mat& image, const Se
     SegmentationGuidedResult result;
     if (image.empty())
         return result;
-    if (image.type() != CV_8UC3 || p.clothTileSize < 1 || p.angularSamples < 12 ||
-        p.tableInsetKernel < 1 || p.tableInsetKernel % 2 != 1 || p.closingKernel < 1 || p.closingKernel % 2 != 1 ||
+    if (image.type() != CV_8UC3 || p.clothTileSize < 1 || p.angularSamples < 12 || p.tableInsetKernel < 1 || p.tableInsetKernel % 2 != 1 || p.closingKernel < 1 || p.closingKernel % 2 != 1 ||
         p.clothMinimumDistance > p.clothMaximumDistance || p.minimumClothSamples < 1)
         throw std::invalid_argument("Invalid segmentation-guided detection image/options");
     cv::Mat table = cv::Mat::zeros(image.size(), CV_8UC1);
@@ -274,9 +258,7 @@ SegmentationGuidedResult detectSegmentationGuided(const cv::Mat& image, const Se
     result.routingMask = cv::Mat::zeros(image.size(), CV_8UC1);
     for (const auto& region : result.clusters) {
         const int margin = cvRound(p.routingOverlapRadii * region.expectedRadius);
-        const cv::Rect interior(region.core.x + margin, region.core.y + margin,
-                                std::max(0, region.core.width - 2 * margin),
-                                std::max(0, region.core.height - 2 * margin));
+        const cv::Rect interior(region.core.x + margin, region.core.y + margin, std::max(0, region.core.width - 2 * margin), std::max(0, region.core.height - 2 * margin));
         if (!interior.empty())
             result.routingMask(interior).setTo(255);
     }
@@ -291,10 +273,8 @@ SegmentationGuidedResult detectSegmentationGuided(const cv::Mat& image, const Se
         HoughParams local;
         local.param2 = p.localAccumulatorThreshold;
         local.minDist = p.localMinCentreDistance;
-        local.minRadius = region.minRadius = std::max(p.absoluteMinLocalRadius,
-            static_cast<int>(std::floor(p.localMinRadiusRatio * region.expectedRadius)));
-        local.maxRadius = region.maxRadius = std::min(p.absoluteMaxLocalRadius,
-            static_cast<int>(std::ceil(p.localMaxRadiusRatio * region.expectedRadius)));
+        local.minRadius = region.minRadius = std::max(p.absoluteMinLocalRadius, static_cast<int>(std::floor(p.localMinRadiusRatio * region.expectedRadius)));
+        local.maxRadius = region.maxRadius = std::min(p.absoluteMaxLocalRadius, static_cast<int>(std::ceil(p.localMaxRadiusRatio * region.expectedRadius)));
         cv::Mat grey, smooth, edges, gx, gy;
         cv::cvtColor(image(region.crop), grey, cv::COLOR_BGR2GRAY);
         cv::GaussianBlur(grey, smooth, {5, 5}, 1.5);

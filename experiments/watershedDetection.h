@@ -55,8 +55,7 @@ struct WatershedDetectionResult {
 };
 
 // No ground truth enters grouping, masks, markers, segmentation or acceptance.
-WatershedDetectionResult segmentCrowdedBalls(const cv::Mat& image,
-    const std::vector<cv::Vec3f>& baseline, const WatershedOptions& options = {});
+WatershedDetectionResult segmentCrowdedBalls(const cv::Mat& image, const std::vector<cv::Vec3f>& baseline, const WatershedOptions& options = {});
 
 void runWatershedDetectionExperiment(const std::filesystem::path& outputDirectory);
 

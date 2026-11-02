@@ -4,8 +4,7 @@
 #include <algorithm>
 #include <stdexcept>
 
-cv::Mat combineImages(const std::vector<ImagePanel>& panels, int columns)
-{
+cv::Mat combineImages(const std::vector<ImagePanel>& panels, int columns) {
     if (columns <= 0)
         throw std::invalid_argument("Image grid columns must be positive");
 
@@ -19,13 +18,11 @@ cv::Mat combineImages(const std::vector<ImagePanel>& panels, int columns)
     for (const auto& panel : panels) {
         if (panel.image.empty())
             continue;
-        if (panel.image.depth() != CV_8U ||
-            (panel.image.channels() != 1 && panel.image.channels() != 3 && panel.image.channels() != 4))
+        if (panel.image.depth() != CV_8U || (panel.image.channels() != 1 && panel.image.channels() != 3 && panel.image.channels() != 4))
             throw std::invalid_argument("Image panels must be 8-bit grayscale, BGR, or BGRA");
 
         int baseline = 0;
-        const auto labelSize = cv::getTextSize(panel.label, cv::FONT_HERSHEY_SIMPLEX,
-                                              fontScale, 1, &baseline);
+        const auto labelSize = cv::getTextSize(panel.label, cv::FONT_HERSHEY_SIMPLEX, fontScale, 1, &baseline);
         width = std::max({width, panel.image.cols, labelSize.width});
         height = std::max(height, panel.image.rows);
         ++count;
@@ -55,11 +52,8 @@ cv::Mat combineImages(const std::vector<ImagePanel>& panels, int columns)
 
         const int x = (index % columns) * cellWidth + padding;
         const int y = (index / columns) * cellHeight + padding;
-        cv::putText(combined, panel.label, cv::Point(x, y + 15),
-                    cv::FONT_HERSHEY_SIMPLEX, fontScale, cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
-        colour.copyTo(combined(cv::Rect(x + (width - colour.cols) / 2,
-                                       y + labelHeight + (height - colour.rows) / 2,
-                                       colour.cols, colour.rows)));
+        cv::putText(combined, panel.label, cv::Point(x, y + 15), cv::FONT_HERSHEY_SIMPLEX, fontScale, cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
+        colour.copyTo(combined(cv::Rect(x + (width - colour.cols) / 2, y + labelHeight + (height - colour.rows) / 2, colour.cols, colour.rows)));
         ++index;
     }
     return combined;

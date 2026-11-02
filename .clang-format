@@ -1,0 +1,28 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+ContinuationIndentWidth: 4
+UseTab: Never
+BreakBeforeBraces: Attach
+
+# Keep ordinary signatures, calls and conditions together. Exceptionally long
+# parameter lists and expressions may wrap rather than growing without limit.
+ColumnLimit: 240
+BinPackParameters: true
+BinPackArguments: true
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+PenaltyReturnTypeOnItsOwnLine: 1000000
+
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortLambdasOnASingleLine: None
+
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+SpaceBeforeParens: ControlStatements
+SortIncludes: Never
+ReflowComments: Never
+FixNamespaceComments: false

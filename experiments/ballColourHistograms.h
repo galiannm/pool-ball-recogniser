@@ -38,8 +38,7 @@ struct BallColourScores {
 const char* histogramSpaceName(BallHistogramSpace space);
 const char* bodyColourName(int colour);
 cv::Mat histogramBodyMask(const BallROI& ball, const BallHistogramOptions& options = {});
-BallColourModel trainBallColourModel(const std::vector<LabelledColourSample>& samples,
-    BallHistogramSpace space, const BallHistogramOptions& options = {});
+BallColourModel trainBallColourModel(const std::vector<LabelledColourSample>& samples, BallHistogramSpace space, const BallHistogramOptions& options = {});
 // Inference has no ground-truth input and cannot change the trained model.
 BallColourScores scoreBallColours(const BallROI& ball, const BallColourModel& model);
 int histogramBallNumber(const std::string& predictedType, int bestColour);

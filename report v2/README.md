@@ -1,32 +1,27 @@
 # Report v2
 
-This report describes the selected **experimental** `pad1_row_largest_cue`
-configuration (80/86 matched identities), not the older application baseline.
-Production integration and consolidation into the assignment's single C++ file
-remain separate work. The original `report/` is unchanged.
+The report describes the `largest_raw_radius` configuration now consolidated in
+`../myApplication.cpp`. Its final CSV/image files reproduce the saved experimental
+outputs byte-for-byte. See [SUBMISSION.md](../SUBMISSION.md) for build commands,
+source mapping, evaluation basis and comparison modes.
 
-Build in this folder using `make`. Source is `main.tex`, output is `main.pdf`.
-The document uses 12-point A4 text and 25.4 mm margins, with no title page.
-All pages, references and AI acknowledgement count toward the eight-page limit.
+Build with `make` in this folder, or `make -C 'report v2'` from the project root.
+The PDF has eight pages, 12-point body text, 25 mm margins and no title page.
+Theory/application and results/analysis occupy approximately half each. The
+report includes predicted outputs for all six table images, recognition and
+cue-size ablations, failure illustrations, limitations, references and an AI
+acknowledgement. The original `report/` folder is unchanged.
 
-The revised draft has six main-text pages and two appendix pages. It explains
-the selected two-cluster approach without discussing the six-cluster search.
-Appendix A contains final rectified outputs for all six tables, also supplied as
-individual `assets/final_table1.png` through `final_table6.png`. Appendix B holds
-the radius-measurement illustration, references and AI acknowledgement. Technical
-terms are introduced through their role in this task, with examples of how the
-local colour/type evidence and joint identity assignment interact.
+`provenance.json` records the new executable's measurement sources alongside the
+historical experiment sources used for comparison. Scores use the pre-existing
+working annotations, which differ from the original supplied CSV; the report
+explicitly discloses this and evaluation-informed method selection.
 
-Figures/tables are regenerated from saved outputs with `make assets`. This needs
-Python, NumPy, Matplotlib and Python OpenCV for offline report graphics only.
-Application/experimental processing remains C++/OpenCV. The figure script checks
-the illustrative K2 light fractions against recorded C++ evidence. It does not
-tune parameters or rerun evaluation. `provenance.json` records metric sources.
+`generate_assets.py` is the existing historical experiment-figure generator.
+It also generates intermediate/unused graphics; the current report selects a
+subset of those plus the six final PNGs. Offline Python is used for graphics
+only; application processing/evaluation is C++/OpenCV.
 
-Classification uses HSV **histogram comparison**; backprojection is a diagnostic
-image, not the decision score. Inference and ground-truth evaluation are kept
-distinct. Test-informed selection is explicitly disclosed; 80/86 is not claimed
-as independent held-out performance. No ground-truth error is asserted without
-evidence. References and AI acknowledgement must be retained/reviewed for the
-final submission; the acknowledgement covers the substantial AI-generated code,
-experiments, report draft and graphics.
+OpenAI ChatGPT/Codex assisted with implementations, experiments, debugging,
+comparisons, figures and report drafting, including this consolidation and
+revision. Retain an accurate acknowledgement and review all work before submission.

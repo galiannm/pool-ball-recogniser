@@ -16,21 +16,9 @@
 
 #include "myApplication.h"
 
-enum class RunMode
-{
-    Application = 1,
-    Baseline,
-    GridSearch, 
-    Validation,
-    SanityCheck,
-    ExtractBall,
-    ColourAnalysis,
-    kMeans,
-    kMeansValidation
-};
+enum class RunMode { Application = 1, Baseline, GridSearch, Validation, SanityCheck, ExtractBall, ColourAnalysis, kMeans, kMeansValidation };
 
-int main()
-{
+int main() {
     std::cout << "\n1. Application\n"
               << "2. Baseline\n"
               << "3. Grid search\n"
@@ -43,8 +31,7 @@ int main()
               << "0. Exit\n\n";
 
     int choice = 0;
-    while (true)
-    {
+    while (true) {
         std::cout << "Select a mode (0-9): " << std::flush;
 
         std::string input;
@@ -53,9 +40,7 @@ int main()
 
         std::istringstream selection(input);
         char extra;
-        if (!(selection >> choice) || (selection >> extra) ||
-            choice < 0 || choice > 9)
-        {
+        if (!(selection >> choice) || (selection >> extra) || choice < 0 || choice > 9) {
             std::cout << "Invalid selection. Enter a number from 0 to 6.\n";
             continue;
         }
@@ -68,49 +53,45 @@ int main()
 
     RunMode mode = static_cast<RunMode>(choice);
 
-    try
-    {
-        switch (mode)
-        {
-            case RunMode::Application:
-                MyApplication();
-                break;
-    
-            case RunMode::Baseline:
-                testCurrentParameters();
-                break;
-    
-            case RunMode::GridSearch:
-                runGridSearch();
-                break;
-    
-            case RunMode::Validation:
-                runValidation();
-                break;
-            
-            case RunMode::SanityCheck:
-                runSanityCheck();
-                break;
-            
-            case RunMode::ExtractBall:
-                testBallExtraction();
-                break;
-            
-            case RunMode::ColourAnalysis:
-                testColourAnalysis();
-                break;
-            
-            case RunMode::kMeans:
-                testKMeansSegmentation();
-                break;
+    try {
+        switch (mode) {
+        case RunMode::Application:
+            MyApplication();
+            break;
 
-            case RunMode::kMeansValidation:
-                runRecognitionValidation();
-                break;
+        case RunMode::Baseline:
+            testCurrentParameters();
+            break;
+
+        case RunMode::GridSearch:
+            runGridSearch();
+            break;
+
+        case RunMode::Validation:
+            runValidation();
+            break;
+
+        case RunMode::SanityCheck:
+            runSanityCheck();
+            break;
+
+        case RunMode::ExtractBall:
+            testBallExtraction();
+            break;
+
+        case RunMode::ColourAnalysis:
+            testColourAnalysis();
+            break;
+
+        case RunMode::kMeans:
+            testKMeansSegmentation();
+            break;
+
+        case RunMode::kMeansValidation:
+            runRecognitionValidation();
+            break;
         }
-    }
-    catch (const std::exception& error)
-    {
+    } catch (const std::exception& error) {
         std::cerr << "Error: " << error.what() << '\n';
         return 1;
     }

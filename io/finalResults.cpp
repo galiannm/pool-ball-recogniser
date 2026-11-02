@@ -19,8 +19,10 @@ namespace {
 constexpr double ballDiameterMm = 43.0;
 
 string finalBallLabel(int number) {
-    if (number == 0) return "Cue";
-    if (number >= 1 && number <= 15) return to_string(number);
+    if (number == 0)
+        return "Cue";
+    if (number >= 1 && number <= 15)
+        return to_string(number);
     return "Unknown";
 }
 
@@ -29,8 +31,7 @@ void drawFinalLabel(Mat& image, Point centre, int number, Point offset = {}) {
     const double scale = number < 0 ? 0.36 : 0.45;
     int baseline = 0;
     const Size text = getTextSize(label, FONT_HERSHEY_SIMPLEX, scale, 1, &baseline);
-    Point anchor(centre.x - text.width / 2 + offset.x,
-                 centre.y + text.height / 2 + offset.y);
+    Point anchor(centre.x - text.width / 2 + offset.x, centre.y + text.height / 2 + offset.y);
     anchor.x = clamp(anchor.x, 2, max(2, image.cols - text.width - 2));
     anchor.y = clamp(anchor.y, text.height + 2, max(text.height + 2, image.rows - baseline - 2));
     putText(image, label, anchor, FONT_HERSHEY_SIMPLEX, scale, Scalar(0, 0, 0), 3, LINE_AA);
@@ -40,16 +41,26 @@ void drawFinalLabel(Mat& image, Point centre, int number, Point offset = {}) {
 Scalar diagramBallColour(int number) {
     // BGR drawing colours represent the predicted identity, not measured pixels.
     switch (number >= 9 && number <= 15 ? number - 8 : number) {
-        case 0: return {245, 245, 245};
-        case 1: return {20, 215, 245};
-        case 2: return {200, 70, 30};
-        case 3: return {45, 45, 220};
-        case 4: return {145, 55, 125};
-        case 5: return {20, 130, 245};
-        case 6: return {60, 145, 35};
-        case 7: return {50, 40, 115};
-        case 8: return {25, 25, 25};
-        default: return {145, 145, 145};
+    case 0:
+        return {245, 245, 245};
+    case 1:
+        return {20, 215, 245};
+    case 2:
+        return {200, 70, 30};
+    case 3:
+        return {45, 45, 220};
+    case 4:
+        return {145, 55, 125};
+    case 5:
+        return {20, 130, 245};
+    case 6:
+        return {60, 145, 35};
+    case 7:
+        return {50, 40, 115};
+    case 8:
+        return {25, 25, 25};
+    default:
+        return {145, 145, 145};
     }
 }
 
@@ -69,8 +80,7 @@ Mat drawTableDiagram(const vector<Point2f>& centres, const vector<int>& numbers)
             // Clip a coloured middle band to a white disk, preserving its round outline.
             const int half = cvCeil(radius) + 2;
             const Point origin(cvFloor(centres[i].x) - half, cvFloor(centres[i].y) - half);
-            const Rect patch = Rect(origin.x, origin.y, 2 * half + 1, 2 * half + 1)
-                             & Rect(0, 0, diagram.cols, diagram.rows);
+            const Rect patch = Rect(origin.x, origin.y, 2 * half + 1, 2 * half + 1) & Rect(0, 0, diagram.cols, diagram.rows);
             if (!patch.empty()) {
                 Mat mask = Mat::zeros(patch.size(), CV_8UC1);
                 const Point localFixed = fixedCentre - Point(patch.x * fixedScale, patch.y * fixedScale);
@@ -91,11 +101,8 @@ Mat drawTableDiagram(const vector<Point2f>& centres, const vector<int>& numbers)
 
 } // namespace
 
-void saveFinalResults(const Mat& image, const filesystem::path& directory, const vector<Vec3f>& circles,
-                      const vector<Point2f>& tableCentres, const vector<string>& types,
-                      const vector<int>& numbers) {
-    if (circles.size() != tableCentres.size() || circles.size() != types.size() ||
-        circles.size() != numbers.size())
+void saveFinalResults(const Mat& image, const filesystem::path& directory, const vector<Vec3f>& circles, const vector<Point2f>& tableCentres, const vector<string>& types, const vector<int>& numbers) {
+    if (circles.size() != tableCentres.size() || circles.size() != types.size() || circles.size() != numbers.size())
         throw runtime_error("Final result vectors have inconsistent candidate counts");
 
     filesystem::create_directories(directory);
@@ -117,14 +124,11 @@ void saveFinalResults(const Mat& image, const filesystem::path& directory, const
     saveImage(directory / "table_diagram.png", drawTableDiagram(tableCentres, numbers));
 
     ofstream csv(directory / "balls.csv");
-    if (!csv.is_open()) throw runtime_error("Could not create final results CSV: " + directory.string());
-    csv << "candidate,predictedType,predictedNumber,originalX,originalY,originalRadiusPixels,tableX,tableY\n"
-        << fixed << setprecision(6);
+    if (!csv.is_open())
+        throw runtime_error("Could not create final results CSV: " + directory.string());
+    csv << "candidate,predictedType,predictedNumber,originalX,originalY,originalRadiusPixels,tableX,tableY\n" << fixed << setprecision(6);
     for (size_t i = 0; i < circles.size(); ++i)
-        csv << i + 1 << ',' << types[i] << ',' << numbers[i] << ','
-            << circles[i][0] << ',' << circles[i][1] << ',' << circles[i][2] << ','
-            << tableCentres[i].x << ',' << tableCentres[i].y << '\n';
+        csv << i + 1 << ',' << types[i] << ',' << numbers[i] << ',' << circles[i][0] << ',' << circles[i][1] << ',' << circles[i][2] << ',' << tableCentres[i].x << ',' << tableCentres[i].y << '\n';
     finishOutputFile(csv);
     cout << "Final images and table coordinates saved to: " << directory << endl;
 }
-

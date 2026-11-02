@@ -8,7 +8,7 @@ namespace experiments {
 
 struct CircularEdgeOptions {
     int angularSamples = 72; // Five-degree sectors.
-    double tolerance = 2.5; // Source-image pixels, around the predicted boundary.
+    double tolerance = 2.5;  // Source-image pixels, around the predicted boundary.
     double minimumRadialAlignment = 0.6;
     double cannyHigh = 75;
 };
@@ -31,10 +31,8 @@ struct CircularEdgeScore {
 };
 
 // No annotations or candidate filtering: these functions measure evidence only.
-CircularEdgeMaps prepareCircularEdgeMaps(const cv::Mat& image, const cv::Mat& tableMask,
-                                        const CircularEdgeOptions& options = {});
-CircularEdgeScore measureCircularEdgeSupport(const CircularEdgeMaps& maps, const cv::Vec3f& circle,
-                                             const CircularEdgeOptions& options = {});
+CircularEdgeMaps prepareCircularEdgeMaps(const cv::Mat& image, const cv::Mat& tableMask, const CircularEdgeOptions& options = {});
+CircularEdgeScore measureCircularEdgeSupport(const CircularEdgeMaps& maps, const cv::Vec3f& circle, const CircularEdgeOptions& options = {});
 void runCircularEdgeExperiment(const std::filesystem::path& directory);
 
 } // namespace experiments

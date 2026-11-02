@@ -14,8 +14,9 @@ ROOT = Path(__file__).resolve().parents[1]
 HERE = Path(__file__).resolve().parent
 ASSETS = HERE / "assets"
 TABLES = HERE / "tables"
-SELECTED = "pad1_row_largest_cue"
-BASE = ROOT / "output/experiments/row_cue_size"
+SELECTED = "largest_raw_radius"
+BASE = ROOT / "output/experiments/cue_radius_comparison"
+TYPE_EVIDENCE = ROOT / "output/experiments/row_cue_size/predictions.csv"
 plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10, "pdf.fonttype": 42})
 ASSETS.mkdir(exist_ok=True)
 TABLES.mkdir(exist_ok=True)
@@ -69,14 +70,14 @@ def arrow(a, b, **kwargs):
     ax.add_patch(FancyArrowPatch(a,b,arrowstyle="-|>",mutation_scale=11,color="#395269",lw=1,**kwargs))
 for x,t in [(0.15,"Input: table mask\nand smoothing"),(4.2,"Hough circles\nand pocket rejection"),(8.25,"Circular ROI; K=2\ninitial type evidence")]: box(x,3.1,t)
 arrow((3.7,3.45),(4.15,3.45));arrow((7.75,3.45),(8.2,3.45))
-for x,t in [(8.25,"White candidates: +1 pixel;\nrecompute type evidence"),(4.2,"HSV histogram comparison\n+ type/identity scores"),(0.15,"Reserve cue if ambiguous;\nunique identity assignment")]: box(x,1.65,t)
+for x,t in [(8.25,"White candidates: +1 pixel;\nrecompute type evidence"),(4.2,"HSV histogram comparison\n+ type/identity scores"),(0.15,"If >1 white: largest → cue;\nunique identity assignment")]: box(x,1.65,t)
 arrow((10,3.05),(10,2.4));arrow((8.2,2),(7.75,2));arrow((4.15,2),(3.7,2))
-box(.15,.15,"AllBalls training: colour models + row/radius fit",colour="#ecf3e9",w=7.55)
+box(.15,.15,"AllBalls training: eight body-colour histograms",colour="#ecf3e9",w=7.55)
 box(8.25,.15,"Final identities and\ntable coordinates",colour="#f7edda")
 arrow((1.9,1.6),(1.9,1.1));arrow((1.9,1.1),(10,1.1));arrow((10,1.1),(10,.9))
 arrow((5.95,3.05),(5.95,2.85));arrow((5.95,2.85),(11.95,2.85));arrow((11.95,2.85),(11.95,.5));arrow((11.95,.5),(11.8,.5))
 ax.text(8.2,2.86,"centre transformation",fontsize=8,va="bottom")
-arrow((5.95,.9),(5.95,1.6),linestyle="--");arrow((.6,.9),(.6,1.6),linestyle="--")
+arrow((5.95,.9),(5.95,1.6),linestyle="--")
 save(fig,"pipeline")
 
 # Original, table mask, preprocessing and retained detections.
@@ -88,8 +89,6 @@ smooth = cv.GaussianBlur(cv.cvtColor(masked,cv.COLOR_BGR2GRAY),(5,5),1.5)
 detected = a.copy()
 for x,y,r in circles("AllBalls.jpeg"):
     cv.circle(detected,(round(x),round(y)),round(r),(0,255,255),2)
-for y in (float(circles("AllBalls.jpeg")[:,1].min()),float(circles("AllBalls.jpeg")[:,1].max())):
-    cv.line(detected,(337,round(y)),(1570,round(y)),(255,220,40),2)
 fig, axes=plt.subplots(2,2,figsize=(10,3.1))
 for ax,im,t in zip(axes.flat,[a,masked,smooth,detected],["(a) Original","(b) Table mask applied","(c) Smoothed intensity","(d) Retained Hough circles"]):show(ax,im,t)
 fig.tight_layout(pad=.4);save(fig,"detection_stages")
@@ -104,7 +103,7 @@ for i in range(nodes.size()):
         entries=node.getNode("histograms");hists=[entries.at(j).getNode("histogram").mat() for j in range(entries.size())]
 if hists is None:raise ValueError("Missing frozen models")
 models.release()
-predictions=read(BASE/"predictions.csv")
+predictions=read(TYPE_EVIDENCE)
 fig,axes=plt.subplots(2,5,figsize=(10,3.9))
 for row,(name,index,padding) in enumerate([("AllBalls.jpeg",4,0),("AllBalls.jpeg",8,0)]):
     crop,m=roi(image(name),circles(name)[index],padding)
@@ -134,6 +133,18 @@ for row,(name,index,padding) in enumerate([("AllBalls.jpeg",4,0),("AllBalls.jpeg
         show(axes[row,col],im, title if row==0 else "")
     axes[row,0].set_ylabel("Solid 1" if row==0 else "Striped 9")
 fig.tight_layout(pad=.45);save(fig,"recognition_stages")
+
+# Explain the selected raw-radius rule at a common source-pixel scale.
+cue_candidates=[r for r in read(BASE/"cue_candidates.csv") if r["image"]=="Table1.jpeg"]
+fig,axes=plt.subplots(1,2,figsize=(7,2.65))
+for ax,r in zip(axes,cue_candidates):
+    c=circles("Table1.jpeg")[int(r["candidate"])-1];x,y,radius=c
+    a=image("Table1.jpeg");ax.imshow(cv.cvtColor(a,cv.COLOR_BGR2RGB))
+    selected=r["rawSelected"]=="1"
+    ax.add_patch(Circle((x,y),radius,fill=False,ec="#00cc66" if selected else "#F0E442",lw=1.8))
+    ax.set(xlim=(x-40,x+40),ylim=(y+40,y-40));ax.axis("off")
+    ax.set_title(("Reserved cue" if selected else "Other white candidate")+f": {radius:.2f} pixels",fontsize=10)
+fig.tight_layout(pad=.4);save(fig,"raw_cue_selection")
 
 # Coordinate transformation and nominal-scale diagram: copied from the selected run.
 folder=BASE/"final_results"/SELECTED/"Table3"
@@ -205,6 +216,7 @@ for ax,number in zip(axes.flat,range(1,7)):
     folder=BASE/"final_results"/SELECTED/f"Table{number}"
     show(ax,cv.imread(str(folder/"table_numbered.png")),f"Table {number}")
     shutil.copy2(folder/"table_numbered.png",ASSETS/f"final_table{number}.png")
+    shutil.copy2(folder/"table_numbered.png",ASSETS/f"table{number}.png")
 fig.tight_layout(pad=.55,h_pad=.9,w_pad=.7);save(fig,"final_tables")
 
 # Numeric tables are generated directly from the selected run.
@@ -217,6 +229,12 @@ for r in selected:
 lines.extend([r"\bottomrule",r"\end{tabular}"])
 (TABLES/"per_image.tex").write_text("\n".join(lines)+"\n")
 (HERE/"provenance.json").write_text(json.dumps({"selectedMethod":SELECTED,"metrics":str(BASE.relative_to(ROOT)/"metrics.csv"),
-    "predictions":str(BASE.relative_to(ROOT)/"predictions.csv"),"recognitionFigure":"Reconstructed K2 light fractions verified against saved C++ evidence",
-    "figures":"Own visualisations of supplied images and saved experiment outputs; not new evaluation runs"},indent=2)+"\n")
+    "predictions":str(BASE.relative_to(ROOT)/"predictions.csv"),"typeEvidence":str(TYPE_EVIDENCE.relative_to(ROOT)),
+    "recognitionFigure":"Reconstructed K2 light fractions verified against unchanged C++ K2 control evidence",
+    "figures":"Own visualisations of supplied images and saved experiment outputs; not new evaluation runs",
+    "consolidatedMetrics":"output/myApplication/metrics.csv",
+    "consolidatedPredictions":"output/myApplication/predictions.csv",
+    "annotationFile":"data/ground_truth/BallLocations.csv",
+    "originalAnnotationFile":"data/ground_truth/BallLocation_original.csv",
+    "validation":"35 selected final CSV/PNG files byte-identical; comparison counts reproduced"},indent=2)+"\n")
 print("Generated report figures and metric table; K2 illustration checks passed.")

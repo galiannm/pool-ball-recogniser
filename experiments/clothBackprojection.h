@@ -21,9 +21,9 @@ struct ClothBackprojectionOptions {
 
 struct ClothBackprojectionModel {
     cv::Mat samplingMask;
-    cv::Mat histogram;       // CV_32F HxS, min/max-normalised to [0,255].
-    cv::Mat similarity8U;    // Direct calcBackProject output, no map renormalisation.
-    cv::Mat similarity;      // CV_32F, similarity8U / 255.
+    cv::Mat histogram;    // CV_32F HxS, min/max-normalised to [0,255].
+    cv::Mat similarity8U; // Direct calcBackProject output, no map renormalisation.
+    cv::Mat similarity;   // CV_32F, similarity8U / 255.
     int samples = 0;
     bool valid = false;
     std::string status;
@@ -47,14 +47,9 @@ struct ClothVerificationResult {
 // Fixed geometry only: no annotated ball centres are used to exclude pockets.
 cv::Mat makeClothPocketMask(cv::Size sourceSize);
 
-ClothBackprojectionModel estimateClothBackprojection(const cv::Mat& image,
-    const cv::Mat& tableMask, const cv::Mat& pocketMask,
-    const std::vector<cv::Vec3f>& rawHoughCandidates,
-    const ClothBackprojectionOptions& options = {});
+ClothBackprojectionModel estimateClothBackprojection(const cv::Mat& image, const cv::Mat& tableMask, const cv::Mat& pocketMask, const std::vector<cv::Vec3f>& rawHoughCandidates, const ClothBackprojectionOptions& options = {});
 
-ClothVerificationResult verifyClothCandidates(const ClothBackprojectionModel& model,
-    const cv::Mat& tableMask, const std::vector<cv::Vec3f>& candidates,
-    const ClothBackprojectionOptions& options = {});
+ClothVerificationResult verifyClothCandidates(const ClothBackprojectionModel& model, const cv::Mat& tableMask, const std::vector<cv::Vec3f>& candidates, const ClothBackprojectionOptions& options = {});
 
 void runBackprojectionExperiment(const std::filesystem::path& directory);
 

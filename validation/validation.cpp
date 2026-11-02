@@ -21,8 +21,7 @@ using namespace std;
 
 namespace fs = std::filesystem;
 
-void runValidation()
-{
+void runValidation() {
     // Parameters selected using AllBalls.jpeg
     HoughParams params;
 
@@ -36,8 +35,7 @@ void runValidation()
 
     ofstream file(OUTPUT_DIR + "validation_results.csv");
 
-    if (!file.is_open())
-    {
+    if (!file.is_open()) {
         cerr << "Could not create validation CSV" << endl;
         return;
     }
@@ -54,24 +52,19 @@ void runValidation()
 
     cout << "\n===== VALIDATION STARTED =====\n";
 
-    for (const string& imageName : imageNames)
-    {
+    for (const string& imageName : imageNames) {
         Mat image = imread(config::mediaDirectory + imageName);
 
-        if (image.empty())
-        {
+        if (image.empty()) {
             cerr << "Could not open: " << imageName << endl;
             continue;
         }
 
         // Ground truth for this image
-        vector<Point2f> groundTruth =
-            loadGroundTruth(CSV_PATH, imageName);
+        vector<Point2f> groundTruth = loadGroundTruth(CSV_PATH, imageName);
 
-        if (groundTruth.empty())
-        {
-            cerr << "No ground truth for: "
-                 << imageName << endl;
+        if (groundTruth.empty()) {
+            cerr << "No ground truth for: " << imageName << endl;
             continue;
         }
 
@@ -92,27 +85,14 @@ void runValidation()
         Mat matchImage = drawValidationMatches(transformedImage, predictions, groundTruth, result);
 
         // Create output filename
-        string baseName = imageName.substr(
-            0, imageName.find_last_of('.')
-        );
+        string baseName = imageName.substr(0, imageName.find_last_of('.'));
 
         // Save validation visualisation
-        saveImage(
-            OUTPUT_DIR + baseName + "_matches.png",
-            matchImage
-        );
+        saveImage(OUTPUT_DIR + baseName + "_matches.png", matchImage);
 
         // Write CSV row
-        file << imageName << ","
-             << groundTruth.size() << ","
-             << circles.size() << ","
-             << result.TP << ","
-             << result.FP << ","
-             << result.FN << ","
-             << result.precision << ","
-             << result.recall << ","
-             << result.f1 << ","
-             << result.meanError << "\n";
+        file << imageName << "," << groundTruth.size() << "," << circles.size() << "," << result.TP << "," << result.FP << "," << result.FN << "," << result.precision << "," << result.recall << "," << result.f1 << "," << result.meanError
+             << "\n";
 
         // Print individual results
         cout << "\n" << imageName << endl;
@@ -127,13 +107,9 @@ void runValidation()
         cout << "Mean error: " << result.meanError << endl;
 
         // Save visualisation
-        Mat visualisation =
-            drawDetectedBalls(image, circles);
+        Mat visualisation = drawDetectedBalls(image, circles);
 
-        string outputPath =
-            OUTPUT_DIR + imageName.substr(
-                0, imageName.find_last_of('.')
-            ) + "_detection.jpeg";
+        string outputPath = OUTPUT_DIR + imageName.substr(0, imageName.find_last_of('.')) + "_detection.jpeg";
 
         saveImage(outputPath, visualisation);
 
@@ -169,6 +145,5 @@ void runValidation()
     cout << "Overall recall: " << recall << endl;
     cout << "Overall F1: " << f1 << endl;
 
-    cout << "\nResults saved to: "
-         << OUTPUT_DIR << endl;
+    cout << "\nResults saved to: " << OUTPUT_DIR << endl;
 }
