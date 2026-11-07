@@ -6,6 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenCV 4 REQUIRED)
 
+# Small, incremental rebuild for inspecting masking and raw Hough candidates.
+add_executable(PoolBallLearning myApp.cpp)
+target_compile_definitions(PoolBallLearning PRIVATE POOL_BALL_STANDALONE)
+target_include_directories(PoolBallLearning PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(PoolBallLearning PRIVATE ${OpenCV_LIBS})
+
 add_executable(PoolBallDetection
     main.cpp
     myApplication.cpp

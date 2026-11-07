@@ -1,5 +1,4 @@
 #include "watershedDetection.h"
-
 #include "ccaGridSearch.h"
 #include "recognitionGridSearch.h"
 #include "config.h"
@@ -7,10 +6,10 @@
 #include "detection/geometricFilter.h"
 #include "evaluation/evaluation.h"
 #include "geometry/perspectiveTransform.h"
-#include "visualisation/combineImages.h"
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -18,6 +17,9 @@
 #include <map>
 #include <numeric>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace experiments {
 namespace {
@@ -74,7 +76,7 @@ std::vector<WatershedRegion> crowdedRegions(const cv::Mat& image, const std::vec
         if (!bounds.empty())
             crops.push_back(bounds);
     }
-    // Merge overlapping windows so the same cluster is not independently split twice.
+    // Merge overlapping windows so clusters are not processed twice.
     bool changed = true;
     while (changed) {
         changed = false;
@@ -112,7 +114,7 @@ bool foreground(const cv::Mat& image, const cv::Mat& table, const std::vector<cv
         cv::circle(samplesAllowed, centre(baseline[i]) - region.crop.tl(), cvRound(1.25 * baseline[i][2]), cv::Scalar(0), cv::FILLED);
     std::vector<cv::Vec3b> samples;
     std::vector<double> channels[3];
-    // A two-pixel sampling stride reduces the influence of adjacent duplicate samples.
+    // Sample cloth every second pixel.
     for (int y = 0; y < local.rows; y += 2)
         for (int x = 0; x < local.cols; x += 2) {
             const auto h = hsv.at<cv::Vec3b>(y, x);
@@ -141,11 +143,11 @@ bool foreground(const cv::Mat& image, const cv::Mat& table, const std::vector<cv
         for (int x = 0; x < local.cols; ++x)
             if (cv::norm(cv::Vec3d(lab.at<cv::Vec3b>(y, x)) - cloth) > region.clothDistanceThreshold)
                 region.foreground.at<uchar>(y, x) = 255;
-    // Preserve a small foreground core around known detections, including green balls.
+    // Retain known Hough centres in the foreground mask.
     for (int i : region.houghIndices)
         cv::circle(region.foreground, centre(baseline[i]) - region.crop.tl(), cvRound(p.houghCoreRadius * baseline[i][2]), cv::Scalar(255), cv::FILLED);
     cv::morphologyEx(region.foreground, region.foreground, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_ELLIPSE, {p.closingKernel, p.closingKernel}));
-    // Fill enclosed holes; a padded exterior avoids assuming the crop corner is background.
+    // Fill holes using a padded image.
     cv::Mat filled;
     cv::copyMakeBorder(region.foreground, filled, 1, 1, 1, 1, cv::BORDER_CONSTANT, cv::Scalar(0));
     cv::floodFill(filled, {0, 0}, cv::Scalar(255));
@@ -169,7 +171,7 @@ void findPeaks(WatershedRegion& region, const std::vector<cv::Vec3f>& baseline, 
     const int n = cv::connectedComponentsWithStats(peakMask, labels, stats, centroids, 8, CV_32S);
     for (int label = 1; label < n; ++label) {
         WatershedProposal peak;
-        // Select an actual peak pixel nearest its plateau centroid, never a point outside the plateau.
+        // Keep a peak pixel inside the plateau.
         double best = std::numeric_limits<double>::infinity();
         for (int y = stats.at<int>(label, cv::CC_STAT_TOP); y < stats.at<int>(label, cv::CC_STAT_TOP) + stats.at<int>(label, cv::CC_STAT_HEIGHT); ++y)
             for (int x = stats.at<int>(label, cv::CC_STAT_LEFT); x < stats.at<int>(label, cv::CC_STAT_LEFT) + stats.at<int>(label, cv::CC_STAT_WIDTH); ++x)
@@ -208,7 +210,7 @@ cv::Mat markers(const WatershedRegion& region, const cv::Mat& table, const std::
     cv::Mat expanded;
     cv::dilate(region.foreground, expanded, cv::getStructuringElement(cv::MORPH_ELLIPSE, {7, 7}));
     cv::Mat result = cv::Mat::zeros(region.foreground.size(), CV_32SC1);
-    result.setTo(1, expanded == 0); // Sure background; the collar remains unknown.
+    result.setTo(1, expanded == 0); // Sure background; leave a narrow unknown border.
     result.setTo(1, table(region.crop) == 0);
     int label = 2;
     for (int index : region.houghIndices)
@@ -266,34 +268,6 @@ void acceptBasins(WatershedRegion& region, std::vector<cv::Vec3f>& circles, cons
     }
 }
 
-cv::Scalar labelColour(int label) {
-    if (label <= 1)
-        return {0, 0, 0};
-    return {double(60 + label * 73 % 196), double(60 + label * 137 % 196), double(60 + label * 193 % 196)};
-}
-
-cv::Mat labelView(const cv::Mat& image, const cv::Mat& labels, bool overlay) {
-    if (labels.empty())
-        return {};
-    cv::Mat result = overlay ? image.clone() : cv::Mat::zeros(image.size(), CV_8UC3);
-    for (int y = 0; y < labels.rows; ++y)
-        for (int x = 0; x < labels.cols; ++x) {
-            const int label = labels.at<int>(y, x);
-            if (label > 1) {
-                const auto c = labelColour(label);
-                auto& pixel = result.at<cv::Vec3b>(y, x);
-                for (int channel = 0; channel < 3; ++channel)
-                    pixel[channel] = cv::saturate_cast<uchar>(overlay ? 0.45 * pixel[channel] + 0.55 * c[channel] : c[channel]);
-            } else if (label == -1)
-                result.at<cv::Vec3b>(y, x) = {255, 255, 255};
-        }
-    return result;
-}
-
-void save(const std::filesystem::path& path, const cv::Mat& image) {
-    if (!cv::imwrite(path.string(), image))
-        throw std::runtime_error("Could not save " + path.string());
-}
 
 std::ofstream output(const std::filesystem::path& path) {
     std::ofstream stream(path);
@@ -305,7 +279,6 @@ std::ofstream output(const std::filesystem::path& path) {
 std::string trueType(int n) {
     return n < 0 ? "Unknown" : n == 0 ? "White" : n <= 8 ? "Solid" : "Striped";
 }
-
 struct Measured {
     int gt = 0, tp = 0, fp = 0, fn = 0, types = 0, numbers = 0, recovered = 0, lost = 0;
     double totalError = 0;
@@ -319,54 +292,11 @@ void writeMetrics(std::ostream& out, const Measured& m) {
     out << m.gt << ',' << m.tp + m.fp << ',' << m.tp << ',' << m.fp << ',' << m.fn << ',' << ratio(m.tp, m.tp + m.fp) << ',' << ratio(m.tp, m.gt) << ',' << ratio(2 * m.tp, 2 * m.tp + m.fp + m.fn) << ',' << ratio(m.totalError, m.tp) << ','
         << m.recovered << ',' << m.lost << ',' << m.types << ',' << m.numbers << ',' << ratio(m.types, m.tp) << ',' << ratio(m.numbers, m.tp) << ',' << ratio(m.numbers, m.gt);
 }
-
 const char* metricHeader = "groundTruth,detections,TP,FP,FN,precision,recall,F1,meanError,"
                            "recovered,lost,typeCorrect,numberCorrect,typeAccuracy,numberAccuracy,endToEndNumberRecall";
 
-cv::Mat detectionView(const cv::Mat& image, const std::vector<cv::Vec3f>& circles, const EvaluationResult& evaluation, const std::vector<LabelledBall>& truth, const std::vector<cv::Point2f>& sourceTruth) {
-    cv::Mat view = image.clone();
-    for (size_t i = 0; i < circles.size(); ++i) {
-        const int match = evaluation.predictionToGroundTruth[i];
-        const cv::Scalar colour = match < 0 ? cv::Scalar(80, 80, 255) : cv::Scalar(70, 240, 70);
-        cv::circle(view, centre(circles[i]), cvRound(circles[i][2]), colour, 2);
-        cv::putText(view, std::to_string(i + 1), centre(circles[i]) + cv::Point(3, -3), cv::FONT_HERSHEY_SIMPLEX, 0.4, colour, 1);
-    }
-    for (size_t g = 0; g < truth.size(); ++g)
-        if (evaluation.groundTruthToPrediction[g] < 0) {
-            const cv::Point point(cvRound(sourceTruth[g].x), cvRound(sourceTruth[g].y));
-            cv::drawMarker(view, point, {255, 150, 0}, cv::MARKER_CROSS, 18, 2);
-            cv::putText(view, "miss " + std::to_string(truth[g].number), point + cv::Point(5, 15), cv::FONT_HERSHEY_SIMPLEX, 0.45, {255, 150, 0}, 1);
-        }
-    return view;
-}
-
-void regionDiagnostics(const cv::Mat& image, const std::vector<cv::Vec3f>& baseline, const WatershedDetectionResult& result, const std::filesystem::path& directory) {
-    for (size_t i = 0; i < result.regions.size(); ++i) {
-        const auto& r = result.regions[i];
-        cv::Mat original = image(r.crop).clone(), accepted = original.clone();
-        for (int index : r.houghIndices)
-            cv::circle(original, centre(baseline[index]) - r.crop.tl(), cvRound(baseline[index][2]), {60, 220, 60}, 1);
-        for (const auto& p : r.proposals) {
-            cv::circle(accepted, p.localCentre, 3, p.accepted ? cv::Scalar(0, 255, 255) : cv::Scalar(80, 80, 255), cv::FILLED);
-            if (p.accepted)
-                cv::circle(accepted, p.localCentre, cvRound(r.expectedRadius), {0, 255, 255}, 2);
-        }
-        cv::Mat distance;
-        if (!r.distance.empty())
-            cv::normalize(r.distance, distance, 0, 255, cv::NORM_MINMAX, CV_8U);
-        const std::vector<ImagePanel> panels = {{"Original / Hough circles", original},
-                                                {"Foreground / " + r.status, r.foreground},
-                                                {"Distance transform", distance},
-                                                {"Hough markers", labelView(image(r.crop), r.seededMarkers, false)},
-                                                {"Hybrid markers", labelView(image(r.crop), r.hybridMarkers, false)},
-                                                {"Hough-seeded watershed", labelView(image(r.crop), r.seededLabels, true)},
-                                                {"Hybrid watershed", labelView(image(r.crop), r.hybridLabels, true)},
-                                                {"Yellow: accepted new / red: rejected peaks", accepted}};
-        save(directory / ("region_" + std::to_string(i + 1) + "_diagnostics.png"), combineImages(panels, 3));
-    }
-}
-
 } // namespace
+
 
 WatershedDetectionResult segmentCrowdedBalls(const cv::Mat& image, const std::vector<cv::Vec3f>& baseline, const WatershedOptions& p) {
     if (image.empty())
@@ -398,138 +328,106 @@ WatershedDetectionResult segmentCrowdedBalls(const cv::Mat& image, const std::ve
     return result;
 }
 
+// Comparison and diagnostics: same methods, same recognition settings, fewer exports.
+
 void runWatershedDetectionExperiment(const std::filesystem::path& directory) {
     std::filesystem::create_directories(directory);
     const WatershedOptions options;
-    auto optionCSV = output(directory / "parameters.csv");
-    optionCSV << "parameter,value\n";
-    const std::vector<std::pair<std::string, double>> optionValues = {{"groupDistanceFactor", options.groupDistanceFactor},
-                                                                      {"cropPaddingRadii", options.cropPaddingRadii},
-                                                                      {"minClothSamples", options.minClothSamples},
-                                                                      {"clothMinDistance", options.clothMinDistance},
-                                                                      {"clothMaxDistance", options.clothMaxDistance},
-                                                                      {"clothMADMultiplier", options.clothMADMultiplier},
-                                                                      {"houghCoreRadius", options.houghCoreRadius},
-                                                                      {"closingKernel", options.closingKernel},
-                                                                      {"peakNeighbourhoodRadii", options.peakNeighbourhoodRadii},
-                                                                      {"minimumPeakRadii", options.minimumPeakRadii},
-                                                                      {"minimumMarkerSeparationRadii", options.minimumMarkerSeparationRadii},
-                                                                      {"cropEdgeMarginRadii", options.cropEdgeMarginRadii},
-                                                                      {"seedRadius", options.seedRadius},
-                                                                      {"minBasinAreaRatio", options.minBasinAreaRatio},
-                                                                      {"maxBasinAreaRatio", options.maxBasinAreaRatio},
-                                                                      {"minCircularity", options.minCircularity},
-                                                                      {"maxAspectRatio", options.maxAspectRatio},
-                                                                      {"minForegroundSupport", options.minForegroundSupport}};
-    for (const auto& setting : optionValues)
-        optionCSV << setting.first << ',' << setting.second << '\n';
+
     auto metrics = output(directory / "metrics.csv");
     metrics << "method,split,image," << metricHeader << '\n';
-    auto audit = output(directory / "ground_truth_audit.csv");
-    audit << "image,trueNumber,tableX,tableY,sourceX,sourceY,rawHoughMatched,baselineMatched,"
-             "insideCrowdedROI,nearestBaselineError,status\n";
-    auto regionCSV = output(directory / "regions.csv");
-    regionCSV << "image,region,x,y,width,height,houghSeeds,expectedRadius,clothSamples,clothDistanceThreshold,status\n";
+
+    // Retain the evidence needed to explain why no new balls were accepted.
     auto proposals = output(directory / "proposals.csv");
-    proposals << "image,region,peak,sourceX,sourceY,radius,peakDistance,watershedLabel,areaRatio,"
-                 "circularity,aspectRatio,foregroundSupport,accepted,reason\n";
-    auto predictions = output(directory / "predictions.csv");
-    predictions << "method,image,candidate,origin,x,y,radius,tableX,tableY,trueNumber,type,number,typeCorrect,numberCorrect,error\n";
+    proposals << "image,region,peak,sourceX,sourceY,radius,peakDistance,watershedLabel,"
+                 "areaRatio,circularity,aspectRatio,foregroundSupport,accepted,reason\n";
+    auto misses = output(directory / "misses.csv");
+    misses << "image,trueNumber,inCrowdedRegion,matchedBeforePocketFilter\n";
     auto changes = output(directory / "changes.csv");
     changes << "method,image,trueNumber,baselineMatched,methodMatched,change\n";
-    auto settings = output(directory / "parameters.md");
-    settings << "# Fixed prototype parameters\n\nSee experiments/watershedDetection.h for defaults. "
-             << "No parameter grid or annotation-driven marker selection is used.\n\n"
-             << "- Nearby-circle grouping: distance <= 1.4 times sum of radii; at least two detections.\n"
-             << "- Crop padding: 2 median radii; overlapping crops merge.\n"
-             << "- Cloth: HSV H 35-95, S>=35, V>=30; sample stride 2; exclude disks of 1.25 Hough radii.\n"
-             << "- Lab: per-channel median cloth; threshold = median distance + 2.5 MAD, clipped to [16,45].\n"
-             << "- Require 40 cloth samples; keep known foreground cores of 0.65 Hough radius.\n"
-             << "- Close with a 3x3 ellipse, fill enclosed holes, intersect with table polygon.\n"
-             << "- Distance maxima: neighbourhood approximately 0.9 median radii wide; distance >=0.45 radius.\n"
-             << "- Markers: radius 3; separation >=1.15 times the larger radius; crop edge margin 0.6 radius.\n"
-             << "- Sure background: outside a 7x7 dilation of foreground; unknown collar inside it.\n"
-             << "- Watershed image: original BGR crop smoothed with 3x3 Gaussian, sigma=0.8.\n"
-             << "- Basin area / expected disk area: [0.25,1.8]; circularity >=0.35; aspect ratio <=2.2.\n"
-             << "- Foreground coverage of expected disk >=0.35; existing pocket filter applies to additions.\n"
-             << "- New centre: distance peak, not basin centroid. New radius: local median Hough radius.\n"
-             << "- Recognition: configuration 2153 plus selected solid-only CCA (2% cutoff, 5x5 band, "
-             << "non-light>=70%, light boundary<=20%, exactly one non-light component). "
-             << "Standard circular masks are used for all methods; watershed masks are diagnostic only.\n";
+
     std::map<std::pair<std::string, std::string>, Measured> totals;
-    std::map<std::string, int> proposalCounts;
-    std::vector<std::string> misses;
     for (const auto& name : config::allImages()) {
         const cv::Mat image = cv::imread(config::mediaDirectory + name);
         if (image.empty())
             throw std::runtime_error("Could not load " + name);
+
         const auto truth = loadLabelledGroundTruth(config::groundTruthPath, name);
         if (truth.empty())
             throw std::runtime_error("No ground truth for " + name);
+
         std::vector<cv::Point2f> gt;
-        for (const auto& t : truth)
-            gt.push_back(t.centre);
+        for (const auto& ball : truth)
+            gt.push_back(ball.centre);
+
+        const auto hough = runDetection(image, HoughParams{});
+        const auto baseline = evaluateDetections(
+            transformCentres(hough.filteredCircles), gt, config::matchTolerance);
+        const auto segmented = segmentCrowdedBalls(image, hough.filteredCircles, options);
+
+        // Audit just the missed balls; this tells us whether the cluster selection
+        // made recovery possible at all.
+        const auto raw = evaluateDetections(
+            transformCentres(hough.rawCircles), gt, config::matchTolerance);
         std::vector<cv::Point2f> sourceGT;
         cv::perspectiveTransform(gt, sourceGT, getTableTransformation().inv());
-        const auto hough = runDetection(image, HoughParams{});
-        const auto baselineEvaluation = evaluateDetections(transformCentres(hough.filteredCircles), gt, config::matchTolerance);
-        const auto rawEvaluation = evaluateDetections(transformCentres(hough.rawCircles), gt, config::matchTolerance);
-        const auto segmented = segmentCrowdedBalls(image, hough.filteredCircles, options);
-        const auto imageDirectory = directory / std::filesystem::path(name).stem();
-        std::filesystem::create_directories(imageDirectory);
-        for (size_t g = 0; g < truth.size(); ++g) {
-            bool inRegion = false;
+        for (size_t g = 0; g < gt.size(); ++g) {
+            if (baseline.groundTruthToPrediction[g] >= 0)
+                continue;
+            bool inside = false;
             for (const auto& region : segmented.regions)
-                inRegion |= region.crop.contains(cv::Point(cvRound(sourceGT[g].x), cvRound(sourceGT[g].y)));
-            double nearest = std::numeric_limits<double>::infinity();
-            for (const auto& point : transformCentres(hough.filteredCircles))
-                nearest = std::min(nearest, cv::norm(point - gt[g]));
-            const bool matched = baselineEvaluation.groundTruthToPrediction[g] >= 0;
-            const bool rawMatched = rawEvaluation.groundTruthToPrediction[g] >= 0;
-            if (!matched)
-                misses.push_back(name + ": ball " + std::to_string(truth[g].number) + (inRegion ? " (inside a crowded ROI)" : " (outside crowded ROIs)") +
-                                 (rawMatched ? "; matched before pocket filtering" : "; already missed before pocket filtering"));
-            audit << name << ',' << truth[g].number << ',' << gt[g].x << ',' << gt[g].y << ',' << sourceGT[g].x << ',' << sourceGT[g].y << ',' << rawMatched << ',' << matched << ',' << inRegion << ',' << nearest << ','
-                  << (matched      ? "matched"
-                      : rawMatched ? "removed_by_pocket_filter"
-                      : inRegion   ? "miss_inside_crowded_roi"
-                                   : "miss_outside_crowded_roi")
-                  << '\n';
+                inside |= region.crop.contains({cvRound(sourceGT[g].x), cvRound(sourceGT[g].y)});
+            misses << name << ',' << truth[g].number << ',' << inside << ','
+                   << (raw.groundTruthToPrediction[g] >= 0) << '\n';
         }
+
         for (size_t r = 0; r < segmented.regions.size(); ++r) {
             const auto& region = segmented.regions[r];
-            regionCSV << name << ',' << r + 1 << ',' << region.crop.x << ',' << region.crop.y << ',' << region.crop.width << ',' << region.crop.height << ',' << region.houghIndices.size() << ',' << region.expectedRadius << ','
-                      << region.clothSamples << ',' << region.clothDistanceThreshold << ',' << region.status << '\n';
             for (size_t i = 0; i < region.proposals.size(); ++i) {
                 const auto& peak = region.proposals[i];
-                ++proposalCounts[peak.reason];
                 const auto full = peak.localCentre + region.crop.tl();
-                proposals << name << ',' << r + 1 << ',' << i + 1 << ',' << full.x << ',' << full.y << ',' << region.expectedRadius << ',' << peak.peakDistance << ',' << peak.label << ',' << peak.areaRatio << ',' << peak.circularity << ','
-                          << peak.aspectRatio << ',' << peak.foregroundSupport << ',' << peak.accepted << ',' << peak.reason << '\n';
+                proposals << name << ',' << r + 1 << ',' << i + 1 << ','
+                          << full.x << ',' << full.y << ',' << region.expectedRadius << ','
+                          << peak.peakDistance << ',' << peak.label << ',' << peak.areaRatio << ','
+                          << peak.circularity << ',' << peak.aspectRatio << ','
+                          << peak.foregroundSupport << ',' << peak.accepted << ','
+                          << peak.reason << '\n';
             }
         }
-        regionDiagnostics(image, hough.filteredCircles, segmented, imageDirectory);
-        std::vector<ImagePanel> overview;
-        const std::vector<std::pair<std::string, std::vector<cv::Vec3f>>> methods = {{"hough", hough.filteredCircles}, {"hough_seeded", hough.filteredCircles}, {"hybrid", segmented.hybridCircles}};
-        for (const auto& method : methods) {
-            const auto tableCentres = transformCentres(method.second);
-            const auto evaluation = evaluateDetections(tableCentres, gt, config::matchTolerance);
+
+        // The Hough-seeded watershed is a control: its circles are deliberately
+        // unchanged. The hybrid may append accepted watershed proposals.
+        const std::vector<std::pair<std::string, std::vector<cv::Vec3f>>> methods = {
+            {"hough", hough.filteredCircles},
+            {"hough_seeded", hough.filteredCircles},
+            {"hybrid", segmented.hybridCircles}
+        };
+        const std::string split = name == config::tuningImage ? "reference" : "evaluation";
+
+        for (const auto& [method, circles] : methods) {
+            const auto centres = transformCentres(circles);
+            const auto evaluation = evaluateDetections(centres, gt, config::matchTolerance);
             Measured m;
             m.gt = static_cast<int>(truth.size());
             m.tp = evaluation.TP;
             m.fp = evaluation.FP;
             m.fn = evaluation.FN;
             m.totalError = evaluation.meanError * evaluation.TP;
-            for (size_t g = 0; g < truth.size(); ++g) {
-                const bool old = baselineEvaluation.groundTruthToPrediction[g] >= 0;
-                const bool now = evaluation.groundTruthToPrediction[g] >= 0;
-                m.recovered += !old && now;
-                m.lost += old && !now;
-                changes << method.first << ',' << name << ',' << truth[g].number << ',' << old << ',' << now << ',' << (!old && now ? "recovered" : old && !now ? "lost" : "unchanged") << '\n';
+
+            for (size_t g = 0; g < gt.size(); ++g) {
+                const bool before = baseline.groundTruthToPrediction[g] >= 0;
+                const bool after = evaluation.groundTruthToPrediction[g] >= 0;
+                m.recovered += !before && after;
+                m.lost += before && !after;
+                changes << method << ',' << name << ',' << truth[g].number << ','
+                        << before << ',' << after << ','
+                        << (!before && after ? "recovered" : before && !after ? "lost" : "unchanged")
+                        << '\n';
             }
-            for (size_t i = 0; i < method.second.size(); ++i) {
-                const auto& circle = method.second[i];
-                const auto ball = extractBall(image, circle);
+
+            // Preserve the original K=6 / solid-only CCA recognition evaluation.
+            for (size_t i = 0; i < circles.size(); ++i) {
+                const auto ball = extractBall(image, circles[i]);
                 const auto clusters = segmentBallKMeans(ball, 6);
                 const auto recognition = ccaRecognitionBase();
                 const auto baseType = classifyExperimentalType(clusters, recognition);
@@ -540,24 +438,18 @@ void runWatershedDetectionExperiment(const std::filesystem::path& directory) {
                 const auto type = classifyExperimentalCCA(baseType, features, cca);
                 const int number = classifyExperimentalNumber(clusters, type.type, recognition);
                 const int match = evaluation.predictionToGroundTruth[i];
-                const int actual = match < 0 ? -1 : truth[match].number;
-                predictions << method.first << ',' << name << ',' << i + 1 << ',' << (i < hough.filteredCircles.size() ? "hough" : "watershed") << ',' << circle[0] << ',' << circle[1] << ',' << circle[2] << ',' << tableCentres[i].x << ','
-                            << tableCentres[i].y << ',' << actual << ',' << type.type << ',' << number << ',';
-                if (match >= 0) {
-                    const bool typeCorrect = type.type == trueType(actual), numberCorrect = number == actual;
-                    m.types += typeCorrect;
-                    m.numbers += numberCorrect;
-                    predictions << typeCorrect << ',' << numberCorrect << ',' << cv::norm(tableCentres[i] - gt[match]);
-                } else {
-                    predictions << ",,";
-                }
-                predictions << '\n';
+                if (match < 0)
+                    continue;
+                const int actual = truth[match].number;
+                m.types += type.type == trueType(actual);
+                m.numbers += number == actual;
             }
-            const std::string split = name == config::tuningImage ? "reference" : "evaluation";
-            metrics << method.first << ',' << split << ',' << name << ',';
+
+            metrics << method << ',' << split << ',' << name << ',';
             writeMetrics(metrics, m);
             metrics << '\n';
-            auto& total = totals[{method.first, split}];
+
+            auto& total = totals[{method, split}];
             total.gt += m.gt;
             total.tp += m.tp;
             total.fp += m.fp;
@@ -567,43 +459,19 @@ void runWatershedDetectionExperiment(const std::filesystem::path& directory) {
             total.totalError += m.totalError;
             total.recovered += m.recovered;
             total.lost += m.lost;
-            overview.push_back(
-                {method.first + " / TP " + std::to_string(m.tp) + " FP " + std::to_string(m.fp) + " FN " + std::to_string(m.fn) + " / green match, red FP, blue missed GT", detectionView(image, method.second, evaluation, truth, sourceGT)});
         }
-        save(imageDirectory / "detection_comparison.png", combineImages(overview, 1));
-        std::cout << name << ": " << segmented.regions.size() << " crowded regions, " << segmented.hybridCircles.size() - hough.filteredCircles.size() << " new candidates\n" << std::flush;
+        std::cout << name << ": " << segmented.regions.size()
+                  << " crowded regions, "
+                  << segmented.hybridCircles.size() - hough.filteredCircles.size()
+                  << " new candidates\n";
     }
-    auto summary = output(directory / "summary.md");
-    summary << "# Watershed detection experiment\n\nFixed prototype; no grid search. "
-            << "Ground truth is used only for evaluation and diagnostics, never masks or seeds.\n\n"
-            << "| Method | Split | TP | FP | FN | Precision | Recall | F1 | Mean error | Recovered/lost | Correct type/number |\n"
-            << "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n";
-    for (const auto& row : totals) {
-        const auto& m = row.second;
-        metrics << row.first.first << ',' << row.first.second << ",ALL,";
-        writeMetrics(metrics, m);
+
+    // Same aggregate metrics rows as the original program.
+    for (const auto& [key, value] : totals) {
+        metrics << key.first << ',' << key.second << ",ALL,";
+        writeMetrics(metrics, value);
         metrics << '\n';
-        summary << '|' << row.first.first << '|' << row.first.second << '|' << m.tp << '|' << m.fp << '|' << m.fn << '|' << ratio(m.tp, m.tp + m.fp) << '|' << ratio(m.tp, m.gt) << '|' << ratio(2 * m.tp, 2 * m.tp + m.fp + m.fn) << '|'
-                << ratio(m.totalError, m.tp) << '|' << m.recovered << '/' << m.lost << '|' << m.types << '/' << m.numbers << "|\n";
     }
-    summary << "\nHough-seeded watershed is a segmentation control: its circles and standard extraction masks "
-            << "are deliberately unchanged, so detection and recognition scores should equal Hough. "
-            << "Hybrid can append accepted peak-centred candidates but does not relocate or delete Hough circles. "
-            << "Recognition is frozen to configuration 2153 plus the selected solid-only CCA rule. "
-            << "Watershed labels are diagnostic and are not substituted for circular recognition masks.\n\n"
-            << "Baseline misses and pocket-filter status are in ground_truth_audit.csv. Parameters are in "
-            << "parameters.md and watershedDetection.h. Basin rejection reasons are in proposals.csv. "
-            << "A local window requires at least two nearby filtered Hough detections; wholly missed or isolated "
-            << "balls outside those windows cannot be recovered. Green balls can still merge into the cloth mask. "
-            << "Watershed cannot reconstruct an invisible boundary or guarantee an unbiased centre for an occluded ball. "
-            << "No pixel-level annotations are available, so segmentation quality is inspected visually. "
-            << "Recognition parameters were previously tuned on Table1-6, so recognition scores are not independent test estimates.\n";
-    summary << "\nBaseline misses:\n\n";
-    for (const auto& miss : misses)
-        summary << "- " << miss << '\n';
-    summary << "\nPeak outcomes across all seven images:\n\n";
-    for (const auto& count : proposalCounts)
-        summary << "- " << count.first << ": " << count.second << '\n';
 }
 
-} // namespace experiments
+} 

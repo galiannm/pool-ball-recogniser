@@ -1,0 +1,55 @@
+experiment,image,matchedDetections,correctTypes,correctIdentities,notes
+CCA,Table1.jpeg,14,8,,type-only
+KMeansK2,Table1.jpeg,14,8,,type-only
+KMeansK3,Table1.jpeg,14,8,,type-only
+KMeansK4,Table1.jpeg,14,8,,type-only
+KMeansK5,Table1.jpeg,14,8,,type-only
+KMeansK6,Table1.jpeg,14,8,,type-only
+ManualHLS,Table1.jpeg,14,6,,type-only
+KMeansHue,Table1.jpeg,14,8,6,independent hue-based identity
+ExpectedRadiusCue,Table1.jpeg,14,10,10,cue heuristic only
+CCA,Table2.jpeg,16,14,,type-only
+KMeansK2,Table2.jpeg,16,15,,type-only
+KMeansK3,Table2.jpeg,16,15,,type-only
+KMeansK4,Table2.jpeg,16,15,,type-only
+KMeansK5,Table2.jpeg,16,15,,type-only
+KMeansK6,Table2.jpeg,16,15,,type-only
+ManualHLS,Table2.jpeg,16,9,,type-only
+KMeansHue,Table2.jpeg,16,15,14,independent hue-based identity
+ExpectedRadiusCue,Table2.jpeg,16,16,16,cue heuristic only
+CCA,Table3.jpeg,15,13,,type-only
+KMeansK2,Table3.jpeg,15,14,,type-only
+KMeansK3,Table3.jpeg,15,12,,type-only
+KMeansK4,Table3.jpeg,15,12,,type-only
+KMeansK5,Table3.jpeg,15,13,,type-only
+KMeansK6,Table3.jpeg,15,12,,type-only
+ManualHLS,Table3.jpeg,15,8,,type-only
+KMeansHue,Table3.jpeg,15,14,14,independent hue-based identity
+ExpectedRadiusCue,Table3.jpeg,15,13,13,cue heuristic only
+CCA,Table4.jpeg,14,13,,type-only
+KMeansK2,Table4.jpeg,14,14,,type-only
+KMeansK3,Table4.jpeg,14,13,,type-only
+KMeansK4,Table4.jpeg,14,13,,type-only
+KMeansK5,Table4.jpeg,14,13,,type-only
+KMeansK6,Table4.jpeg,14,14,,type-only
+ManualHLS,Table4.jpeg,14,7,,type-only
+KMeansHue,Table4.jpeg,14,14,13,independent hue-based identity
+ExpectedRadiusCue,Table4.jpeg,14,14,14,cue heuristic only
+CCA,Table5.jpeg,14,14,,type-only
+KMeansK2,Table5.jpeg,14,14,,type-only
+KMeansK3,Table5.jpeg,14,14,,type-only
+KMeansK4,Table5.jpeg,14,14,,type-only
+KMeansK5,Table5.jpeg,14,13,,type-only
+KMeansK6,Table5.jpeg,14,13,,type-only
+ManualHLS,Table5.jpeg,14,7,,type-only
+KMeansHue,Table5.jpeg,14,13,11,independent hue-based identity
+ExpectedRadiusCue,Table5.jpeg,14,13,13,cue heuristic only
+CCA,Table6.jpeg,13,11,,type-only
+KMeansK2,Table6.jpeg,13,11,,type-only
+KMeansK3,Table6.jpeg,13,11,,type-only
+KMeansK4,Table6.jpeg,13,11,,type-only
+KMeansK5,Table6.jpeg,13,11,,type-only
+KMeansK6,Table6.jpeg,13,12,,type-only
+ManualHLS,Table6.jpeg,13,6,,type-only
+KMeansHue,Table6.jpeg,13,11,10,independent hue-based identity
+ExpectedRadiusCue,Table6.jpeg,13,10,9,cue heuristic only
