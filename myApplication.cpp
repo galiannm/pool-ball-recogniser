@@ -423,7 +423,7 @@ KMeansResult segmentBallKMeans(const BallROI& ball, int k) {
 }
 
 // ======================================
-// K-MEANS WHITE-COVERAGE CLASSIFICATION HERE NEXT
+// K-MEANS WHITE-COVERAGE CLASSIFICATION
 // ======================================
 
 /*
@@ -480,7 +480,7 @@ BallTypeResult classifyBallType(const KMeansResult& segmentation) {
 }
 
 // ==================================================
-// COLOUR HISTOGRAMS AND UNIQUE IDENTITY ASSIGNMENT
+// COLOUR HISTOGRAMS AND UNIQUE IDENTITY ASSIGNMENT  HERE NEXT
 // ==================================================
 
 enum class BallHistogramSpace { HS, HSV, HLS };

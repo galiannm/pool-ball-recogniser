@@ -100,8 +100,6 @@ struct DetectionResult {
     EvaluationResult evaluation;
 };
 
-enum class BallHistogramSpace { HS, HSV, HLS };
-
 struct BallHistogramOptions {
     int hueBins = 18, saturationBins = 8, toneBins = 8;
     int lightMinV = 170, lightMaxS = 165;
@@ -114,7 +112,6 @@ struct LabelledColourSample {
 };
 
 struct BallColourModel {
-    BallHistogramSpace space;
     BallHistogramOptions options;
     std::array<cv::Mat, 8> histograms; // Colours 1–8; 9–15 share colours 1–7.
     std::array<int, 8> examples{};
@@ -126,6 +123,59 @@ struct BallColourScores {
     int pixels = 0, bestColour = -1;
     double margin = 0;
 };
+
+struct ColourRecognitionResult {
+    std::vector<BallColourScores> colours;
+    int matched = 0;          // Matched numbered balls; excludes cue.
+    int correct = 0;
+    int groundTruthCount = 0; // Annotated numbered balls; excludes cue.
+    double accuracy = 0;
+    double endToEndAccuracy = 0;
+};
+
+// HSV histogram colour recognition.
+const char* bodyColourName(int colour);
+
+void validate(const BallHistogramOptions& options);
+
+cv::Mat makeColourFeatures(const BallROI& ball, const BallHistogramOptions& options);
+
+cv::Mat smoothHistogram(const cv::Mat& histogram, const BallHistogramOptions& options);
+
+cv::Mat histogramBodyMask(const BallROI& ball, const BallHistogramOptions& options = {});
+
+cv::Mat buildColourHistogram(const cv::Mat& features, const cv::Mat& mask,
+                            const BallHistogramOptions& options);
+
+BallColourModel buildReferenceHistograms(
+    const std::vector<LabelledColourSample>& samples,
+    const BallHistogramOptions& options = {});
+
+BallColourModel buildColourReferenceModel(const cv::Mat& referenceImage);
+
+BallColourScores scoreBallColours(const BallROI& ball, const BallColourModel& model);
+
+ColourRecognitionResult evaluateBallColours(
+    const std::vector<BallColourScores>& colours,
+    const std::vector<cv::Vec3f>& circles,
+    const std::string& filename);
+
+cv::Mat drawBallColours(
+    const cv::Mat& image,
+    const std::vector<cv::Vec3f>& circles,
+    const std::vector<BallColourScores>& colours);
+
+cv::Mat drawBodyPixelsGrid(
+    const std::vector<BallROI>& balls,
+    const std::vector<BallColourScores>& colours);
+
+ColourRecognitionResult runColourRecognition(
+    const cv::Mat& image,
+    const std::vector<BallROI>& balls,
+    const std::vector<cv::Vec3f>& circles,
+    const BallColourModel& model,
+    const std::filesystem::path& directory,
+    const std::string& filename);
 
 std::vector<std::string> getAllImages();
 
@@ -200,6 +250,7 @@ TypeRecognitionResult evaluateBallTypes(
     const std::string& filename);
 
 TypeRecognitionResult runTypeRecognition(
+    const cv::Mat& image,
     const std::vector<BallROI>& balls,
     const std::vector<cv::Vec3f>& circles,
     const std::filesystem::path& directory,
