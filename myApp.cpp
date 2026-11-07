@@ -1,22 +1,4 @@
-#include <opencv2/opencv.hpp>
-#include <algorithm>
-#include <array>
-#include <cmath>
-#include <cstdlib>
-#include <filesystem>
-#include <fstream>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <limits>
-#include <map>
-#include <numeric>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
+#include "myApp.h"
 
 /*
 =========================================
@@ -28,6 +10,11 @@
 inline const std::string MEDIA_DIR = "Media/";
 inline const std::string GROUND_TRUTH_PATH = "data/ground_truth/BallLocationsNew.csv";
 inline const std::string OUTPUT_DIR = "final_output/";
+
+inline const std::string DETECTION_DIR = OUTPUT_DIR + "detection/";
+inline const std::string RECOGNITION_DIR = OUTPUT_DIR + "recognition/";
+inline const std::string FINAL_RES_DIR = OUTPUT_DIR + "final/";
+inline const std::string EXPERIMENT_DIR = OUTPUT_DIR + "experiments/";
 
 inline const std::string TUNNNING_IMG = "AllBalls.jpeg";
 inline const std::vector<std::string> VAL_IMG = {"Table1.jpeg", "Table2.jpeg", "Table3.jpeg", "Table4.jpeg", "Table5.jpeg", "Table6.jpeg"};
@@ -42,83 +29,10 @@ inline const std::vector<cv::Point> TABLE_CORNERS = {{337, 35}, {1570, 21}, {188
 
 inline constexpr double BALL_DIAMETER_MM = 43.0;
 
-// ========Structs========
-struct HoughParams {
-    double dp = 1.5;
-    double minDist = 18.0;
-    double param1 = 75.0;
-    double param2 = 35.0;
-    int minRadius = 15;
-    int maxRadius = 30;
-};
-
-struct DetectionResult {
-    cv::Mat maskedImage;
-    std::vector<cv::Vec3f> rawCircles;
-    std::vector<cv::Vec3f> filteredCircles;
-};
-
-struct BallROI {
-    cv::Mat image;
-    cv::Mat mask;
-};
-
-struct KMeansRegion {
-    cv::Mat mask;
-
-    double percentage = 0;
-
-    // Average colour of cluster (OpenCV BGR)
-    cv::Vec3b colour = cv::Vec3b(0, 0, 0);
-    cv::Vec3b hsv = cv::Vec3b(0, 0, 0);
-};
-
-struct KMeansResult {
-    int k = 0;
-    cv::Mat segmentedImage;
-    std::vector<KMeansRegion> regions;
-
-    // Hue comparaisons between the two largest clusters
-    double hueDifference = -1;
-    double saturationDifference = 0;
-    double brightnessDifference = 0;
-    double bgrDistance = 0;
-};
-
-struct BallTypeResult {
-    std::string type = "Unknown";
-
-    double lightPercent = 0;
-    double colouredPercent = 0;
-    double darkPercent = 0;
-};
-
-struct LabelledBall {
-    int number; // 1-15, 0 = cue ball
-    cv::Point2f centre;
-};
-
-struct EvaluationResult {
-    int TP = 0;
-    int FP = 0;
-    int FN = 0;
-
-    double precision = 0;
-    double recall = 0;
-    double f1 = 0;
-    double meanError = 0;
-
-    // Index of matched ground-truth ball for each prediction.
-    // -1 means the prediction is a false positive.
-    std::vector<int> predictionToGroundTruth;
-
-    // Index of matched prediction for each ground-truth ball.
-    // -1 means the ground-truth ball was missed.
-    std::vector<int> groundTruthToPrediction;
-};
+inline const std::string RUN_MODE = "ALL"; // or "MAIN", "EXPERIMENTS"
 
 // ========Helper Functions
-inline std::vector<std::string> getAllImages() {
+std::vector<std::string> getAllImages() {
     auto images = VAL_IMG;
     images.insert(images.begin(), TUNNNING_IMG);
     return images;
@@ -315,59 +229,79 @@ cv::Scalar diagramBallColour(int number) {
     }
 }
 
-/*
-=========================================
-            DETECTION
-=========================================
-*/
+// Reads the annotated positions and identities for one image, representing the cue ball with identity zero.
+std::vector<LabelledBall> loadLabelledGroundTruth(const std::string& csvPath, const std::string& imageName) {
+    std::vector<LabelledBall> balls;
+    std::ifstream file(csvPath);
 
-// Finds circle candidates using Hough detection after converting the image to greyscale and blurring it.
-std::vector<cv::Vec3f> detectBalls(const cv::Mat& image, const HoughParams& params) {
-    cv::Mat grey_image;
-    cv::cvtColor(image, grey_image, cv::COLOR_BGR2GRAY);
+    if (!file.is_open())
+        return balls;
 
-    cv::Mat blurred_image;
-    cv::GaussianBlur(grey_image, blurred_image, cv::Size(5, 5), 1.5);
+    std::string line;
 
-    std::vector<cv::Vec3f> circles;
+    while (std::getline(file, line)) {
+        std::stringstream ss(line);
+        std::string filename;
 
-    cv::HoughCircles(blurred_image, circles, cv::HOUGH_GRADIENT, params.dp, params.minDist, params.param1, params.param2, params.minRadius, params.maxRadius);
+        std::getline(ss, filename, ',');
 
-    return circles;
+        if (filename != imageName)
+            continue;
+
+        std::vector<std::string> values;
+        std::string value;
+
+        while (std::getline(ss, value, ','))
+            values.push_back(value);
+
+        // 15 numbered balls + white cue ball
+        for (int i = 0; i < 16; ++i) {
+            int index = 2 * i;
+
+            if (index + 1 >= static_cast<int>(values.size()))
+                break;
+
+            if (values[index].empty() || values[index + 1].empty())
+                continue;
+
+            float row = std::stof(values[index]);
+            float col = std::stof(values[index + 1]);
+
+            LabelledBall ball;
+            ball.number = (i == 15) ? 0 : i + 1;
+            ball.centre = cv::Point2f(col, row);
+
+            balls.push_back(ball);
+        }
+
+        break;
+    }
+
+    return balls;
 }
 
-/*
-Runs the Ball Dection Pipeline:
-    1. Masks the table from the image.
-    2. Detects circles using Hough Transform.
-    3. Filters out circles that are too close to the pockets.
-    4. Visualizes the results (TODO_ADD).
-*/
-DetectionResult runDetection(const cv::Mat& image, const HoughParams& params) {
-    DetectionResult result;
+// Reads the annotated ball positions for one image
+std::vector<cv::Point2f> loadGroundTruth(
+    const std::string& csvPath,
+    const std::string& imageName,
+    std::vector<int>* ballIds) {
 
-    if (image.empty())
-        return result;
+    const auto balls = loadLabelledGroundTruth(csvPath, imageName);
 
-    result.maskedImage = maskTable(image);
+    std::vector<cv::Point2f> points;
 
-    result.rawCircles = detectBalls(result.maskedImage, params);
-    result.filteredCircles = filterPocketDetections(result.rawCircles);
+    if (ballIds)
+        ballIds->clear();
 
-    return result;
+    for (const LabelledBall& ball : balls) {
+        points.push_back(ball.centre);
+
+        if (ballIds)
+            ballIds->push_back(ball.number);
+    }
+
+    return points;
 }
-
-/*
-=========================================
-            RECOGNITION
-=========================================
-*/
-
-/*
-=========================================
-            EVALUATION
-=========================================
-*/
 
 /*
 =========================================
@@ -395,7 +329,7 @@ cv::Mat drawDetectedBalls(const cv::Mat& image, const std::vector<cv::Vec3f>& ci
 }
 
 // Draws a readable predicted ball label near a centre while keeping the text inside the image.
-void drawFinalLabel(cv::Mat& image, cv::Point centre, int number, cv::Point offset = {}) {
+void drawFinalLabel(cv::Mat& image, cv::Point centre, int number, cv::Point offset) {
     const std::string label = finalBallLabel(number);
     const double scale = number < 0 ? 0.36 : 0.45;
     int baseline = 0;
@@ -447,6 +381,185 @@ cv::Mat drawTableDiagram(const std::vector<cv::Point2f>& centres, const std::vec
     for (size_t i = 0; i < centres.size(); ++i)
         drawFinalLabel(diagram, {cvRound(centres[i].x), cvRound(centres[i].y)}, numbers[i]);
     return diagram;
+}
+
+/*
+=========================================
+            DETECTION
+=========================================
+*/
+
+// Finds circle candidates using Hough detection after converting the image to greyscale and blurring it.
+std::vector<cv::Vec3f> detectBalls(const cv::Mat& image, const HoughParams& params) {
+    cv::Mat grey_image;
+    cv::cvtColor(image, grey_image, cv::COLOR_BGR2GRAY);
+
+    cv::Mat blurred_image;
+    cv::GaussianBlur(grey_image, blurred_image, cv::Size(5, 5), 1.5);
+
+    std::vector<cv::Vec3f> circles;
+
+    cv::HoughCircles(blurred_image, circles, cv::HOUGH_GRADIENT, params.dp, params.minDist, params.param1, params.param2, params.minRadius, params.maxRadius);
+
+    return circles;
+}
+
+/*
+Runs the Ball Dection Pipeline:
+    1. Masks the table from the image.
+    2. Detects circles using Hough Transform.
+    3. Filters out circles that are too close to the pockets.
+    4. Run evaluation
+    5. Save the results.
+*/
+DetectionResult runDetection(const cv::Mat& image, 
+                            const HoughParams& params, 
+                            const std::filesystem::path directory, 
+                            const std::string& filename) {
+    DetectionResult result;
+
+    if (image.empty())
+        return result;
+
+    result.maskedImage = maskTable(image);
+
+    result.rawCircles = detectBalls(result.maskedImage, params);
+    result.filteredCircles = filterPocketDetections(result.rawCircles);
+
+    const auto predictions = transformCentres(result.filteredCircles);
+    const auto groundTruth = loadGroundTruth(GROUND_TRUTH_PATH, filename);
+
+    const EvaluationResult evaluation =evaluateDetections(predictions, groundTruth, MATCH_TOLERANCE);
+
+    // save detection results
+    saveImage(directory / "masked.png", result.maskedImage);
+    saveImage(directory / "raw_circles.png", drawDetectedBalls(result.maskedImage, result.rawCircles));
+    saveImage(directory / "filtered_circles.png", drawDetectedBalls(result.maskedImage, result.filteredCircles));
+
+    std::ofstream csv(directory / "detection_evaluation.csv");
+    if (!csv.is_open())
+        throw std::runtime_error("Could not create detection evaluation CSV");
+
+    csv << "TP,FP,FN,precision,recall,F1,meanError\n";
+    csv << evaluation.TP << ','
+        << evaluation.FP << ','
+        << evaluation.FN << ','
+        << evaluation.precision << ','
+        << evaluation.recall << ','
+        << evaluation.f1 << ','
+        << evaluation.meanError << '\n';
+
+    finishOutputFile(csv);
+
+    return result;
+}
+
+// Run extraction pipeline to extract detected ball and saving the results
+std::vector<BallROI> runExtraction(
+    const cv::Mat& image,
+    const std::vector<cv::Vec3f>& circles,
+    const std::filesystem::path& directory) {
+
+    std::vector<BallROI> balls;
+
+    for (size_t i = 0; i < circles.size(); ++i) {
+        BallROI ball = extractBall(image, circles[i]);
+
+        const std::string name = "ball_" + std::to_string(i + 1);
+
+        saveImage(directory / "ROI" / (name + ".png"), ball.image);
+        saveImage(directory / "ROI" / (name + "_mask.png"), ball.mask);
+
+        balls.push_back(ball);
+    }
+
+    return balls;
+}
+
+/*
+=========================================
+            RECOGNITION
+=========================================
+*/
+
+/*
+=========================================
+            EVALUATION
+=========================================
+*/
+
+EvaluationResult evaluateDetections(const std::vector<cv::Point2f>& predictions, const std::vector<cv::Point2f>& groundTruth, double tolerance) {
+    std::vector<std::vector<std::pair<double, size_t>>> candidates(predictions.size());
+
+    for (size_t p = 0; p < predictions.size(); ++p) {
+        for (size_t g = 0; g < groundTruth.size(); ++g) {
+            double distance = std::hypot(double(predictions[p].x) - groundTruth[g].x, double(predictions[p].y) - groundTruth[g].y);
+            if (distance <= tolerance)
+                candidates[p].emplace_back(distance, g);
+        }
+        std::sort(candidates[p].begin(), candidates[p].end());
+    }
+
+    // Match each detection to at most one ground-truth ball, and vice versa.
+    // Rearrange existing matches when doing so allows more balls to be matched.
+    std::vector<int> matchedPrediction(groundTruth.size(), -1);
+    std::function<bool(size_t, std::vector<bool>&)> tryMatch = [&](size_t p, std::vector<bool>& visited) -> bool {
+        for (const auto& candidate : candidates[p]) {
+            size_t g = candidate.second;
+            if (visited[g])
+                continue;
+            visited[g] = true;
+
+            if (matchedPrediction[g] == -1 || tryMatch(static_cast<size_t>(matchedPrediction[g]), visited)) {
+                matchedPrediction[g] = static_cast<int>(p);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    EvaluationResult result;
+    for (size_t p = 0; p < predictions.size(); ++p) {
+        std::vector<bool> visited(groundTruth.size(), false);
+        if (tryMatch(p, visited))
+            ++result.TP;
+    }
+
+    // Store the final one-to-one matching.
+    result.predictionToGroundTruth.assign(predictions.size(), -1);
+    result.groundTruthToPrediction.assign(groundTruth.size(), -1);
+
+    for (size_t g = 0; g < groundTruth.size(); ++g) {
+        int p = matchedPrediction[g];
+
+        if (p == -1)
+            continue;
+
+        result.predictionToGroundTruth[p] = static_cast<int>(g);
+        result.groundTruthToPrediction[g] = p;
+    }
+
+    double totalError = 0;
+    for (size_t g = 0; g < groundTruth.size(); ++g) {
+        if (matchedPrediction[g] == -1)
+            continue;
+        const cv::Point2f& prediction = predictions[matchedPrediction[g]];
+        totalError += std::hypot(double(prediction.x) - groundTruth[g].x, double(prediction.y) - groundTruth[g].y);
+    }
+
+    result.FP = static_cast<int>(predictions.size()) - result.TP;
+    result.FN = static_cast<int>(groundTruth.size()) - result.TP;
+
+    if (!predictions.empty())
+        result.precision = double(result.TP) / predictions.size();
+    if (!groundTruth.empty())
+        result.recall = double(result.TP) / groundTruth.size();
+    if (result.precision + result.recall > 0)
+        result.f1 = 2 * result.precision * result.recall / (result.precision + result.recall);
+    if (result.TP > 0)
+        result.meanError = totalError / result.TP;
+
+    return result;
 }
 
 /*
@@ -504,13 +617,165 @@ void saveFinalResults(const cv::Mat& image, const std::filesystem::path& directo
 =========================================
 */
 
+/*
+Searches 480 Hough parameter combinations on AllBalls:
+    1. load the training image
+    2. Define values to test (dp, minDist, param1, param2)
+    3. Run detection on each combination
+    4. Evaluate each configuration (prioritise maximising TP, 
+        then minimising FP, then localisation error)
+    5. Save and Visualise best combination
+*/
+void runGridSearch() {
+    cv::Mat image = cv::imread(MEDIA_DIR + TUNNNING_IMG);
+
+    if (image.empty()) {
+        std::cerr << "Could not open AllBalls.jpeg" << std::endl;
+        return;
+    }
+
+    cv::Mat maskedImage = maskTable(image);
+
+    std::vector<cv::Point2f> groundTruth = loadGroundTruth(GROUND_TRUTH_PATH, TUNNNING_IMG);
+
+    if (groundTruth.size() != 16) {
+        std::cerr << "Invalid ground truth: " << groundTruth.size() << " balls" << std::endl;
+        return;
+    }
+
+    // DEFINE PARAMETER SEARCH SPACE (480 configurations)
+    std::vector<double> dpValues = {1.0, 1.5, 2.0};
+    std::vector<double> minDistValues = {15, 18, 20, 22, 25};
+    std::vector<double> param1Values = {75, 100, 125, 150};
+    std::vector<double> param2Values = {15, 20, 25, 30, 35, 40, 45, 50};
+
+    std::string output_dir = EXPERIMENT_DIR + "grid_search/";
+    std::filesystem::create_directories(output_dir);
+    std::ofstream file(output_dir + "grid_search.csv");
+
+    if (!file.is_open()) {
+        std::cerr << "Could not create output/grid_search.csv" << std::endl;
+        return;
+    }
+
+    file << "dp,minDist,param1,param2,"
+         << "minRadius,maxRadius,detections,"
+         << "TP,FP,FN,precision,recall,F1,meanError\n";
+
+    double bestTP = -1;
+    int bestFP = std::numeric_limits<int>::max();
+    double bestError = std::numeric_limits<double>::infinity();
+
+    HoughParams bestParams;
+    EvaluationResult bestResult;
+
+    int count = 0;
+    const size_t totalConfigurations = dpValues.size() * minDistValues.size() * param1Values.size() * param2Values.size();
+
+    // TEST EVERY PARAMETER COMBINATION
+    for (double dp : dpValues) {
+        for (double minDist : minDistValues) {
+            for (double p1 : param1Values) {
+                for (double p2 : param2Values) {
+                    HoughParams params;
+
+                    params.dp = dp;
+                    params.minDist = minDist;
+                    params.param1 = p1;
+                    params.param2 = p2;
+
+                    // Fixed during this first search
+                    params.minRadius = 15;
+                    params.maxRadius = 30;
+
+                    // Detect balls
+                    std::vector<cv::Vec3f> circles = detectBalls(maskedImage, params);
+
+                    // Transform detected centres
+                    std::vector<cv::Point2f> predictions = transformCentres(circles);
+
+                    // Evaluate
+                    EvaluationResult result = evaluateDetections(predictions, groundTruth, MATCH_TOLERANCE);
+
+                    // Save results
+                    file << dp << "," << minDist << "," << p1 << "," << p2 << "," << params.minRadius << "," << params.maxRadius << "," << circles.size() << "," << result.TP << "," << result.FP << "," << result.FN << "," << result.precision
+                         << "," << result.recall << "," << result.f1 << "," << result.meanError << "\n";
+
+                    count++;
+
+                    // Prioritise recall, then precision
+                    // then centre localisation accuracy.
+                    double candidateError = result.TP > 0 ? result.meanError : std::numeric_limits<double>::infinity();
+
+                    bool better = (
+                        // 1. Detect more actual balls
+                        result.TP > bestTP ||
+
+                        // 2. Same number of balls: fewer false positives
+                        (result.TP == bestTP && result.FP < bestFP) ||
+
+                        // 3. Same TP and FP: better localisation
+                        (result.TP == bestTP && result.FP == bestFP && candidateError < bestError));
+
+                    if (better) {
+                        bestTP = result.TP;
+                        bestFP = result.FP;
+                        bestError = candidateError;
+
+                        bestParams = params;
+                        bestResult = result;
+                    }
+
+                    std::cout << "\rTested " << count << "/" << totalConfigurations << " configurations" << std::flush;
+                }
+            }
+        }
+    }
+
+    finishOutputFile(file);
+
+    // display the results of the best configuration
+    std::cout << std::fixed << std::setprecision(4);
+
+    std::cout << "\n\n===== GRID SEARCH COMPLETE =====\n";
+    std::cout << "Configurations tested: " << count << std::endl;
+
+    std::cout << "\nBEST PARAMETERS:\n";
+    std::cout << "dp: " << bestParams.dp << std::endl;
+    std::cout << "minDist: " << bestParams.minDist << std::endl;
+    std::cout << "param1: " << bestParams.param1 << std::endl;
+    std::cout << "param2: " << bestParams.param2 << std::endl;
+    std::cout << "minRadius: " << bestParams.minRadius << std::endl;
+    std::cout << "maxRadius: " << bestParams.maxRadius << std::endl;
+
+    std::cout << "\nBEST PERFORMANCE:\n";
+    std::cout << "TP: " << bestResult.TP << std::endl;
+    std::cout << "FP: " << bestResult.FP << std::endl;
+    std::cout << "FN: " << bestResult.FN << std::endl;
+    std::cout << "Precision: " << bestResult.precision << std::endl;
+    std::cout << "Recall: " << bestResult.recall << std::endl;
+    std::cout << "F1: " << bestResult.f1 << std::endl;
+
+    if (bestResult.TP > 0)
+        std::cout << "Mean error: " << bestResult.meanError << " pixels" << std::endl;
+    else
+        std::cout << "Mean error: N/A" << std::endl;
+
+    // save the visualisation of the best configuration
+    std::vector<cv::Vec3f> bestCircles = detectBalls(maskedImage, bestParams);
+    cv::Mat bestImage = drawDetectedBalls(maskedImage, bestCircles);
+
+    saveImage(output_dir + "best_detection.jpeg", bestImage);
+}
+
 
 /*
 =========================================
             MAIN APPLICATION
 =========================================
 */
-void MyApplication() {
+
+void runMainPipeline() {
     const HoughParams params;
 
     for (const std::string& filename : getAllImages()) {
@@ -519,36 +784,42 @@ void MyApplication() {
         if (image.empty())
             throw std::runtime_error("Could not load: " + filename);
 
-        const std::filesystem::path directory =
-            std::filesystem::path(OUTPUT_DIR) /
-            std::filesystem::path(filename).stem();
+        const std::filesystem::path directory_detection = std::filesystem::path(DETECTION_DIR) / std::filesystem::path(filename).stem();
 
-        // 1. Run detection.
-        const DetectionResult detection = runDetection(image, params);
+        // Run detection.
+        const DetectionResult detection = runDetection(image, params, directory_detection, filename);
 
-        // 2. Save the mask and detection images.
-        saveImage(directory / "masked.png", detection.maskedImage);
-
-        saveImage(directory / "raw_circles.png",
-                  drawDetectedBalls(image, detection.rawCircles));
-
-        saveImage(directory / "filtered_circles.png",
-                  drawDetectedBalls(image, detection.filteredCircles));
-
-        // 3. Extract each remaining ball from the original colour image.
-        for (size_t i = 0; i < detection.filteredCircles.size(); ++i) {
-            const BallROI ball =
-                extractBall(image, detection.filteredCircles[i]);
-
-            const std::string name = "ball_" + std::to_string(i + 1);
-
-            saveImage(directory / "ROI" / (name + ".png"), ball.image);
-            saveImage(directory / "ROI" / (name + "_mask.png"), ball.mask);
-        }
+        // Run Ball Extraction
+        const std::vector<BallROI> balls = runExtraction(image, detection.filteredCircles, directory_detection);
 
         std::cout << filename
                   << ": " << detection.rawCircles.size() << " raw circles, "
                   << detection.filteredCircles.size() << " after filtering\n";
+    }
+}
+
+void runExperiments() {
+    // 1. Run the grid search experiments
+    runGridSearch();
+}
+
+void MyApplication() {
+    const bool runMain = RUN_MODE == "MAIN" || RUN_MODE == "ALL";
+    const bool runExp = RUN_MODE == "EXPERIMENTS" || RUN_MODE == "ALL";
+
+    if (!runMain && !runExp) {
+        std::cout << "Error: Unknown Run Mode\n";
+        return;
+    }
+
+    if (runExp) {
+        std::cout << "=================RUNNING EXPERIMENTS=================\n";
+        runExperiments();
+    }
+
+    if (runMain) {
+        std::cout << "=================RUNNING MAIN PIPELINE=================\n";
+        runMainPipeline();
     }
 }
 
