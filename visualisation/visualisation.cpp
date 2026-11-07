@@ -5,12 +5,10 @@
 using namespace cv;
 using namespace std;
 
-Mat drawDetectedBalls(const Mat &image, const vector<Vec3f> &circles)
-{
+Mat drawDetectedBalls(const Mat& image, const vector<Vec3f>& circles) {
     Mat result = image.clone();
 
-    for (const Vec3f &detected : circles)
-    {
+    for (const Vec3f& detected : circles) {
         Point center(cvRound(detected[0]), cvRound(detected[1]));
 
         int radius = cvRound(detected[2]);
@@ -25,30 +23,24 @@ Mat drawDetectedBalls(const Mat &image, const vector<Vec3f> &circles)
     return result;
 }
 
-Mat drawValidationMatches(const Mat &transformedImage, const vector<Point2f> &predictions, const vector<Point2f> &groundTruth, const EvaluationResult &result)
-{
+Mat drawValidationMatches(const Mat& transformedImage, const vector<Point2f>& predictions, const vector<Point2f>& groundTruth, const EvaluationResult& result) {
     Mat canvas = transformedImage.clone();
 
     // Draw ground truth
-    for (size_t g = 0; g < groundTruth.size(); ++g)
-    {
+    for (size_t g = 0; g < groundTruth.size(); ++g) {
         Point gt(cvRound(groundTruth[g].x), cvRound(groundTruth[g].y));
 
-        if (result.groundTruthToPrediction[g] == -1)
-        {
+        if (result.groundTruthToPrediction[g] == -1) {
             // Missed ball
             drawMarker(canvas, gt, Scalar(255, 0, 0), MARKER_TILTED_CROSS, 25, 3);
-        }
-        else
-        {
+        } else {
             // Ground-truth centre
             circle(canvas, gt, 7, Scalar(255, 0, 255), FILLED);
         }
     }
 
     // Draw detections
-    for (size_t p = 0; p < predictions.size(); ++p)
-    {
+    for (size_t p = 0; p < predictions.size(); ++p) {
         Point centre(cvRound(predictions[p].x), cvRound(predictions[p].y));
 
         bool matched = result.predictionToGroundTruth[p] != -1;
@@ -57,26 +49,20 @@ Mat drawValidationMatches(const Mat &transformedImage, const vector<Point2f> &pr
 
         circle(canvas, centre, 10, colour, 2);
 
-        if (matched)
-        {
+        if (matched) {
             int g = result.predictionToGroundTruth[p];
 
-            line(
-                canvas, centre,
-                Point(cvRound(groundTruth[g].x), cvRound(groundTruth[g].y)),
-                Scalar(255, 255, 255), 1);
+            line(canvas, centre, Point(cvRound(groundTruth[g].x), cvRound(groundTruth[g].y)), Scalar(255, 255, 255), 1);
         }
     }
 
     return canvas;
 }
 
-Mat drawGroundTruthOverlay(const Mat &transformedImage, const vector<Point2f> &groundTruth, const vector<int> &ballIds)
-{
+Mat drawGroundTruthOverlay(const Mat& transformedImage, const vector<Point2f>& groundTruth, const vector<int>& ballIds) {
     Mat result = transformedImage.clone();
 
-    for (size_t i = 0; i < groundTruth.size(); ++i)
-    {
+    for (size_t i = 0; i < groundTruth.size(); ++i) {
         Point centre(cvRound(groundTruth[i].x), cvRound(groundTruth[i].y));
 
         // Magenta circle
@@ -92,14 +78,11 @@ Mat drawGroundTruthOverlay(const Mat &transformedImage, const vector<Point2f> &g
     return result;
 }
 
-Mat drawClassifiedBalls(const Mat &image, const vector<Vec3f> &circles,
-                        const vector<string> &predictedTypes, const vector<int> &predictedNumbers)
-{
+Mat drawClassifiedBalls(const Mat& image, const vector<Vec3f>& circles, const vector<string>& predictedTypes, const vector<int>& predictedNumbers) {
     Mat result = image.clone();
 
-    for (size_t i = 0; i < circles.size(); ++i)
-    {
-        const Vec3f &detected = circles[i];
+    for (size_t i = 0; i < circles.size(); ++i) {
+        const Vec3f& detected = circles[i];
 
         Point centre(cvRound(detected[0]), cvRound(detected[1]));
 
@@ -114,23 +97,16 @@ Mat drawClassifiedBalls(const Mat &image, const vector<Vec3f> &circles,
         string label;
         Scalar colour;
 
-        if (type == "White")
-        {
+        if (type == "White") {
             label = "W";
             colour = Scalar(255, 255, 255);
-        }
-        else if (type == "Solid")
-        {
+        } else if (type == "Solid") {
             label = "S";
             colour = Scalar(0, 255, 0);
-        }
-        else if (type == "Striped")
-        {
+        } else if (type == "Striped") {
             label = "ST";
             colour = Scalar(0, 255, 255);
-        }
-        else
-        {
+        } else {
             label = "?";
             colour = Scalar(0, 0, 255);
         }

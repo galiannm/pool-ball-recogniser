@@ -34,7 +34,7 @@ int classifyBallNumber(const KMeansResult& segmentation, const BallTypeResult& p
     const int brightness = body->hsv[2];
 
     // Black is a number decision; its type remains Solid.
-    if (saturation < 60) {
+    if (saturation <= 60) {
         if (brightness <= 90 && predictedType.type == "Solid")
             return 8;
         return -1;
@@ -93,11 +93,9 @@ BallTypeResult classifyBallType(const KMeansResult& segmentation) {
 
         if (V >= LIGHT_MIN_V && S <= LIGHT_MAX_S) {
             result.lightPercent += region.percentage;
-        }
-        else if (V <= DARK_MAX_V) {
+        } else if (V <= DARK_MAX_V) {
             result.darkPercent += region.percentage;
-        }
-        else {
+        } else {
             result.colouredPercent += region.percentage;
         }
     }
@@ -105,19 +103,16 @@ BallTypeResult classifyBallType(const KMeansResult& segmentation) {
     // Classify using cluster proportions
     if (result.lightPercent >= WHITE_BALL_MIN) {
         result.type = "White";
-    } else if (result.colouredPercent + result.darkPercent
-             >= SOLID_MIN) {
+    } else if (result.colouredPercent + result.darkPercent >= SOLID_MIN) {
         result.type = "Solid";
-    } else if (result.lightPercent > 0 &&
-             result.colouredPercent + result.darkPercent > 0) {
+    } else if (result.lightPercent > 0 && result.colouredPercent + result.darkPercent > 0) {
         result.type = "Striped";
     }
 
     return result;
 }
 
-
-BallTypeResult classifyBallTypeWithCCA( const KMeansResult& segmentation, const CCAFeatures& cca) {
+BallTypeResult classifyBallTypeWithCCA(const KMeansResult& segmentation, const CCAFeatures& cca) {
     // First compute the existing K-means prediction.
     BallTypeResult result = classifyBallType(segmentation);
 
@@ -140,10 +135,7 @@ BallTypeResult classifyBallTypeWithCCA( const KMeansResult& segmentation, const 
 
     // Require both high light coverage and
     // strong boundary coverage.
-    if (light >= WHITE_MIN_LIGHT &&
-        cca.largestLightComponentPercent >= 80.0 &&
-        cca.lightBoundaryCoverage >= WHITE_MIN_BOUNDARY &&
-        cca.nonLightComponents == 0) {
+    if (light >= WHITE_MIN_LIGHT && cca.largestLightComponentPercent >= 80.0 && cca.lightBoundaryCoverage >= WHITE_MIN_BOUNDARY && cca.nonLightComponents == 0) {
 
         result.type = "White";
         return result;
@@ -156,8 +148,7 @@ BallTypeResult classifyBallTypeWithCCA( const KMeansResult& segmentation, const 
     // The largest light component should occupy
     // a meaningful part of the ball and extend
     // towards its boundary.
-    if (cca.largestLightComponentPercent >= STRIPE_MIN_LIGHT_COMPONENT &&
-        cca.lightBoundaryCoverage >= STRIPE_MIN_BOUNDARY && nonLight >= 10.0) {
+    if (cca.largestLightComponentPercent >= STRIPE_MIN_LIGHT_COMPONENT && cca.lightBoundaryCoverage >= STRIPE_MIN_BOUNDARY && nonLight >= 10.0) {
 
         result.type = "Striped";
         return result;
@@ -167,9 +158,7 @@ BallTypeResult classifyBallTypeWithCCA( const KMeansResult& segmentation, const 
 
     // Mostly non-light, little boundary contact,
     // and one dominant connected non-light region.
-    if (nonLight >= 70.0 &&
-        cca.lightBoundaryCoverage <= SOLID_MAX_BOUNDARY &&
-        cca.nonLightComponents == 1) {
+    if (nonLight >= 70.0 && cca.lightBoundaryCoverage <= SOLID_MAX_BOUNDARY && cca.nonLightComponents == 1) {
 
         result.type = "Solid";
         return result;

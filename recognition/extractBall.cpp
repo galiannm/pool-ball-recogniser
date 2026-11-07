@@ -5,7 +5,7 @@
 using namespace cv;
 using namespace std;
 
-BallROI extractBall(const Mat& image, const Vec3f& detectedCircle){
+BallROI extractBall(const Mat& image, const Vec3f& detectedCircle) {
     BallROI result;
 
     if (image.empty())

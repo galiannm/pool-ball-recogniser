@@ -1,0 +1,395 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=25mm]{geometry}
+\usepackage{graphicx,booktabs,amsmath,array,microtype,xcolor}
+\usepackage{tikz}
+\usepackage[labelfont=bf,font=small]{caption}
+\usepackage[hidelinks]{hyperref}
+\usepackage{float,fancyhdr}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt plus 1pt}
+\fancyhf{}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0pt}\pagestyle{fancy}
+\newcommand{\resultsroot}{../output/final-results/}
+\newcommand{\panel}[3]{\begin{minipage}[t]{#1}\centering\includegraphics[width=\linewidth]{\resultsroot#2}\\[2pt]{\scriptsize #3}\end{minipage}}
+\newcommand{\smallpanel}[3]{\begin{minipage}[t]{#1}\centering\includegraphics[width=\linewidth,height=22mm,keepaspectratio]{\resultsroot#2}\\[2pt]{\scriptsize #3}\end{minipage}}
+\begin{document}
+\begin{center}
+{\Large\bfseries Pool-ball localisation and recognition}\\[4pt]
+Computer Vision (CSU44053)\\
+Manon Yiqin Galian Ng (23375206)
+\end{center}
+\section*{Introduction}
+The aim was to locate pool balls in photographs and identify their type and number.
+I used \texttt{AllBalls.jpeg} to select detection parameters and build reference colour
+models, then repeatedly evaluated and refined the approach on Tables1--6.
+
+\section{Theory and application}
+\subsection{Table masking and ball detection}
+The pipeline detects circles, extracts ball crops, estimates type and colour, assigns
+identities jointly, then transforms the results into an overhead view. Detection and
+colour analysis use the original photograph, since rectifying it first could distort
+circular ball outlines.
+
+The supplied table corners, clockwise from top-left, are $(337,35)$, $(1570,21)$,
+$(1888,451)$ and $(38,472)$. I used their quadrilateral to mask the background,
+converted the image to greyscale and applied a $5\times5$ Gaussian filter with
+$\sigma=1.5$ to reduce small intensity variations.
+
+I used a gradient-based Circular Hough Transform to estimate centres and radii.
+After trying parameters manually, I searched 480 combinations, keeping radii within
+15--30 pixels. Configurations were ranked by matched balls, then false positives,
+then mean centre error. Recall came first because a missed ball cannot be recognised
+later. The selected accumulator resolution ratio was 1.5, minimum centre separation
+18 pixels, edge threshold 75 and circle-vote threshold 35.
+
+Pockets can also produce circular detections. I transformed candidate centres into
+table coordinates and rejected those within 25 units of six approximate pocket
+centres. Each remaining ball was cropped from the original colour image and given
+a circular mask for recognition.
+\begin{figure}[H]\centering
+\panel{.48\linewidth}{mainDetectionResults/AllBalls/masked.png}{Table mask}\hfill
+\panel{.48\linewidth}{mainDetectionResults/AllBalls/blurred.png}{Greyscale and smoothing}\\[4pt]
+\panel{.48\linewidth}{mainDetectionResults/AllBalls/raw_circles.png}{Hough circles}\hfill
+\panel{.48\linewidth}{mainDetectionResults/AllBalls/filtered_circles.png}{Pocket filtering}
+\caption{Detection stages on AllBalls. Pocket filtering removes the extra circle.}
+\end{figure}
+
+\newpage
+\subsection{Ball type and body-colour histograms}
+I clustered the pixels inside each circular crop in BGR colour space using $K=2$.
+The idea was that a striped ball's white and coloured regions would often form
+separate groups. I used three initialisations with a fixed random seed, stopping
+after 50 iterations or when cluster centres changed by less than 0.2. Each cluster's
+mean colour was converted to HSV: $V\ge170$ and $S\le165$ indicated light pixels;
+a non-light cluster with $V\le90$ was dark. These thresholds were chosen manually.
+Cluster sizes then estimated the light fraction $w$.
+
+For colour recognition, I built eight reference HSV histograms from labelled
+AllBalls examples, sharing a model between solid and striped partners and excluding
+the cue. A $3\times3$ elliptical erosion reduced boundary pixels, and bright,
+low-saturation pixels were removed to suppress white patches and reflections.
+Crops with fewer than 12 usable body pixels supplied no numbered-colour evidence.
+\begin{figure}[H]\centering
+\begin{minipage}[t]{.24\linewidth}\centering
+% Original-image crop centred on Table3 candidate 8; not a new application export.
+\begin{tikzpicture}\clip (0,0) circle (11mm);
+\node[inner sep=0] at (0,0) {\includegraphics[width=22mm,viewport=1392 444 1431 483,clip]{\resultsroot mainDetectionResults/Table3/masked.png}};
+\end{tikzpicture}\\[2pt]{\scriptsize Circular colour crop}
+\end{minipage}\hfill
+\smallpanel{.24\linewidth}{mainTypeRecognitionResults/Table3/ball_8_kmeans.png}{Two colour clusters}\hfill
+\smallpanel{.24\linewidth}{mainColourRecognitionResults/Table3/ball_8_body.png}{Retained body pixels}\hfill
+\smallpanel{.24\linewidth}{ExperimentHistogramBackprojectionResults/Table3/ball_8_bestColour.png}{Reference backprojection}
+\caption{Recognition stages for Table3 candidate 8. Backprojection visualises colour agreement; recognition uses direct histogram comparison.}
+\end{figure}
+
+Each histogram has $18\times8\times8=1152$ bins. Hue spans $[0,180)$, and
+saturation and value span $[0,256)$, so bins cover 10 hue units and 32 saturation
+or value levels. Finer hue grouping helps distinguish body colours, while broader
+saturation and value groups allow lighting variation. This is a design compromise,
+not a claim that these bin counts are optimal.
+
+For nearly grey pixels (BGR maximum minus minimum below 15), I set hue to zero
+because it is unstable at low chroma. A $[1,2,1]/4$ filter smooths neighbouring bins,
+wrapping hue and repeating the other endpoints. Histograms sum to one, with solid
+and striped references weighted equally. Candidate histogram $p$ is compared with
+each reference $q$ using one minus Bhattacharyya distance [1]:
+\[
+s(p,q)=1-\sqrt{1-\sum_b\sqrt{p_bq_b}}.
+\]
+This produces eight colour similarities rather than one fixed colour label.
+
+\newpage
+\subsection{Type compatibility and identity assignment}
+Hard thresholds can give different types to balls with nearly identical light
+coverage. I therefore used soft compatibility scores with expected light-fraction
+intervals $[0,0.30]$ for solids, $[0.30,0.85]$ for stripes and $[0.85,1]$ for cue.
+For type $t$ and observed light fraction $w$:
+\[
+g_t(w)=\exp\left(-\frac{d(w,I_t)^2}{2(0.10)^2}\right).
+\]
+Here $d$ is zero inside interval $I_t$ and the distance to its nearest endpoint
+outside it. Compatibility is one inside the interval and decreases smoothly outside;
+the width 0.10 controls the decrease. This is a heuristic score, not a probability.
+Numbered-identity scores multiply colour similarity by type compatibility. The cue
+score is $w g_{\mathrm{cue}}(w)$.
+
+Each ball identity can appear at most once. I arranged candidate-to-identity scores
+in a matrix and used Hungarian assignment [2] to maximise their total while enforcing
+uniqueness. Extra dummy columns allow several candidates to receive \texttt{Unknown},
+mainly for surplus candidates or those without usable evidence. This is not a
+calibrated confidence-based rejection rule.
+
+Sometimes a detected circle enclosed a white interior patch rather than the whole
+ball. I expanded the recognition radius of initially white candidates by one pixel
+and recomputed their scores, keeping the original detection centre and radius.
+If several candidates were initially white, I reserved cue for the largest original
+Hough radius. This uses size as a clue to distinguish a whole cue ball from
+a smaller white patch.
+
+\begin{figure}[H]\centering
+\begin{minipage}[t]{.48\linewidth}\centering
+\includegraphics[height=16mm,viewport=244 309 292 357,clip]{\resultsroot mainDetectionResults/Table1/masked.png}\\[2pt]
+{\scriptsize Genuine cue: original radius 24.15 pixels}
+\end{minipage}\hfill
+\begin{minipage}[t]{.48\linewidth}\centering
+\includegraphics[height=16mm,viewport=1330 280 1366 316,clip]{\resultsroot mainDetectionResults/Table1/masked.png}\\[2pt]
+{\scriptsize Competing patch: original radius 17.55 pixels}
+\end{minipage}
+\caption{Initially white candidates on Table1, shown at equal display size. The smaller circle captures an interior region of a striped ball.}
+\end{figure}
+
+\subsection{Coordinate transformation and visualisation}
+A homography maps the four table corners to $(0,0)$, $(1433,0)$, $(1433,682)$ and
+$(0,682)$ in a $1434\times683$ rectangle:
+\[
+\lambda(x_t,y_t,1)^T=H(x,y,1)^T.
+\]
+A table unit is approximately one millimetre at the supplied scale. Stored centres
+are transformed for matching and output. The overhead diagram uses fixed ball radii
+and colours/bands representing predicted identities, rather than observed orientation.
+\begin{figure}[H]\centering
+\panel{.32\linewidth}{mainFinalResults/Table2/original_numbered.png}{Original-image labels}\hfill
+\panel{.32\linewidth}{mainFinalResults/Table2/table_numbered.png}{Rectified labels}\hfill
+\panel{.32\linewidth}{mainFinalResults/Table2/table_diagram.png}{Overhead diagram}
+\caption{Transformation and presentation on Table2. All views retain the extra false detection.}
+\end{figure}
+
+\newpage
+\subsection{Alternative approaches investigated}
+\textbf{Fixed HLS thresholds.} My first type estimator separated pixels into white,
+dark and coloured groups using HLS lightness and saturation. Their proportions
+supplied cue/solid/stripe rules. These were easy to interpret but sensitive to
+highlights and shadows, motivating K-means. The initial K-means rules
+labelled at least 85\% light coverage as cue, at least 70\% non-light coverage as
+solid, and other mixed cases as striped. I also tested $K=3$--6.
+
+\textbf{Connected-component analysis (CCA).} Colour proportions do not describe
+spatial arrangement. I therefore examined component counts, largest-region fractions
+and boundary light coverage. Larger white regions might distinguish stripes from
+solid balls' number patches, but highlights, orientation and thresholded shadows
+can change connectivity. Initial colour recognition used cluster-mean hue
+thresholds, with a separate low-value rule for black. Similar colours and shifting
+cluster means motivated the histogram descriptor.
+\begin{figure}[H]\centering
+\panel{.37\linewidth}{ExperimentManualHLSResults/Table1/predicted_types.png}{HLS type predictions}\hfill
+\panel{.37\linewidth}{ExperimentKMeansK2Results/Table1/predicted_types.png}{Initial K=2 predictions}\hfill
+\smallpanel{.19\linewidth}{ExperimentCCAResults/Table1/ball_7_light.png}{CCA light region}
+\caption{Alternative type evidence on Table1. A light region alone does not establish that a ball is striped or cue.}
+\end{figure}
+
+\textbf{Segmentation-assisted detection.} Touching balls interrupt each other's
+outlines. I tested foreground segmentation and distance-transform/watershed proposals
+near baseline detections, using area, shape, support, duplicate and pocket checks.
+A separate combined method estimated local cloth colour and routed foreground
+clusters to more permissive local Hough searches, retaining baseline circles outside
+these regions. Edge, arc and foreground checks filtered proposals; a subsequent
+marker-controlled watershed rejected circles with implausible supported basin areas.
+These checks used image evidence rather than ground-truth labels.
+\begin{figure}[H]\centering
+\panel{.32\linewidth}{ExperimentWatershedResults/Table1/foreground.png}{Foreground}\hfill
+\panel{.32\linewidth}{ExperimentWatershedResults/Table1/distance.png}{Distance transform}\hfill
+\panel{.32\linewidth}{ExperimentWatershedResults/Table1/basins.png}{Watershed basins}\\[4pt]
+\panel{.48\linewidth}{ExperimentGuidedHoughWatershedResults/Table3/clusters.png}{Combined method: local search regions}\hfill
+\panel{.48\linewidth}{ExperimentGuidedHoughWatershedResults/Table3/basins.png}{Combined method: watershed basins}
+\caption{Segmentation stages. Separating a region visually does not guarantee an accepted ball detection.}
+\end{figure}
+
+\newpage
+\section{Results and analysis}
+\subsection{Evaluation methodology}
+Tables1--6 contain 90 annotated balls. Predictions are matched one-to-one to annotated
+centres within 15 rectified table units. Matching prioritises the number of valid
+pairs, using proximity to resolve alternatives; it need not minimise total distance
+globally. Matched detections are true positives (TP), unmatched predictions false
+positives (FP), and unmatched annotations false negatives (FN). Pooled counts give:
+\[
+P=\frac{TP}{TP+FP},\qquad R=\frac{TP}{TP+FN},\qquad F_1=\frac{2PR}{P+R}.
+\]
+Mean localisation error is $\frac{1}{TP}\sum_i\|\hat{\mathbf{x}}_i-\mathbf{x}_i\|_2$
+for matched centres in table coordinates. Type accuracy measures cue/solid/striped
+correctness; identity accuracy requires the exact number or cue. If $C$ identities
+are correct, matched identity accuracy is $C/TP$ and end-to-end correct-identity
+recall is $C/90$. An Unknown label on a genuine ball is an identity error.
+Extra detections affect precision, but are not directly penalised by $C/90$.
+
+\subsection{Final performance on the supplied images}
+\begin{table}[H]\centering\small
+\caption{Final detection and recognition results. Mean error is in table units.}
+\begin{tabular}{lrrrrrr}\toprule
+Image & GT & TP & FP & FN & Mean error & Correct identities\\\midrule
+Table1 &16&14&1&2&7.68&11/14\\
+Table2 &16&16&1&0&3.58&16/16\\
+Table3 &16&15&0&1&3.12&15/15\\
+Table4 &15&14&0&1&3.89&14/14\\
+Table5 &14&14&0&0&5.83&13/14\\
+Table6 &13&13&0&0&5.76&11/13\\\midrule
+Total &90&86&2&4&4.91&80/86\\\bottomrule
+\end{tabular}
+\end{table}
+The detector achieves 97.73\% precision, 95.56\% recall and 96.63\% F1. Identity
+accuracy is 93.02\% on matched balls, while end-to-end correct-identity recall is
+88.89\%. The latter reflects the complete task because missed balls also
+count against it. All six genuine cues are identified correctly. The pooled mean
+centre error is 4.91 units, weighting images by their number of matches.
+
+Table2 recognises all genuine balls but retains a false detection. Tables3 and 4
+recognise every matched ball, yet each misses ball 10. Tables5 and 6 detect every
+ball but still make identity mistakes. Detection and recognition therefore remain
+separate sources of failure; high accuracy on matched balls does not imply that
+the whole scene is correct.
+
+On AllBalls, the selected search configuration gave 16 TP, 1 FP and no FN
+(94.12\% precision, 100\% recall, 96.97\% F1; mean error 2.76).
+Pocket filtering removed the false positive, and final recognition was 16/16.
+These are training-image results, since AllBalls supplied parameter selection and
+reference colours; they are excluded from the development totals.
+
+\newpage
+\subsection{What the experiments changed}
+\begin{table}[H]\centering\small
+\caption{Detection alternatives on Tables1--6, using pooled counts.}
+\begin{tabular}{lrrrr}\toprule
+Method & TP & FP & FN & F1 (\%)\\\midrule
+Selected global Hough + filtering &86&2&4&96.63\\
+Watershed augmentation &86&2&4&96.63\\
+Cluster-local Hough &86&16&4&89.58\\
+Cluster-local Hough + watershed &83&11&7&90.22\\\bottomrule
+\end{tabular}
+\end{table}
+Watershed augmentation accepted no detection changes. Local Hough retained the
+same total TP count but produced 14 more false positives than the selected detector.
+Its watershed check removed five false positives while losing three genuine matches.
+Although this improved F1 slightly over local Hough alone, both remained worse than
+the simpler global detector. A local recovery therefore did not establish an overall
+improvement.
+\begin{figure}[H]\centering
+\panel{.32\linewidth}{mainDetectionResults/Table3/filtered_circles.png}{Baseline: 15 TP, 0 FP, 1 FN}\hfill
+\panel{.32\linewidth}{ExperimentGuidedHoughPreWatershedResults/Table3/circles.png}{Local Hough: 16 TP, 4 FP, 0 FN}\hfill
+\panel{.32\linewidth}{ExperimentGuidedHoughWatershedResults/Table3/circles.png}{Watershed: 16 TP, 3 FP, 0 FN}
+\caption{Table3 illustrates a recovered ball accompanied by false detections.}
+\end{figure}
+\begin{table}[H]\centering\small
+\caption{Recognition comparisons. Type and identity counts measure different tasks.}
+\begin{tabular}{llr}\toprule
+Task & Configuration & Correct /86\\\midrule
+Type & HLS thresholds &43\\
+Type & K=2 &76\\
+Type & K=3, 4 or 5 (each) &73\\
+Type & K=6 &74\\
+Type & K=2 + CCA &73\\\midrule
+Identity & Hue rules &68\\
+Identity & HSV histograms, hard types &72\\
+Identity & Independent soft scores &73\\
+Identity & Add unique assignment &75\\
+Identity & Add selective +1 crop expansion &79\\
+Identity & Add largest-radius cue reservation &80\\\bottomrule
+\end{tabular}
+\end{table}
+K=2 outperformed the tested larger cluster counts under the same type rules. Extra
+clusters can represent shading rather than useful material regions. CCA also reduced
+type correctness, so I retained the simpler estimator. The original controlled
+recognition comparisons held detections fixed: histograms added four correct
+identities, soft scoring one, assignment two, selective expansion four and cue
+reservation one. The total gain cannot be credited to histograms or assignment alone.
+
+\newpage
+\subsection{Successes and remaining failures}
+\begin{figure}[H]\centering
+\panel{.32\linewidth}{mainFinalResults/Table1/table_numbered.png}{Table1: 11/14 identities; two misses}\hfill
+\panel{.32\linewidth}{mainFinalResults/Table2/table_numbered.png}{Table2: 16/16; one false detection}\hfill
+\panel{.32\linewidth}{mainFinalResults/Table3/table_numbered.png}{Table3: 15/15; one miss}\\[5pt]
+\panel{.32\linewidth}{mainFinalResults/Table4/table_numbered.png}{Table4: 14/14; one miss}\hfill
+\panel{.32\linewidth}{mainFinalResults/Table5/table_numbered.png}{Table5: 13/14; no misses}\hfill
+\panel{.32\linewidth}{mainFinalResults/Table6/table_numbered.png}{Table6: 11/13; no misses}
+\caption{Final labelled results for all six development images. Fractions count correct identities among matched detections; labels include false detections and Unknown.}
+\end{figure}
+
+\textbf{Crowding and localisation.} Table1 misses balls 6 and 7 in the crowded group,
+assigns a false circle to 6, leaves ball 14 Unknown and swaps identities 5 and 9.
+Interrupted outlines make circle evidence weaker in crowded regions. The swapped
+matches have centre errors of 14.63 and 14.81 units, close to the 15-unit tolerance,
+so their recognition errors coincide with poor localisation. A displaced crop can
+include neighbouring colour or exclude part of a stripe, giving unreliable evidence
+even when a centre still counts as matched. Across all matches, median error is
+3.75 units, maximum error is 14.81, and seven errors exceed 10 units.
+
+\textbf{Colour and type confusion.} Tables5 and 6 label ball 10 as 4, changing both
+blue to purple and stripe to solid. Table6 also labels 3 as 11, preserving red but
+changing solid to stripe. The latter shows that correct body colour is not enough
+for correct identity. Stripe orientation can hide much of the white region, while
+reflections can make a solid appear lighter. These are plausible explanations for
+the confusions, rather than verified causes for each individual error.
+
+\textbf{Cue correction.} Selective expansion improved the 75/86 control to 79/86
+without losses, and cue reservation added the final correction. The row-adjusted
+radius rule made the same choices. Expanding every ball had worsened a separate
+baseline, so the benefit is specific to initially white crops. Assignment can also
+propagate a score change to other candidates.
+
+\begin{figure}[H]\centering
+\begin{minipage}[t]{.32\linewidth}\centering
+\includegraphics[height=24mm,viewport=1010 203 1275 488,clip]{\resultsroot mainFinalResults/Table1/table_numbered.png}\\[2pt]
+{\scriptsize Table1: crowding and false circle 6}
+\end{minipage}\hfill
+\begin{minipage}[t]{.32\linewidth}\centering
+\includegraphics[height=24mm,viewport=1225 473 1320 563,clip]{\resultsroot mainFinalResults/Table6/table_numbered.png}\\[2pt]
+{\scriptsize Table6: ball 10 labelled 4}
+\end{minipage}\hfill
+\begin{minipage}[t]{.32\linewidth}\centering
+\includegraphics[height=24mm,viewport=1165 198 1245 283,clip]{\resultsroot mainFinalResults/Table6/table_numbered.png}\\[2pt]
+{\scriptsize Table6: ball 3 labelled 11}
+\end{minipage}
+\caption{Enlarged details of the final outputs make the remaining failures visible.}
+\end{figure}
+
+\newpage
+\subsection{Robustness, appropriateness and improvements}
+The selected combination balances accuracy and complexity on the supplied images.
+Circular detection suits approximately round, visible balls, histogram distributions
+are less dependent on one representative colour, and uniqueness uses a real constraint
+of the task. The rejected alternatives did not improve their tested controls; this
+does not mean those methods are ineffective in other settings.
+
+\textbf{Limits of the evidence.} Tables1--6 share a camera and broadly similar
+conditions, with some repeated arrangements. Repeated inspection and method selection
+introduce selection bias, even though histogram references came only from AllBalls.
+The reported scores describe development performance rather than performance on an
+untouched test set. One additional correct identity changes matched accuracy by
+about 1.16 percentage points, so small gains need further testing.
+
+\textbf{Changes in scene conditions.} Fixed image-space radii, table corners and
+pocket locations depend on the camera setup. A new viewpoint or resolution would
+require updated geometry and radius ranges. Occlusion can remove the circular
+boundary needed by Hough detection. Different lighting, cloth colour or camera colour
+response can change histogram matches, and stripe orientation changes visible white
+coverage. The largest-radius cue rule can fail if a distant cue appears smaller than
+a nearby white patch. Evaluating new photographs with varied viewpoints, lighting
+and crowded arrangements, while freezing settings before inspection, is therefore
+the most useful next step.
+
+\textbf{Recognition improvements.} More labelled reference examples under varied
+illumination and orientation could make the colour models less dependent on one
+training image. Better boundary estimation or cloth rejection could reduce crop
+contamination, but should be checked for both fixes and regressions. A calibrated
+Unknown policy could prevent weak candidates from taking real identities during
+assignment. The current best-effort assignment improves results, but its uniqueness
+constraint can also spread one candidate's error to another.
+
+\textbf{Evaluation improvements.} The 15-unit tolerance is about 35\% of the 43 mm
+ball diameter. Reporting performance across several tolerances would show how much
+success depends on accepting weakly localised matches; it should not be adjusted
+simply to raise the score. The homography describes the cloth plane, while visible
+ball centres lie above it, creating possible systematic error. Centre annotations
+also cannot establish the accuracy of masks or full ball boundaries. Boundary labels
+and isolated recognition comparisons would help distinguish detection geometry,
+colour evidence and assignment errors.
+
+\paragraph{References}
+\small
+[1] K. Dawson-Howe, CSU44053 course notes: \emph{Images, Edges, Histograms, Region
+Segmentation, Learning and Evaluation}; based on \emph{A Practical Introduction to
+Computer Vision with OpenCV}, Wiley (2014).\par
+[2] H. W. Kuhn, ``The Hungarian method for the assignment problem,''
+\emph{Naval Research Logistics Quarterly}, 2, 83--97 (1955).
+\end{document}

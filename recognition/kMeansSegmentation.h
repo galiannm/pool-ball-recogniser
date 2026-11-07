@@ -26,7 +26,4 @@ struct KMeansResult {
     double bgrDistance = 0;
 };
 
-KMeansResult segmentBallKMeans(
-    const BallROI& ball,
-    int k
-);
+KMeansResult segmentBallKMeans(const BallROI& ball, int k);

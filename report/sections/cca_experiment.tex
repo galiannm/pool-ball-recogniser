@@ -1,0 +1,292 @@
+\subsection{Tuning the Connected-Component Recognition Approach}
+\label{sec:cca-search}
+
+The final recognition experiment investigated whether spatial measurements
+could improve the tuned colour classifier. The preceding search selected
+configuration 2153, which correctly classified 81/86 matched ball types and
+74/86 numbers on Table1--Table6. Rather than replacing this classifier with
+an entirely different method, CCA was evaluated as an optional type-correction
+stage. Its purpose was to distinguish a substantial white stripe from smaller
+white markings and highlights using connectivity and boundary contact.
+
+The earlier default CCA method reduced accuracy, but that result only tested
+one set of thresholds. This experiment separately investigated feature
+extraction, decision thresholds and which correction rules should be enabled.
+All changes remained in the independent experiment executable. The production
+CCA implementation and main application were not modified.
+
+\subsubsection{Fixed recognition base and control configurations}
+
+The primary search froze configuration 2153: K=6; light-cluster thresholds
+$V\geq170$, $S\leq125$; an 85\% cue-ball light threshold; an 80\%
+solid-ball non-light threshold; and a blue/purple hue boundary of 125.
+The other colour thresholds retained their original values. Extraction
+used the original Hough radius with zero padding and no cloth filtering.
+Neither the colour clusters nor body-cluster selection nor number thresholds
+were tuned again. CCA could change the type passed to number recognition,
+but could not change the cluster colours themselves.
+
+Four controls were measured: the original K=2 classifier without CCA; that
+classifier with production CCA; the tuned K=6 classifier without CCA; and
+the tuned K=6 classifier with the original CCA thresholds. For the last
+control, the definition of a light cluster was aligned with the K=6 base
+($S\leq125$). It was not left at the original K=2 saturation threshold
+of 165. This alignment avoids constructing CCA features from a different
+light/non-light partition than the classifier whose decisions they modify.
+
+Detection and one-to-one annotation matching were performed once per image
+and reused for all CCA settings. The run again contained 86 matched
+annotations out of 90 on Table1--Table6, plus 16 matched annotations on
+AllBalls. Unmatched detections were displayed but excluded from classification
+accuracy. Table1--Table6 provided tuning scores; AllBalls remained a separate
+reference check and did not influence ranking. The same limitations of
+correlated scenes and reuse of evaluation labels described in
+Section~\ref{sec:recognition-experiments} apply here.
+
+\subsubsection{Constructing and measuring connected regions}
+
+K-means clusters contain pixels with similar BGR colours, regardless of their
+positions. CCA introduces spatial information after clustering. All cluster
+masks classified as light were combined with a binary OR operation, then
+restricted to the ball mask. The non-light mask was the complement of the
+light mask within the ball. Adjacent light pixels from different K-means
+clusters could therefore form one connected light region. Conversely,
+disconnected patches from one colour cluster could form several regions.
+
+Eight-connected component labelling was applied separately to the light and
+non-light masks. A component's area was divided by the retained ball-mask
+area, rather than by the area of its own colour category. The features were
+the number of eligible light components, the largest eligible light area,
+the number of eligible non-light components and the largest eligible
+non-light area. Eligibility required a minimum component area of
+$\{0.5,1,2,3\}\%$ of the ball.
+
+The circular mask was eroded with an elliptical kernel, and the eroded mask
+was subtracted from the original mask to define an inner boundary band.
+Kernel sizes $3\times3$, $5\times5$ and $7\times7$ compared successively
+wider bands. The original erosion-border semantics were retained. Light
+boundary coverage was the percentage of band pixels belonging to the raw
+light mask:
+\[
+ C_{\partial}=100\frac{|M_{\mathrm{light}}\cap B|}{|B|},\qquad
+ B=M_{\mathrm{ball}}\setminus\operatorname{erode}(M_{\mathrm{ball}}).
+\]
+An empty band returned zero coverage.
+
+Small-component filtering affected component counts and largest-component
+statistics only. It did not erase pixels from the light/non-light masks,
+change their raw percentages, or change boundary coverage. This distinction
+preserved the original feature definitions and prevented an area-cutoff
+change from silently altering several measurements at once. No morphological
+opening or closing was added to the colour masks.
+
+The four area cutoffs and three kernels gave 12 feature configurations.
+These were cached for each candidate after K-means, so rule-threshold trials
+reused the same spatial measurements. For the original K=2 control, the
+experimental defaults were compared with production CCA on every candidate:
+light and non-light masks, boundary mask, component counts, largest areas,
+boundary coverage and final hybrid type all had to agree. This guarded
+against improvements caused by accidentally changing the baseline algorithm.
+
+\subsubsection{Decision rules and search space}
+
+The hybrid retained the original decision order: test a cue-ball correction,
+then a striped-ball correction, then a solid-ball correction, and otherwise
+retain the colour-only type. Each rule could be enabled independently,
+giving all eight subsets of the three rules, including CCA disabled.
+This comparison distinguished improvements from a useful subset of rules
+from improvements requiring the full hybrid.
+
+The following threshold groups were searched:
+
+\begin{enumerate}
+\item \textbf{Cue rule.} Minimum raw light percentage
+$\{80,85,90,95\}$; minimum largest light component
+$\{70,80,90\}\%$ of the ball; and minimum light-boundary coverage
+$\{60,75,90\}\%$. The rule also required zero non-light components
+above the selected area cutoff. These conditions gave 36 combinations.
+The rule is an override when its conditions hold, not a veto on every
+other prediction of white: if no override fires, the base type remains.
+\item \textbf{Stripe rule.} Minimum largest light component
+$\{5,10,15,20,25,30\}\%$; minimum light-boundary coverage
+$\{5,10,20,30,40,50\}\%$; and minimum total non-light proportion
+$\{2,5,10,15,20\}\%$. These gave 180 combinations. The non-light
+requirement prevents an almost entirely light ball from being automatically
+assigned a stripe merely because its light region is connected to the edge.
+\item \textbf{Solid rule.} Minimum total non-light proportion
+$\{60,70,80,90\}\%$; maximum light-boundary coverage
+$\{5,12,20,30\}\%$; maximum eligible non-light component count
+$\{1,2\}$, with at least one required; and minimum largest non-light
+component $\{0,50,70,85\}\%$. These gave 128 combinations.
+A zero largest-component threshold disabled this additional dominance
+constraint. Allowing two components and adding a dominance threshold were
+experimental extensions; the original rule required exactly one component
+and had no explicit largest-area condition.
+\end{enumerate}
+
+For every feature setting and enabled-rule subset, the original rule
+thresholds supplied the starting point. Two passes searched the cue, stripe
+and solid groups in that order, skipping disabled groups. Each group used
+its full Cartesian product while holding the other groups fixed, and the
+current configuration remained a candidate. This was a grouped search,
+not a full joint Cartesian product over all rule thresholds. It may miss
+interactions requiring simultaneous changes in several groups, and two
+passes do not guarantee convergence to a global optimum.
+
+For each rule, four of the eight subsets enable it. Consequently the run
+scored
+\[
+ 4 + 12\left[8+2\times4(36+180+128)\right]=33{,}124
+\]
+trials: four controls, 96 initial seeds, and 33,024 grouped threshold trials.
+Repeated parameter settings remained in the audit trail. This total is
+therefore not a count of distinct models. No thresholds were selected
+separately for individual images or ball numbers.
+
+Ranking first maximised correct full-number predictions, then correct type
+predictions. Remaining ties preferred fewer number regressions, fewer type
+regressions, fewer type changes, fewer enabled rules, less departure from
+the original CCA parameters, and finally the earlier trial ID. All
+regressions and changes were measured against configuration 2153. A
+type-first ranking reversed the first two criteria. The departure metric
+was only a deterministic tie-break: it summed absolute feature and threshold
+changes using the fixed normalisations documented in
+\code{experiments/ccaGridSearch.cpp}. It was not an additional measured
+recognition score or a statistical regularisation estimate.
+
+\subsubsection{Results and rule ablations}
+
+\input{tables/cca_search_summary.tex}
+\input{tables/cca_search_ablation.tex}
+
+With original K=2 recognition, default CCA reduced correct types from 76 to
+73 and correct numbers from 67 to 64. With the K=6 light definition aligned
+to configuration 2153, the default rules still reduced type correctness
+from 81 to 79 and number correctness from 74 to 72. Thus simply attaching
+the existing hybrid to the improved colour classifier was not beneficial.
+
+After tuning, the best observed configuration correctly classified 82/86
+types ($95.35\%$) and 75/86 numbers ($87.21\%$). Both number-first and
+type-first selection chose configuration 20242. Relative to the tuned K=6
+base, it corrected one type and its dependent number, with no regressions
+on matched Table1--Table6 candidates. Each accuracy increased by 1.16
+percentage points. End-to-end number recall increased from 74/90
+($82.22\%$) to 75/90 ($83.33\%$), with detection unchanged. AllBalls
+remained at 16/16 correct types and numbers.
+
+The cue-only and stripe-only ablations did not improve on the K=6 base.
+The solid-only rule achieved the best scores. Some larger tuned rule
+subsets achieved the same scores, but did not provide additional correct
+predictions. The tie-break favouring fewer enabled rules selected the
+solid-only model. This is evidence for a limited corrective use of the
+spatial feature, not for enabling every CCA override.
+
+\input{tables/cca_search_parameters.tex}
+
+The winning feature settings retained the original 2\% component cutoff
+and $5\times5$ erosion kernel. The cue and stripe overrides were disabled.
+The solid correction required at least 70\% non-light pixels, at most
+20\% light-boundary coverage, and exactly one non-light component above
+the area cutoff. No additional largest-non-light dominance threshold was
+needed. The decisive threshold change relative to the original solid
+rule was raising its allowable light-boundary coverage from 12\% to 20\%.
+These correction thresholds are separate from the base classifier's 80\%
+non-light threshold.
+
+\subsubsection{Interpreting the corrected ball}
+
+\input{tables/cca_search_changes.tex}
+
+Only candidate 10 in Table1 changed under the selected correction. Its
+annotated number was 5, a solid orange ball. The K=6 colour classifier
+measured 21.83\% light and 78.17\% non-light pixels. Since the non-light
+proportion fell below the base solid threshold of 80\%, it predicted
+striped, causing the orange body colour to be assigned number 13.
+
+CCA found three light components above the 2\% area cutoff, with the
+largest occupying 12.74\% of the ball. It found one eligible non-light
+component, occupying 76.11\% of the ball. Light pixels covered 17.68\%
+of the boundary band. This failed the old solid correction's maximum
+boundary coverage of 12\%, but satisfied the tuned maximum of 20\%.
+Together with the 70\% non-light requirement and single-component
+condition, this changed the type to solid and the dependent number to 5.
+
+The interpretation is that a substantial connected body region and
+relatively little light at the boundary provided useful evidence for a
+solid ball, even though its total light proportion was too high for the
+colour-only rule. This is a feature-based explanation of this candidate,
+not proof that every similar mask corresponds to a solid ball.
+
+The diagnostic crop also contains substantial parts of neighbouring balls
+in the tightly arranged Table1 scene. Its connected non-light region cannot
+therefore be assumed to represent only the target ball's body. A correct
+classification does not establish an accurate segmentation. In this case,
+the tuned rule may partly compensate for contamination from imperfect
+localisation rather than isolate a property of an unobscured solid ball.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{cca_search_example.png}
+\caption{The corrected Table1 candidate under the original K=2 control,
+original CCA, tuned K=6, default CCA on K=6, and the selected solid-only
+CCA correction. Each panel shows the masked ball and its light/non-light
+partition. White and orange represent interior light and non-light pixels;
+green and red in the mask represent light and non-light boundary pixels.
+Prediction text uses green for correct and red for incorrect. The mask
+colours are feature visualisations, not ground-truth segmentation labels.}
+\label{fig:cca-search-example}
+\end{figure}
+\FloatBarrier
+
+\subsubsection{Ceiling for type-only corrections and limitations}
+
+The preceding colour experiment achieved 75/86 oracle-number predictions
+when supplied with true types. The CCA experiment independently recomputed
+the same diagnostic with its fixed K=6 features and number rules. For
+these rules, a correct predicted number implies the correct type: 0
+corresponds to white, 1--8 to solid, and 9--15 to striped. Consequently,
+75/86 is an upper bound on full-number correctness achievable by changing
+only the type of these cached candidates. The selected CCA correction
+reached that measured ceiling. Further type-only changes cannot improve
+full-number correctness on this fixed feature set; the remaining eleven
+number errors require changes to colour interpretation, body selection,
+segmentation or extraction. This is not an upper bound on a different
+recognition pipeline, and it does not imply that all type errors have
+been corrected: four type errors remain.
+
+The observed gain is small and entirely due to one candidate in one
+image. Searching over 33,124 trials on the same small tuning set creates
+a substantial opportunity to select a threshold that fits this example.
+The absence of regressions on these images is useful for comparison, but
+does not establish that the rule will be harmless on new ball orientations
+or lighting. An independent image set would be needed before treating
+the one-ball gain as a general improvement. The report therefore records
+the result as a promising targeted correction rather than a definitive
+replacement for the colour-only classifier.
+
+\subsubsection{Reproducing and inspecting the CCA experiment}
+
+After building the independent experiment target, run from the repository root:
+\begin{quote}
+\code{./build-local/BallExperiments --cca-grid}
+\end{quote}
+An optional directory argument preserves separate runs. Feature ranges, rule thresholds and the
+frozen recognition base are defined in \code{experiments/ccaSearchConfig.h}.
+Outputs are written to \code{output/experiments/cca_grid_search/}.
+
+The leaderboard records every trial's full CCA configuration, stage, parent,
+scores and regression counts. The ablation CSV selects the best observed
+model for each enabled-rule subset, and the seed CSV records each grouped
+search's starting and final IDs. Finalist configurations, per-image metrics,
+candidate predictions, confusion matrices, detection counts and cached
+features support inspection of the results. The number-ceiling CSV records
+the true-type diagnostic per image and per split. One diagnostic image per
+candidate compares distinct control/finalist configurations, with no
+individual ball subdirectories. Unmatched candidates have blank correctness
+fields and unavailable correctness indicators.
+
+The report tables and figure are refreshed with
+\code{python3 experiments/writeCCAReport.py}. They are snapshots rather
+than live links to the output directory. The surrounding prose contains
+run-specific counts and should be reviewed after changing the grid. No
+search result was automatically applied to the main application.

@@ -1,0 +1,135 @@
+\subsection{Ball Candidate Verification by Cloth Histogram Backprojection}
+\label{sec:backprojection}
+
+This experiment investigated an independent verification stage after Hough
+detection and pocket filtering. Rather than proposing more circles or changing
+their geometry, it attempted to reject candidates whose pixels predominantly
+resembled the table cloth. The objective was fewer false detections without
+rejecting genuine balls. This is separate from the earlier cloth-removal
+experiment: no pixels were removed from retained balls' recognition masks.
+
+\subsubsection{Per-image cloth distribution and numerical scale}
+
+Each image was converted from BGR to 8-bit HSV. A cloth-sampling mask was
+constructed from the known table polygon, inset using an $11\times11$
+elliptical erosion. All raw Hough circles were excluded with a four-pixel
+radius margin, including candidates subsequently removed by pocket filtering.
+The known pocket neighbourhoods, of radius 25 table pixels, were drawn in
+table coordinates and inverse-warped to the source image for exclusion.
+No annotated ball positions were used. At least 1,000 sampling pixels were
+required; insufficient samples or a flat histogram caused conservative
+retention of every candidate.
+
+A two-dimensional H--S histogram used ranges $[0,180)$ and $[0,256)$.
+The distribution was re-estimated for every image; no single reference-image
+histogram was reused across scenes. Histogram bins were min--max normalised
+to $[0,255]$, and \code{cv::calcBackProject()} produced an 8-bit similarity
+map. This was converted to floating point by dividing by 255. The maps were
+not separately min--max normalised afterwards. This ordering preserved
+intermediate histogram scores rather than first reducing them to the
+precision available from an 8-bit map in $[0,1]$. Values indicate relative
+histogram similarity, not calibrated probabilities or a complete definition
+of every possible cloth appearance.
+
+\subsubsection{Candidate score and conservative retention}
+
+Each pocket-filtered candidate retained its original centre and radius.
+Its scoring mask was the original circle intersected with the image and
+table mask. It was not intersected with the cloth-sampling mask, since that
+mask deliberately excludes candidate interiors. Candidates with less than
+80\% valid circular coverage were retained without threshold rejection.
+For candidates with adequate coverage, the experiment recorded mean
+similarity and the fraction $f$ of valid pixels with similarity at least
+$t$. Rejection used $f>f_{\max}$, a strict comparison. Mean similarity
+was diagnostic only; no edge-strength or second decision rule was added.
+
+This rule cannot guarantee retention of a green ball whose H--S distribution
+resembles cloth. The experiment therefore explicitly tracked rejected matched
+balls and included green balls in the score audit. Model failures, disabled
+verification and inadequate coverage had explicit retention reasons rather
+than silently converting missing scores into a rejection.
+
+\subsubsection{Recall screening and frozen evaluation}
+
+The grid varied H bins $\{18,30\}$, S bins $\{16,32\}$,
+similarity threshold $t\in\{0.6,0.7,0.8\}$ and maximum cloth fraction
+$f_{\max}\in\{0.7,0.8,0.9\}$. These gave 36 configurations, evaluated
+on AllBalls only. A configuration was eligible only when its model was
+valid and it retained every originally matched AllBalls candidate.
+
+All 36 configurations passed this recall screen. However, the current
+AllBalls baseline had 16 matched balls and zero false detections after
+pocket filtering. It therefore supplied no negative examples with which
+to optimise false-positive rejection. Selection used a predeclared
+conservative order: higher similarity threshold, higher maximum cloth
+fraction, fewer H bins, fewer S bins, then earlier configuration ID.
+Configuration 9 was frozen: 18 H bins, 16 S bins, $t=0.8$ and
+$f_{\max}=0.9$. Selection was written to disk before any Table1--Table6
+image or label evaluation. No alternative setting was selected after
+inspecting those results. If no configuration had been eligible,
+verification would have remained disabled.
+
+The comparison included A: table masking plus raw Hough, B: A plus pocket
+filtering, and C: B plus the frozen histogram verifier. Table1--Table6 were
+excluded from this filter's tuning, but had already informed other project
+experiments. This is a frozen-setting comparison, not pristine independent
+evidence for the entire project's final generalisation accuracy.
+
+\subsubsection{Measured result and interpretation}
+
+\input{tables/backprojection_results.tex}
+\input{tables/backprojection_false_candidates.tex}
+
+The frozen verifier rejected no candidate on any image. It preserved all
+86 matched balls in Table1--Table6, but also retained both baseline false
+detections. Precision remained $97.73\%$, recall $95.56\%$ and F1
+$96.63\%$, with mean centre error 4.91 table pixels. AllBalls remained
+16/16 with no false detections after pocket filtering. In this rerun,
+raw Hough on AllBalls had one false detection, which pocket filtering
+already removed. This current count should not be confused with the
+historical raw-Hough tuning snapshot discussed earlier.
+
+The two remaining false candidates were not predominantly high-similarity
+cloth under the frozen model. Their high-cloth fractions were approximately
+2.32\% in Table1 and 19.81\% in Table2, far below the rejection threshold
+of 90\%. Thus the observed result was not a recall-versus-precision tradeoff:
+the conservative rule simply did not reject either false candidate.
+Detected green solid and striped balls were also retained. This observation
+does not establish that arbitrary green balls are safe under another camera
+or threshold configuration.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{backprojection_table1.png}
+\caption{Table1 verification diagnostics: sampling exclusions, cloth-similarity
+map, thresholded similarity and candidate decisions. Brightness uses the
+fixed map scale, not a separate per-image display stretch. Green outlines
+mean retained and red would mean rejected; these colours do not themselves
+denote ground-truth correctness. The false candidate remains retained.}
+\label{fig:backprojection-table1}
+\end{figure}
+\FloatBarrier
+
+This first histogram-only experiment therefore does not justify adopting the
+verifier. It establishes a reproducible score distribution and a recall-safe
+reference setting, not an optimal rejection threshold. Additional calibration
+images containing genuine post-pocket false detections would be required
+to tune TP/FP separation while preserving the six images from further
+threshold selection. An edge-based safeguard remains a possible separate
+experiment; it was not added after looking at these evaluation outcomes.
+
+The experiment runs with:
+\begin{quote}
+\code{./build-local/BallExperiments --backprojection}
+\end{quote}
+An optional directory argument preserves separate runs. The default directory
+contains the 36-row screening grid, every AllBalls screening score, the
+frozen selection, per-image and pooled A/B/C metrics, retained/rejected
+candidate scores, prediction matches, rejection counts and annotation
+changes. Each image has a sampling mask, histogram, YAML model, similarity
+map, high-similarity map, decision overlay and comparison sheets.
+Report snapshots are refreshed using:
+\begin{quote}
+\code{python3 experiments/writeBackprojectionReport.py}
+\end{quote}
+No change was made to production localisation, extraction or recognition.

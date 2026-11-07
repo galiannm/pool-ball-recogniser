@@ -1,0 +1,14 @@
+Selected method: largest_raw_radius
+Hough: dp1.5 minDist18 edge75 vote35 radius15..30; masked table; pocket radius25.
+K2 BGR, seed12345, 3 attempts, 50 iterations, epsilon.2. Light V>=170 S<=165; cue85%; solid70% nonlight.
+HSV18x8x8; erode ellipse3; exclude light; neutral chroma<15 H=0; min12 body pixels.
+Separable [1,2,1]/4 bin smoothing; hue wraps, S/V clamp; L1 normalisation.
+AllBalls labelled training crops only; equal weight per crop; 1-Bhattacharyya distance.
+Gaussian type width.10; numbered similarity times type compatibility; cue light times cue compatibility.
+Best-effort eligibility requires evidence and score>1e-9; Unknown dummy score1e-9.
++1 analysis radius only on original K2 White candidates; original detection geometry retained.
+With >=2 original White candidates, reserve cue for greatest original radius; exact ties keep first.
+Matching: maximum cardinality, nearest-first augmenting paths, distance<=15 table units.
+Working annotations: data/ground_truth/BallLocations.csv; AllBalls excluded from Table1--6 totals.
+Models use AllBalls only, but earlier Table1--6 inspection informed method selection.
+Row comparison (optional; AllBalls only): radius=20.274191364+0.009677436*row.

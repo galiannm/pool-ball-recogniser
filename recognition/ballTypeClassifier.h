@@ -14,19 +14,11 @@ struct BallTypeResult {
 };
 
 // Existing K-means-only baseline
-BallTypeResult classifyBallType(
-    const KMeansResult& segmentation
-);
+BallTypeResult classifyBallType(const KMeansResult& segmentation);
 
 // New K-means + CCA classifier
-BallTypeResult classifyBallTypeWithCCA(
-    const KMeansResult& segmentation,
-    const CCAFeatures& cca
-);
+BallTypeResult classifyBallTypeWithCCA(const KMeansResult& segmentation, const CCAFeatures& cca);
 
 // Experimental HSV rules applied after type classification.
 // Returns 0 for the cue ball, 1-15 for numbered balls, or -1 if unknown.
-int classifyBallNumber(
-    const KMeansResult& segmentation,
-    const BallTypeResult& predictedType
-);
+int classifyBallNumber(const KMeansResult& segmentation, const BallTypeResult& predictedType);

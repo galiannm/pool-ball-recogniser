@@ -2,13 +2,9 @@
 
 #include <opencv2/opencv.hpp>
 
-struct BallROI
-{
+struct BallROI {
     cv::Mat image;
     cv::Mat mask;
 };
 
-BallROI extractBall(
-    const cv::Mat& image,
-    const cv::Vec3f& detectedCircle
-);
+BallROI extractBall(const cv::Mat& image, const cv::Vec3f& detectedCircle);

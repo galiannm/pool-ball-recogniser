@@ -5,7 +5,7 @@
 using namespace cv;
 using namespace std;
 
-vector<Vec3f> detectBalls(const Mat& image, const HoughParams& params){
+vector<Vec3f> detectBalls(const Mat& image, const HoughParams& params) {
     Mat grey_image;
     cvtColor(image, grey_image, COLOR_BGR2GRAY);
 
@@ -14,26 +14,16 @@ vector<Vec3f> detectBalls(const Mat& image, const HoughParams& params){
 
     vector<Vec3f> circles;
 
-    HoughCircles(
-        blurred_image,
-        circles,
-        HOUGH_GRADIENT,
-        params.dp,
-        params.minDist,
-        params.param1,
-        params.param2,
-        params.minRadius,
-        params.maxRadius
-    );
+    HoughCircles(blurred_image, circles, HOUGH_GRADIENT, params.dp, params.minDist, params.param1, params.param2, params.minRadius, params.maxRadius);
 
     return circles;
 }
 
-vector<Vec3f> detectAndFilterBalls(const Mat& image, const HoughParams& params){
+vector<Vec3f> detectAndFilterBalls(const Mat& image, const HoughParams& params) {
     return runDetection(image, params).filteredCircles;
 }
 
-DetectionResult runDetection(const Mat& image, const HoughParams& params){
+DetectionResult runDetection(const Mat& image, const HoughParams& params) {
     DetectionResult result;
 
     if (image.empty())
@@ -42,8 +32,7 @@ DetectionResult runDetection(const Mat& image, const HoughParams& params){
     result.maskedImage = maskTable(image);
 
     result.rawCircles = detectBalls(result.maskedImage, params);
-    result.filteredCircles =
-        filterPocketDetections(result.rawCircles);
+    result.filteredCircles = filterPocketDetections(result.rawCircles);
 
     return result;
 }

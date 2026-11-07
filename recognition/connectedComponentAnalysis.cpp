@@ -9,60 +9,60 @@ using namespace std;
 
 namespace {
 
-    // Keep consistent with ballTypeClassifier.cpp.
-    constexpr int LIGHT_MIN_V = 170;
-    constexpr int LIGHT_MAX_S = 165;
+// Keep consistent with ballTypeClassifier.cpp.
+constexpr int LIGHT_MIN_V = 170;
+constexpr int LIGHT_MAX_S = 165;
 
-    // Ignore components smaller than 2% of ball area.
-    constexpr double MIN_COMPONENT_PERCENT = 2.0;
+// Ignore components smaller than 2% of ball area.
+constexpr double MIN_COMPONENT_PERCENT = 2.0;
 
-    struct ComponentStats {
-        int count = 0;
-        double largestPercent = 0;
-        vector<Mat> regions;
-    };
+struct ComponentStats {
+    int count = 0;
+    double largestPercent = 0;
+    vector<Mat> regions;
+};
 
-    // Is this K-means cluster classified as light?
-    bool isLightCluster(const KMeansRegion& region) {
-        Mat bgr(1, 1, CV_8UC3);
-        bgr.at<Vec3b>(0, 0) = region.colour;
+// Is this K-means cluster classified as light?
+bool isLightCluster(const KMeansRegion& region) {
+    Mat bgr(1, 1, CV_8UC3);
+    bgr.at<Vec3b>(0, 0) = region.colour;
 
-        Mat hsv;
-        cvtColor(bgr, hsv, COLOR_BGR2HSV);
+    Mat hsv;
+    cvtColor(bgr, hsv, COLOR_BGR2HSV);
 
-        Vec3b pixel = hsv.at<Vec3b>(0, 0);
+    Vec3b pixel = hsv.at<Vec3b>(0, 0);
 
-        int S = pixel[1];
-        int V = pixel[2];
+    int S = pixel[1];
+    int V = pixel[2];
 
-        return V >= LIGHT_MIN_V && S <= LIGHT_MAX_S;
+    return V >= LIGHT_MIN_V && S <= LIGHT_MAX_S;
+}
+
+ComponentStats measureComponents(const Mat& mask, int ballArea) {
+    ComponentStats result;
+
+    Mat labels, stats, centroids;
+
+    int count = connectedComponentsWithStats(mask, labels, stats, centroids, 8, CV_32S);
+
+    // Label 0 is the background.
+    for (int i = 1; i < count; ++i) {
+
+        int area = stats.at<int>(i, CC_STAT_AREA);
+
+        double percentage = 100.0 * area / ballArea;
+
+        if (percentage < MIN_COMPONENT_PERCENT)
+            continue;
+
+        result.count++;
+        Mat componentMask = (labels == i);
+        result.regions.push_back(componentMask);
+        result.largestPercent = max(result.largestPercent, percentage);
     }
 
-    ComponentStats measureComponents(const Mat& mask, int ballArea) {
-        ComponentStats result;
-
-        Mat labels, stats, centroids;
-
-        int count = connectedComponentsWithStats(mask, labels, stats, centroids, 8, CV_32S);
-
-        // Label 0 is the background.
-        for (int i = 1; i < count; ++i) {
-
-            int area = stats.at<int>(i, CC_STAT_AREA);
-
-            double percentage = 100.0 * area / ballArea;
-
-            if (percentage < MIN_COMPONENT_PERCENT)
-                continue;
-
-            result.count++;
-            Mat componentMask = (labels == i);
-            result.regions.push_back(componentMask);
-            result.largestPercent = max(result.largestPercent, percentage);
-        }
-
-        return result;
-    }
+    return result;
+}
 
 }
 

@@ -13,75 +13,40 @@ using namespace std;
 // Ignore very small regions caused by noise.
 // --------------------------------------------------
 
-static void analyseComponents(
-    const Mat& binaryMask,
-    int totalBallPixels,
-    double& largestRegionPercent,
-    int& componentCount,
-    Mat* visualisation = nullptr
-) {
+static void analyseComponents(const Mat& binaryMask, int totalBallPixels, double& largestRegionPercent, int& componentCount, Mat* visualisation = nullptr) {
     Mat labels, componentStats, centroids;
 
-    int nLabels = connectedComponentsWithStats(
-        binaryMask,
-        labels,
-        componentStats,
-        centroids,
-        8,
-        CV_32S
-    );
+    int nLabels = connectedComponentsWithStats(binaryMask, labels, componentStats, centroids, 8, CV_32S);
 
     largestRegionPercent = 0.0;
     componentCount = 0;
 
     if (visualisation != nullptr) {
-        *visualisation = Mat::zeros(
-            binaryMask.size(), CV_8UC3
-        );
+        *visualisation = Mat::zeros(binaryMask.size(), CV_8UC3);
     }
 
     const int MIN_COMPONENT_AREA = 5;
 
-    const Vec3b palette[] = {
-        Vec3b(255, 100, 60),
-        Vec3b(60, 220, 100),
-        Vec3b(80, 80, 255),
-        Vec3b(255, 220, 60),
-        Vec3b(200, 80, 200)
-    };
+    const Vec3b palette[] = {Vec3b(255, 100, 60), Vec3b(60, 220, 100), Vec3b(80, 80, 255), Vec3b(255, 220, 60), Vec3b(200, 80, 200)};
 
     int paletteIndex = 0;
 
     for (int label = 1; label < nLabels; ++label) {
-        int area = componentStats.at<int>(
-            label, CC_STAT_AREA
-        );
+        int area = componentStats.at<int>(label, CC_STAT_AREA);
 
         if (area < MIN_COMPONENT_AREA)
             continue;
 
         componentCount++;
 
-        double percentage =
-            100.0 * area / totalBallPixels;
+        double percentage = 100.0 * area / totalBallPixels;
 
-        largestRegionPercent = max(
-            largestRegionPercent,
-            percentage
-        );
+        largestRegionPercent = max(largestRegionPercent, percentage);
 
         if (visualisation != nullptr) {
-            Vec3b colour =
-                palette[paletteIndex % 5];
+            Vec3b colour = palette[paletteIndex % 5];
 
-            visualisation->setTo(
-                Scalar(
-                    colour[0],
-                    colour[1],
-                    colour[2]
-                ),
-                labels == label
-            );
+            visualisation->setTo(Scalar(colour[0], colour[1], colour[2]), labels == label);
 
             paletteIndex++;
         }
@@ -120,17 +85,13 @@ ColourStats analyseBallColours(const BallROI& ball) {
     const int HUE_MAX_V = 235;
     const int HUE_TOLERANCE = 8;
 
-    result.whiteMask =
-        Mat::zeros(ball.image.size(), CV_8UC1);
+    result.whiteMask = Mat::zeros(ball.image.size(), CV_8UC1);
 
-    result.colourMask =
-        Mat::zeros(ball.image.size(), CV_8UC1);
+    result.colourMask = Mat::zeros(ball.image.size(), CV_8UC1);
 
-    result.darkMask =
-        Mat::zeros(ball.image.size(), CV_8UC1);
+    result.darkMask = Mat::zeros(ball.image.size(), CV_8UC1);
 
-    result.dominantColourMask =
-        Mat::zeros(ball.image.size(), CV_8UC1);
+    result.dominantColourMask = Mat::zeros(ball.image.size(), CV_8UC1);
 
     int white = 0;
     int coloured = 0;
@@ -163,35 +124,33 @@ ColourStats analyseBallColours(const BallROI& ball) {
 
             total++;
 
-        // 1. White pixels
-        if (L >= WHITE_MIN_L && S <= WHITE_MAX_S) {
-            white++;
-            result.whiteMask.at<uchar>(y, x) = 255;
-        }
+            // 1. White pixels
+            if (L >= WHITE_MIN_L && S <= WHITE_MAX_S) {
+                white++;
+                result.whiteMask.at<uchar>(y, x) = 255;
+            }
 
-        // 2. Coloured pixels
-        // Check saturation before classifying as dark.
-        else if (S >= COLOUR_MIN_S && V >= COLOUR_MIN_V) {
-            coloured++;
-            result.colourMask.at<uchar>(y, x) = 255;
-        }
+            // 2. Coloured pixels
+            // Check saturation before classifying as dark.
+            else if (S >= COLOUR_MIN_S && V >= COLOUR_MIN_V) {
+                coloured++;
+                result.colourMask.at<uchar>(y, x) = 255;
+            }
 
-        // 3. Dark, relatively neutral pixels
-        else if (L <= DARK_MAX_L && S < DARK_MAX_S) {
-            dark++;
-            result.darkMask.at<uchar>(y, x) = 255;
-        }
+            // 3. Dark, relatively neutral pixels
+            else if (L <= DARK_MAX_L && S < DARK_MAX_S) {
+                dark++;
+                result.darkMask.at<uchar>(y, x) = 255;
+            }
 
-        // 4. Unclassified pixels
-        else {
-            other++;
-        }
+            // 4. Unclassified pixels
+            else {
+                other++;
+            }
 
             // Hue histogram only includes sufficiently
             // saturated and visible pixels.
-            if (hsvS >= HUE_MIN_S &&
-                V >= HUE_MIN_V &&
-                V <= HUE_MAX_V) {
+            if (hsvS >= HUE_MIN_S && V >= HUE_MIN_V && V <= HUE_MAX_V) {
 
                 hueHistogram[H]++;
                 eligibleHuePixels++;
@@ -202,17 +161,13 @@ ColourStats analyseBallColours(const BallROI& ball) {
     if (total == 0)
         return result;
 
-    result.whitePercent =
-        100.0 * white / total;
+    result.whitePercent = 100.0 * white / total;
 
-    result.colourPercent =
-        100.0 * coloured / total;
+    result.colourPercent = 100.0 * coloured / total;
 
-    result.darkPercent =
-        100.0 * dark / total;
+    result.darkPercent = 100.0 * dark / total;
 
-    result.otherPercent =
-        100.0 * other / total;
+    result.otherPercent = 100.0 * other / total;
 
     // ----------------------------------------------
     // STEP 2: Morphological opening
@@ -224,33 +179,16 @@ ColourStats analyseBallColours(const BallROI& ball) {
 
     Mat cleanWhite, cleanColour;
 
-    Mat kernel = getStructuringElement(
-        MORPH_ELLIPSE,
-        Size(3, 3)
-    );
+    Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(3, 3));
 
-    morphologyEx(
-        result.whiteMask,
-        cleanWhite,
-        MORPH_OPEN,
-        kernel
-    );
+    morphologyEx(result.whiteMask, cleanWhite, MORPH_OPEN, kernel);
 
-    morphologyEx(
-        result.colourMask,
-        cleanColour,
-        MORPH_OPEN,
-        kernel
-    );
+    morphologyEx(result.colourMask, cleanColour, MORPH_OPEN, kernel);
 
     // Keep results inside the ball.
-    bitwise_and(
-        cleanWhite, ball.mask, cleanWhite
-    );
+    bitwise_and(cleanWhite, ball.mask, cleanWhite);
 
-    bitwise_and(
-        cleanColour, ball.mask, cleanColour
-    );
+    bitwise_and(cleanColour, ball.mask, cleanColour);
 
     // ----------------------------------------------
     // STEP 3: Connected-component measurements
@@ -258,32 +196,16 @@ ColourStats analyseBallColours(const BallROI& ball) {
 
     Mat whiteComponents, colourComponents;
 
-    analyseComponents(
-        cleanWhite,
-        total,
-        result.largestWhiteRegionPercent,
-        result.whiteComponentCount,
-        &whiteComponents
-    );
+    analyseComponents(cleanWhite, total, result.largestWhiteRegionPercent, result.whiteComponentCount, &whiteComponents);
 
-    analyseComponents(
-        cleanColour,
-        total,
-        result.largestColourRegionPercent,
-        result.colourComponentCount,
-        &colourComponents
-    );
+    analyseComponents(cleanColour, total, result.largestColourRegionPercent, result.colourComponentCount, &colourComponents);
 
     // Make a combined component visualisation.
     // Coloured regions are drawn using the palette.
     // White regions are shown in white.
-    result.componentVisualisation =
-        colourComponents.clone();
+    result.componentVisualisation = colourComponents.clone();
 
-    result.componentVisualisation.setTo(
-        Scalar(255, 255, 255),
-        cleanWhite
-    );
+    result.componentVisualisation.setTo(Scalar(255, 255, 255), cleanWhite);
 
     // ----------------------------------------------
     // STEP 4: Dominant hue
@@ -328,29 +250,22 @@ ColourStats analyseBallColours(const BallROI& ball) {
             int S = pixel[1];
             int V = pixel[2];
 
-            if (S < HUE_MIN_S ||
-                V < HUE_MIN_V ||
-                V > HUE_MAX_V)
+            if (S < HUE_MIN_S || V < HUE_MIN_V || V > HUE_MAX_V)
                 continue;
 
             int difference = abs(H - dominantHue);
 
-            int hueDistance = min(
-                difference,
-                180 - difference
-            );
+            int hueDistance = min(difference, 180 - difference);
 
             if (hueDistance <= HUE_TOLERANCE) {
-                result.dominantColourMask
-                    .at<uchar>(y, x) = 255;
+                result.dominantColourMask.at<uchar>(y, x) = 255;
 
                 matchingPixels++;
             }
         }
     }
 
-    result.dominantHuePercent =
-        100.0 * matchingPixels / total;
+    result.dominantHuePercent = 100.0 * matchingPixels / total;
 
     return result;
 }

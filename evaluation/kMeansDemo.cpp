@@ -37,11 +37,7 @@ void testKMeansSegmentation() {
     vector<Vec3f> circles = detectAndFilterBalls(image, params);
 
     // Match detections to ground truth
-    vector<LabelledBall> groundTruth =
-        loadLabelledGroundTruth(
-            config::groundTruthPath,
-            config::tuningImage
-        );
+    vector<LabelledBall> groundTruth = loadLabelledGroundTruth(config::groundTruthPath, config::tuningImage);
 
     vector<Point2f> gtCentres;
 
@@ -51,11 +47,7 @@ void testKMeansSegmentation() {
 
     vector<Point2f> predictions = transformCentres(circles);
 
-    EvaluationResult evaluation = evaluateDetections(
-        predictions,
-        gtCentres,
-        config::matchTolerance
-    );    
+    EvaluationResult evaluation = evaluateDetections(predictions, gtCentres, config::matchTolerance);
 
     // prepare output files
     string outputDir = config::extractionOutputDirectory + "kmeans/";
@@ -76,13 +68,12 @@ void testKMeansSegmentation() {
         return;
     }
 
-    ccaCSV
-        << "candidate,actualBallNumber,"
-        << "lightPercent,colouredPercent,darkPercent,"
-        << "lightComponents,largestLightComponentPercent,"
-        << "lightBoundaryCoverage,"
-        << "nonLightComponents,largestNonLightComponentPercent,"
-        << "predictedType\n";
+    ccaCSV << "candidate,actualBallNumber,"
+           << "lightPercent,colouredPercent,darkPercent,"
+           << "lightComponents,largestLightComponentPercent,"
+           << "lightBoundaryCoverage,"
+           << "nonLightComponents,largestNonLightComponentPercent,"
+           << "predictedType\n";
 
     csv << fixed << setprecision(6);
 
@@ -107,9 +98,8 @@ void testKMeansSegmentation() {
         return;
     }
 
-    classificationCSV
-        << "candidate,actualBallNumber,predictedBallNumber,predictedType,"
-        << "lightPercent,colouredPercent,darkPercent\n";
+    classificationCSV << "candidate,actualBallNumber,predictedBallNumber,predictedType,"
+                      << "lightPercent,colouredPercent,darkPercent\n";
 
     // Analyse all detected balls
     for (size_t i = 0; i < circles.size(); ++i) {
@@ -119,8 +109,7 @@ void testKMeansSegmentation() {
 
         int ballNumber = -1;
 
-        if (gtIndex >= 0 &&
-            gtIndex < static_cast<int>(groundTruth.size())) {
+        if (gtIndex >= 0 && gtIndex < static_cast<int>(groundTruth.size())) {
             ballNumber = groundTruth[gtIndex].number;
         }
 
@@ -145,37 +134,16 @@ void testKMeansSegmentation() {
                 BallTypeResult hybridPrediction = classifyBallTypeWithCCA(result, cca);
                 int predictedBallNumber = classifyBallNumber(result, kMeansPrediction);
 
-                classificationCSV
-                    << (i + 1) << ","
-                    << ballNumber << ","
-                    << predictedBallNumber << ","
-                    << kMeansPrediction.type << ","
-                    << kMeansPrediction.lightPercent << ","
-                    << kMeansPrediction.colouredPercent << ","
-                    << kMeansPrediction.darkPercent << "\n";
+                classificationCSV << (i + 1) << "," << ballNumber << "," << predictedBallNumber << "," << kMeansPrediction.type << "," << kMeansPrediction.lightPercent << "," << kMeansPrediction.colouredPercent << ","
+                                  << kMeansPrediction.darkPercent << "\n";
 
-                ccaCSV
-                    << (i + 1) << ","
-                    << ballNumber << ","
-                    << hybridPrediction.lightPercent << ","
-                    << hybridPrediction.colouredPercent << ","
-                    << hybridPrediction.darkPercent << ","
-                    << cca.lightComponents << ","
-                    << cca.largestLightComponentPercent << ","
-                    << cca.lightBoundaryCoverage << ","
-                    << cca.nonLightComponents << ","
-                    << cca.largestNonLightComponentPercent << ","
-                    << hybridPrediction.type << "\n";
+                ccaCSV << (i + 1) << "," << ballNumber << "," << hybridPrediction.lightPercent << "," << hybridPrediction.colouredPercent << "," << hybridPrediction.darkPercent << "," << cca.lightComponents << ","
+                       << cca.largestLightComponentPercent << "," << cca.lightBoundaryCoverage << "," << cca.nonLightComponents << "," << cca.largestNonLightComponentPercent << "," << hybridPrediction.type << "\n";
 
-                cout << "Candidate " << (i + 1)
-                    << " | Ball number: " << ballNumber 
-                    << " | K-means: " << kMeansPrediction.type
-                    << " | K-means + CCA: " << hybridPrediction.type
-                    << " | Light components: " << cca.lightComponents
-                    << " | Largest light: " << cca.largestLightComponentPercent << "%"
-                    << " | Light boundary: " << cca.lightBoundaryCoverage << "%"
-                    << " | Non-light components: " << cca.nonLightComponents
-                    << endl;
+                cout << "Candidate " << (i + 1) << " | Ball number: " << ballNumber << " | K-means: " << kMeansPrediction.type << " | K-means + CCA: " << hybridPrediction.type << " | Light components: " << cca.lightComponents
+                     << " | Largest light: " << cca.largestLightComponentPercent << "%"
+                     << " | Light boundary: " << cca.lightBoundaryCoverage << "%"
+                     << " | Non-light components: " << cca.nonLightComponents << endl;
             }
 
             const string label = "K=" + to_string(k);
@@ -185,12 +153,7 @@ void testKMeansSegmentation() {
             }
 
             // CSV: ball information
-            csv << (i + 1) << ","
-                << ballNumber << ","
-                << k << ","
-                << circles[i][0] << ","
-                << circles[i][1] << ","
-                << circles[i][2];
+            csv << (i + 1) << "," << ballNumber << "," << k << "," << circles[i][0] << "," << circles[i][1] << "," << circles[i][2];
 
             // Quote colour tuples so their commas stay within one CSV cell.
             // Leave unused cluster columns empty.
@@ -200,13 +163,8 @@ void testKMeansSegmentation() {
 
                     const KMeansRegion& r = result.regions[j];
 
-                    csv << "," << r.percentage
-                        << ",\"(" << static_cast<int>(r.colour[0])
-                        << ", " << static_cast<int>(r.colour[1])
-                        << ", " << static_cast<int>(r.colour[2]) << ")\""
-                        << ",\"(" << static_cast<int>(r.hsv[0])
-                        << ", " << static_cast<int>(r.hsv[1])
-                        << ", " << static_cast<int>(r.hsv[2]) << ")\"";
+                    csv << "," << r.percentage << ",\"(" << static_cast<int>(r.colour[0]) << ", " << static_cast<int>(r.colour[1]) << ", " << static_cast<int>(r.colour[2]) << ")\""
+                        << ",\"(" << static_cast<int>(r.hsv[0]) << ", " << static_cast<int>(r.hsv[1]) << ", " << static_cast<int>(r.hsv[2]) << ")\"";
 
                 } else {
                     csv << ",,,";
@@ -215,32 +173,23 @@ void testKMeansSegmentation() {
 
             csv << "\n";
 
-            cout << "Candidate " << (i + 1)
-                << " | Ball " << ballNumber
-                << " | K=" << k;
+            cout << "Candidate " << (i + 1) << " | Ball " << ballNumber << " | K=" << k;
 
-            for (size_t j = 0;
-                 j < result.regions.size(); ++j) {
+            for (size_t j = 0; j < result.regions.size(); ++j) {
 
-                cout << " | C" << (j + 1)
-                     << ": "
-                     << fixed << setprecision(1)
-                     << result.regions[j].percentage
-                     << "%";
+                cout << " | C" << (j + 1) << ": " << fixed << setprecision(1) << result.regions[j].percentage << "%";
             }
 
             cout << endl;
         }
         if (panels.size() > 1) {
-            saveImage(outputDir + "candidate_" + to_string(i + 1) + "_comparison.png",
-                      combineImages(panels));
+            saveImage(outputDir + "candidate_" + to_string(i + 1) + "_comparison.png", combineImages(panels));
         }
     }
 
     csv.close();
 
-    cout << "\nK-means experiment complete."
-         << endl;
+    cout << "\nK-means experiment complete." << endl;
 
     cout << "Results: " << outputDir << endl;
     finishOutputFile(classificationCSV);

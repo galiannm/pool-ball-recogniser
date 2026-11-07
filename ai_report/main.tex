@@ -1,0 +1,328 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[margin=2.54cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{array}
+\usepackage{placeins}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{needspace}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+\setlist[itemize]{nosep,leftmargin=*}
+% Consistent visual structure for each prompt.
+\newenvironment{promptentry}{%
+    \par\Needspace{7\baselineskip}\addvspace{1.2em}
+    \hrule
+    \nobreak\vspace{0.5em}
+}{\par\addvspace{0.5em}}
+\newenvironment{aiprompt}{%
+    \begin{list}{}{%
+        \setlength{\leftmargin}{1em}%
+        \setlength{\rightmargin}{1em}%
+        \setlength{\topsep}{0.3em}%
+        \setlength{\parsep}{0pt}%
+    }%
+    \item\relax
+}{\end{list}}
+
+\AddToHook{cmd/subsection/before}{\Needspace{10\baselineskip}}
+
+\begin{document}
+
+\begin{center}
+    {\Large\bfseries Report of Generative AI Use}
+\end{center}
+
+\begin{tabular}{@{}l@{\hspace{1.2em}}l@{}}
+\textbf{Student name:} & Manon Yiqin Galian Ng\\
+\textbf{Student number:} & 23375206\\
+\textbf{Module:} & Computer Vision (CSU44053)\\
+\textbf{Assignment:} & Pool ball detection and recognition
+\end{tabular}
+
+\section{Statement of AI use}
+
+I used ChatGPT as a technical assistant throughout this assignment to discuss computer vision methods,
+review design alternatives, help translate ideas into C++/OpenCV code, troubleshoot implementation
+problems, and improve the organisation and writing of my report. I proposed each approach that was used, 
+including the separation of ball detection and recognition, automated Hough parameter testing, colour-based
+recognition, and later segmentation and histogram-based experiments. ChatGPT also provided substantial
+code examples and, at several points, complete or corrected implementations; I reviewed, adapted, tested and
+evaluated this code against the assignment images. 
+
+For the written report, I used AI to write a template and help organise the strucuture of the report.
+It also helped with proof reading, and the phrasing of some paragraphs I had trouble formulating on my own.
+
+\section{Main Uses and Prompts}
+
+\subsection{Understanding the Brief}
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"I have a computer vision assignment I am working on. It is important that
+you do not give me a solution. Just act as a guide and help me though my own solution. 
+This assignment will use OpenCV and C++. 
+I will also provide my lecture notes so we can stay in the scope of the module.
+It is important to use traditional computer vision techinique and not a neural network.
+I will attach the assignment brief."
+\end{aiprompt}
+
+\textbf{Impact on project:} Explaination of the brief, noted that there are seperate training and eval
+images. Noted that it will not propose full solutions and that we should use traditional CV techniques
+
+\end{promptentry}
+\FloatBarrier
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"It seems like we cannot use the Table1-6 for training. So that means we can only tweek
+parameters on the AllBalls image right? But would we be allowed to look at the validation results
+and find general patterns that we are missing and then build new experiments around those errors?"
+\end{aiprompt}
+
+\textbf{Impact on project:} Noted that yes we cannot use the Table1-6 for training, e.g. parameter tweeking.
+Also if we wanted to structure new experiment around the validation result this should be noted.
+
+\end{promptentry}
+\FloatBarrier
+
+\subsection{Help for Detection}
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"For this assignment let's first work on the ball detection. I think
+the best approach is to use a Hough circle transform."
+\end{aiprompt}
+
+\textbf{Impact on project:} Explained that the circle Hough transform would be 
+good start and propose starting parameters and what each parameters did.
+
+\end{promptentry}
+\FloatBarrier
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"We have been trying to find the best Hough manually. This is super time consuming.
+I think we should be able to automate this process using the test image.
+I want to test a large amount of parameters (a few hundred combinations) without manually testing them all.
+If we can, we should also evaluate each config in a specific way.
+For the next stage we can only recognise ball that have been detected.
+So we should focus on getting pretty much 100\% recall. Then focus on precision
+to avoid getting too many FPs. We can validate afterwards on Table1-6."
+\end{aiprompt}
+
+\textbf{Impact on project:} Outputed that automation would be a good idea.
+proposed a range of parameters to test (200+, I later increased it to 480 in the final
+pipeline after more experimenting). Also proposed the validation structure from my criterias.
+
+\end{promptentry}
+\FloatBarrier
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"We recently learnt about watershed segmentation. Could we use this method to improve
+detection on regions where balls are closely clustered together?
+Could you help me implement an experiment for this?"
+\end{aiprompt}
+
+\textbf{Impact on project:} Helped implement an experiment for watershed segmentation. 
+After testing this experiment the performance didn't not change much. So this was not included in the
+final pipeline. This led to another idea to improve detection; using a more permissive hough in
+the ball clusters and the current hough everywhere else. This experiment manage to catch 1 missing ball
+but added a lot more FP and complexity so was also left out of the final pipeline
+
+\end{promptentry}
+\FloatBarrier
+
+\subsection{Help for Recognition}
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"For recognition I initially think we could just use HLS maybe?"
+\end{aiprompt}
+
+\textbf{Impact on project:} Explained that it was a good simple start. 
+Gave some starting boundaries I could test.
+
+\end{promptentry}
+\FloatBarrier
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"Actually! could we try k-means? with k=2 then hopefully we can extract 2 colour clusters.
+Then we can examine what these clusters are (light, dark, colour) using some
+thresholds. Then we can look at the proportion of these colour regions for each
+ball and see if they are stipped, full or the cue ball. 
+full should be primariy dark or colour pixels, stripped should have a larger proprotion of light and 
+have dark/colour pixels and the cue ball should be all or mostly light.
+Then we could use Hue to get the colour of the ball. 
+We can also test other k sizes, k=2 just seem like the simplest and most logical."
+\end{aiprompt}
+
+\textbf{Impact on project:} Helped implement this k means exepriment and the visualisations.
+We tested with k = 2,3,4,5. 
+With k=2 we were getting optimal performance on the test images so there was not enough evidence to switch to a 
+larger k.
+
+\end{promptentry}
+\FloatBarrier
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"We did a tutorial where we had to detect taffic cones (the orange and white ones). 
+We used at some point to see if there was a white part 'sandwhiched' between two orange 
+regions. For stripe balls this could be useful maybe, at least when the orientation is good.
+Essentially, stripe balls should have 3 main regions with two white and one colour in the middle.
+Can you help me write an experiment to test this?"
+\end{aiprompt}
+
+\textbf{Impact on project:} Also helped me plan and implement this experiment. 
+Some initial tests on the validation image were performing worse. So it was left as an experiment
+
+\end{promptentry}
+\FloatBarrier
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"maybe since we have the training image we could use histogram backprojection / Bhattacharyya for better 
+colour recogntion?"
+\end{aiprompt}
+\FloatBarrier
+
+\textbf{Impact on project:} The biggest help AI provided in helping me plan and implement
+the histogram training based on the colours of the balls in the training image. Backprojection was only
+used to visulise the similarities and instead the Bhattacharyya distance was used to compute histogram
+comparaison
+
+\end{promptentry}
+\FloatBarrier
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"I am thinking. One thing that we have not yet taken into account is that balls are unique. 
+Thus, instead of having 'hard' decisions for each ball we can have probabilities or scores.
+Then we can pick based on the combination that maximises the probabily or scores.
+I think there is an algorithm that does this but I do not remeber the name or how it works 
+exactly"
+\end{aiprompt}
+
+\textbf{Impact on project:} Gave the name of the algorithm I was missing (hungarian algorithm)
+proposed a Guassian function for the scores.
+
+\end{promptentry}
+\FloatBarrier
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"Yes that makes sense. A Gaussian function makes sense, we could also try a linear one first, 
+maybe its peformance can be similar."
+\end{aiprompt}
+
+\textbf{Impact on project:} We implement this 'uniqueness' experiment using both linear and gaussian
+functions. Guassian ultimatly performed better.
+
+\end{promptentry}
+\FloatBarrier
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"Another thing that could be interesting is that, specifically for duplicated cue balls.
+We could expand on pixels around the detection and see if there are colour pixels beyond the white
+(ofc this would be tough for green balls given the green mat).
+This is because a common error, is that sometimes the hough transform detects the smaller inside
+white circle of the balls instead of the full ball."
+\end{aiprompt}
+
+\textbf{Impact on project:} We tested multiple padding 1-5 pixels. 1pixel worked the 
+best and is what was kept
+
+\end{promptentry}
+\FloatBarrier
+
+\begin{promptentry}
+
+\begin{aiprompt}
+"The padding is working well. One last thing I would like to try, 
+is to use the fact that all ball have roughly the same size.
+So is there are still duplicate white balls then we could use the estimate 
+size at a certain dept to determine which ball is the acctuall white cue.
+Additionally, to make it simplier we could also use a simple heuristic that
+says that the larger of the two should be the correct white ball. Then we don't 
+have to compute estimate ball sizes at all depths."
+\end{aiprompt}
+
+\textbf{Impact on project:} We tested both the simpler and more complex 
+solution. The complex solution involved taking the training image and fitting a line 
+relating detected radius to the center row using the 16 balls. We then divided each
+candidate radius by the expected radius at its row. 
+Both method produced the same improvements so we kept the simpler radius rule.
+
+\end{promptentry}
+\FloatBarrier
+
+\subsection{Report writting}
+
+Used some repetive prompts such as:
+
+\begin{aiprompt}
+"Help me rephrase this"
+\end{aiprompt}
+
+\begin{aiprompt}
+"Help me make this sound better"
+\end{aiprompt}
+
+\subsection{Help for Code/Syntax}
+
+Used some repetive prompts such as:
+
+\begin{aiprompt}
+"Help me debug this"
+\end{aiprompt}
+
+\begin{aiprompt}
+"Help me restructure this code in a nicer way"
+\end{aiprompt}
+
+\begin{aiprompt}
+"Help me write a function for ..."
+\end{aiprompt}
+
+\begin{aiprompt}
+"Help me draft an experiment for ..."
+\end{aiprompt}
+
+\begin{aiprompt}
+"How can I implement this in OpenCV?"
+\end{aiprompt}
+
+\section{Coverage checklist}
+
+Summary of AI usage in the assignment.
+
+\begin{itemize}
+    \item Planning the detection and recognition pipeline.
+    \item Generating, modifying, consolidating or formatting C++ code.
+    \item Debugging and explaining code or algorithms.
+    \item Designing experiments, parameter searches and interactive tools.
+    \item generating latex template for the report and AI usage document
+\end{itemize}
+
+\end{document}
