@@ -93,6 +93,26 @@ struct EvaluationResult {
     std::vector<int> groundTruthToPrediction;
 };
 
+struct OverallEvaluation {
+    int TP = 0;
+    int FP = 0;
+    int FN = 0;
+
+    int correctTypes = 0;
+
+    int correctColours = 0;
+    int matchedColours = 0;
+    int colourGroundTruth = 0;
+
+    int correctIdentities = 0;
+    int unknownIdentities = 0;
+};
+
+struct EvaluationContext {
+    std::vector<LabelledBall> truth;
+    EvaluationResult matching;
+};
+
 struct DetectionResult {
     cv::Mat maskedImage;
     std::vector<cv::Vec3f> rawCircles;
@@ -133,6 +153,29 @@ struct ColourRecognitionResult {
     double endToEndAccuracy = 0;
 };
 
+struct Candidate {
+    cv::Vec3f circle;
+    cv::Point2f tableCentre;
+    BallROI roi;
+    BallTypeResult baselineType;
+    BallColourScores colours;
+    std::array<double, 3> typeSupport{};
+    std::array<double, 16> identityScore{};
+    std::array<bool, 16> eligible{};
+    int localBest = -1;
+    double bestScore = 0;
+};
+
+struct IdentityRecognitionResult {
+    std::vector<int> numbers;
+    EvaluationResult detection;
+    int correct = 0;
+    int groundTruthCount = 0;
+    int unknown = 0;
+    double accuracy = 0;           
+    double endToEndAccuracy = 0;  
+};
+
 // HSV histogram colour recognition.
 const char* bodyColourName(int colour);
 
@@ -157,8 +200,7 @@ BallColourScores scoreBallColours(const BallROI& ball, const BallColourModel& mo
 
 ColourRecognitionResult evaluateBallColours(
     const std::vector<BallColourScores>& colours,
-    const std::vector<cv::Vec3f>& circles,
-    const std::string& filename);
+    const EvaluationContext& context);
 
 cv::Mat drawBallColours(
     const cv::Mat& image,
@@ -230,6 +272,10 @@ std::vector<BallROI> runExtraction(
 
 EvaluationResult evaluateDetections(const std::vector<cv::Point2f>& predictions, const std::vector<cv::Point2f>& groundTruth, double tolerance);
 
+EvaluationContext prepareEvaluation(
+    const std::vector<cv::Vec3f>& circles,
+    const std::string& filename);
+
 KMeansResult segmentBallKMeans(const BallROI& ball, int k);
 
 std::vector<KMeansResult> runKMeans(
@@ -246,8 +292,7 @@ BallTypeResult classifyBallType(const KMeansResult& segmentation);
 
 TypeRecognitionResult evaluateBallTypes(
     const std::vector<BallTypeResult>& types,
-    const std::vector<cv::Vec3f>& circles,
-    const std::string& filename);
+    const EvaluationContext& context);
 
 TypeRecognitionResult runTypeRecognition(
     const cv::Mat& image,
@@ -255,6 +300,37 @@ TypeRecognitionResult runTypeRecognition(
     const std::vector<cv::Vec3f>& circles,
     const std::filesystem::path& directory,
     const std::string& filename);
+
+std::string identityType(int number);
+
+void identityEvidence(Candidate& candidate);
+
+Candidate rawWhitePadding(const cv::Mat& image, const Candidate& original,
+                         const BallColourModel& model, int padding);
+
+int selectAmbiguousCue(const std::vector<Candidate>& candidates);
+
+void reserveCueIdentity(std::vector<Candidate>& candidates, int selected);
+
+std::vector<int> maximumAssignment(const std::vector<std::vector<double>>& weights);
+
+std::vector<int> assignUnique(const std::vector<Candidate>& candidates);
+
+IdentityRecognitionResult evaluateBallIdentities(
+    const std::vector<int>& numbers,
+    const EvaluationContext& context);
+
+IdentityRecognitionResult runIdentityRecognition(
+    const cv::Mat& image,
+    const std::vector<BallROI>& balls,
+    const std::vector<cv::Vec3f>& circles,
+    const std::vector<BallTypeResult>& types,
+    const std::vector<BallColourScores>& colours,
+    const BallColourModel& model,
+    const std::filesystem::path& directory,
+    const std::string& filename);
+
+void printOverallEvaluation(const OverallEvaluation& totals);
 
 void saveFinalResults(const cv::Mat& image, const std::filesystem::path& directory, const std::vector<cv::Vec3f>& circles, const std::vector<cv::Point2f>& tableCentres, const std::vector<std::string>& types, const std::vector<int>& numbers);
 

@@ -36,6 +36,8 @@ inline const int DARK_MAX_V = 90;
 inline const double WHITE_BALL_MIN = 85.0;
 inline const double SOLID_MIN = 70.0;
 
+inline constexpr double TYPE_WIDTH = 0.10;
+
 inline const std::string RUN_MODE = "ALL"; // or "MAIN", "EXPERIMENTS"
 
 // ========IMAGE LIST========
@@ -606,6 +608,16 @@ std::vector<BallROI> runExtraction(const cv::Mat& image, const std::vector<cv::V
 ======================
 */
 
+std::string identityType(int number) {
+    if (number < 0)
+        return "Unknown";
+
+    if (number == 0)
+        return "White";
+
+    return number <= 8 ? "Solid" : "Striped";
+}
+
 // =============K MEANS CLUSTERING=============
 
 /*
@@ -775,6 +787,35 @@ BallTypeResult classifyBallType(const KMeansResult& segmentation) {
     }
 
     return result;
+}
+
+// Estimates the ball type
+TypeRecognitionResult runTypeRecognition(const cv::Mat& image, const std::vector<BallROI>& balls, 
+                        const std::vector<cv::Vec3f>& circles, const std::filesystem::path& directory, 
+                        const std::string& filename, const EvaluationContext& context) {
+
+    std::vector<BallTypeResult> results;
+    std::filesystem::create_directories(directory);
+
+    std::ofstream csv(directory / "ball_types.csv");
+    if (!csv.is_open())
+        throw std::runtime_error("Could not create ball types CSV");
+
+    csv << "candidate,type,lightPercent,colouredPercent,darkPercent\n";
+
+    const auto segmentations = runKMeans(balls, K_MEAN_CLUSTERS, directory);
+
+    for (size_t i = 0; i < balls.size(); ++i) {
+        const BallTypeResult type = classifyBallType(segmentations[i]);
+
+        results.push_back(type);
+
+        csv << i + 1 << ',' << type.type << ',' << type.lightPercent << ',' << type.colouredPercent << ',' << type.darkPercent << '\n';
+    }
+    saveImage(directory / "table_types.png", drawBallTypes(image, circles, results));
+
+    finishOutputFile(csv);
+    return evaluateBallTypes(results, context);
 }
 
 /*
@@ -986,12 +1027,10 @@ BallColourModel buildColourReferenceModel(const cv::Mat& referenceImage) {
 // =============CLASSIFY COLOUR=============
 
 // Estimates whether colour of a ball
-ColourRecognitionResult runColourRecognition(const cv::Mat& image,
-                                                    const std::vector<BallROI>& balls, 
-                                                    const std::vector<cv::Vec3f>& circles,
-                                                    const BallColourModel& model, 
-                                                    const std::filesystem::path& directory,
-                                                    const std::string& filename) {
+ColourRecognitionResult runColourRecognition(const cv::Mat& image, const std::vector<BallROI>& balls, 
+                                                const std::vector<cv::Vec3f>& circles, const BallColourModel& model, 
+                                                const std::filesystem::path& directory, const std::string& filename, 
+                                                const EvaluationContext& context) {
 
     std::vector<BallColourScores> results;
     std::filesystem::create_directories(directory);
@@ -1021,7 +1060,7 @@ ColourRecognitionResult runColourRecognition(const cv::Mat& image,
     if (!grid.empty())
         saveImage(directory / "body_pixels_grid.png", grid);
 
-    const ColourRecognitionResult evaluation = evaluateBallColours(results, circles, filename);
+    const ColourRecognitionResult evaluation = evaluateBallColours(results, context);
 
     std::ofstream evaluationCSV(directory / "colour_evaluation.csv");
     if (!evaluationCSV.is_open())
@@ -1041,40 +1080,263 @@ ColourRecognitionResult runColourRecognition(const cv::Mat& image,
 
 /*
 ======================
-    FULL PIPELINE
+    DUP CUE BALLS
+======================
+*/
+
+// Recomputes recognition evidence using an expanded crop while preserving the original detected circle and centre.
+Candidate rawWhitePadding(const cv::Mat& image, const Candidate& original, const BallColourModel& model, int padding) {
+    Candidate grown = original;
+    auto cropCircle = original.circle;
+    cropCircle[2] += padding;
+
+    grown.roi = extractBall(image, cropCircle);
+    grown.baselineType = classifyBallType(segmentBallKMeans(grown.roi, 2));
+    grown.colours = scoreBallColours(grown.roi, model);
+
+    identityEvidence(grown);
+    return grown; // Stored circle/centre remain the original Hough geometry.
+}
+
+// When at least two candidates are classified as white, selects the one with the largest original detected radius.
+int selectAmbiguousCue(const std::vector<Candidate>& candidates) {
+    int count = 0, selected = -1;
+    double largest = -1;
+    for (size_t i = 0; i < candidates.size(); ++i) {
+        const auto& c = candidates[i];
+        if (c.baselineType.type != "White")
+            continue;
+        ++count;
+
+        const double size = c.circle[2];
+        if (size > largest) {
+            largest = size;
+            selected = int(i);
+        }
+    }
+    return count >= 2 ? selected : -1;
+}
+
+// Restricts the selected candidate to the cue identity and prevents every other candidate from receiving that identity.
+void reserveCueIdentity(std::vector<Candidate>& candidates, int selected) {
+    if (selected < 0)
+        return;
+    for (size_t i = 0; i < candidates.size(); ++i) {
+        auto& c = candidates[i];
+        if (int(i) == selected) {
+            c.eligible.fill(false);
+            c.eligible[0] = true;
+        } else {
+            c.eligible[0] = false;
+            c.identityScore[0] = 0;
+        }
+    }
+}
+
+/*
+======================
+    BALL IDENTITY
 ======================
 */
 
 /*
-Run the Recognition pipeline:
-    1. Run the K means segmentation
-    2. Classify the ball type
-    3. TODO
+Maximise total assignment weight (Hungarian method)
+    1. Takes a score matrix (detections are rows, possible identities are columns.)
+    2. Assigns each detection to one column, using each column at most once.
+    3. Rearranges earlier assignments when that improves the overall result.
+    4. Returns the assignment with the highest total score
 */
-TypeRecognitionResult runTypeRecognition(const cv::Mat& image, const std::vector<BallROI>& balls, const std::vector<cv::Vec3f>& circles, const std::filesystem::path& directory, const std::string& filename) {
+std::vector<int> maximumAssignment(const std::vector<std::vector<double>>& weights) {
+    const int n = int(weights.size());
 
-    std::vector<BallTypeResult> results;
-    std::filesystem::create_directories(directory);
+    if (!n)
+        return {};
 
-    std::ofstream csv(directory / "ball_types.csv");
-    if (!csv.is_open())
-        throw std::runtime_error("Could not create ball types CSV");
+    const int m = int(weights[0].size());
 
-    csv << "candidate,type,lightPercent,colouredPercent,darkPercent\n";
+    std::vector<double> u(n + 1), v(m + 1);
+    std::vector<int> p(m + 1), way(m + 1);
 
-    const auto segmentations = runKMeans(balls, K_MEAN_CLUSTERS, directory);
+    for (int i = 1; i <= n; ++i) {
+        p[0] = i;
+        int j0 = 0;
 
-    for (size_t i = 0; i < balls.size(); ++i) {
-        const BallTypeResult type = classifyBallType(segmentations[i]);
+        std::vector<double> minimum(m + 1, std::numeric_limits<double>::infinity());
+        std::vector<bool> used(m + 1, false);
 
-        results.push_back(type);
+        do {
+            used[j0] = true;
+            const int i0 = p[j0];
+            int j1 = 0;
+            double delta = std::numeric_limits<double>::infinity();
 
-        csv << i + 1 << ',' << type.type << ',' << type.lightPercent << ',' << type.colouredPercent << ',' << type.darkPercent << '\n';
+            for (int j = 1; j <= m; ++j) {
+                if (!used[j]) {
+                    const double reduced = -weights[i0 - 1][j - 1] - u[i0] - v[j];
+                    if (reduced < minimum[j]) {
+                        minimum[j] = reduced;
+                        way[j] = j0;
+                    }
+                    if (minimum[j] < delta) {
+                        delta = minimum[j];
+                        j1 = j;
+                    }
+                }
+            }
+
+            for (int j = 0; j <= m; ++j) {
+                if (used[j]) {
+                    u[p[j]] += delta;
+                    v[j] -= delta;
+                } else
+                    minimum[j] -= delta;
+            }
+
+            j0 = j1;
+
+        } while (p[j0] != 0);
+
+        do {
+            const int j1 = way[j0];
+            p[j0] = p[j1];
+            j0 = j1;
+        } while (j0);
     }
-    saveImage(directory / "table_types.png", drawBallTypes(image, circles, results));
+
+    std::vector<int> assigned(n, -1);
+    for (int j = 1; j <= m; ++j)
+        if (p[j])
+            assigned[p[j] - 1] = j - 1;
+    return assigned;
+}
+
+/*
+Combines white coverage and colour similarities into scores for identities 0–15
+    - Converts white coverage into support scores for cue, solid, and striped.
+    - Combines type support with histogram colour similarities to score all 16 identities.
+    - Records the highest-scoring identity for that candidate.
+*/
+void identityEvidence(Candidate& c) {
+    const double light = std::clamp(c.baselineType.lightPercent / 100, 0.0, 1.0);
+    const auto compatibility = [](double distance) {
+        return std::exp(-0.5 * std::pow(distance / TYPE_WIDTH, 2));
+    };
+    
+    const bool usable = c.colours.bestColour >= 1 || c.baselineType.type == "White";
+
+    // Distances to the original K2 light intervals: cue >=.85, solid <=.30, stripe [.30,.85].
+    c.typeSupport = {compatibility(std::max(0.0, 0.85 - light)), compatibility(std::max(0.0, light - 0.30)), compatibility(std::max({0.0, 0.30 - light, light - 0.85}))};
+    c.identityScore[0] = light * c.typeSupport[0];
+    for (int n = 1; n <= 15; ++n) {
+        const int colour = n <= 8 ? n : n - 8;
+        c.identityScore[n] = c.colours.bestColour < 0 ? 0 : c.colours.similarity[colour - 1] * c.typeSupport[n <= 8 ? 1 : 2];
+    }
+
+    const auto best = std::max_element(c.identityScore.begin(), c.identityScore.end());
+    c.localBest = int(best - c.identityScore.begin());
+    c.bestScore = *best;
+    for (int n = 0; n <= 15; ++n)
+        c.eligible[n] = usable && c.identityScore[n] > 1e-9;
+}
+
+// Assigns identities to candidates with the highest total score while allowing each identity once and any number of Unknowns.
+std::vector<int> assignUnique(const std::vector<Candidate>& candidates) {
+    const double abstention = 0;
+
+    std::vector<std::vector<double>> weights(candidates.size(), std::vector<double>(16 + candidates.size(), abstention + 1e-9));
+    for (size_t i = 0; i < candidates.size(); ++i)
+        for (int n = 0; n <= 15; ++n)
+            weights[i][n] = candidates[i].eligible[n] ? candidates[i].identityScore[n] : -1e6;
+
+    auto result = maximumAssignment(weights);
+    for (auto& n : result)
+        if (n >= 16)
+            n = -1; // Separate dummy columns allow any number of Unknowns.
+    return result;
+}
+
+/*
+======================
+    FULL PIPELINE
+======================
+*/
+
+IdentityRecognitionResult runIdentityRecognition( const cv::Mat& image, const std::vector<BallROI>& balls,
+                            const std::vector<cv::Vec3f>& circles, const std::vector<BallTypeResult>& types,
+                            const std::vector<BallColourScores>& colours, const BallColourModel& model,
+                            const std::filesystem::path& directory, const std::string& filename, 
+                            const EvaluationContext& context) {
+
+    if (balls.size() != circles.size() || types.size() != circles.size() || colours.size() != circles.size()) {
+        throw std::runtime_error("Identity inputs have different counts");
+    }
+
+    // Combine the evidence already calculated for each detection.
+    const auto centres = transformCentres(circles);
+    std::vector<Candidate> original;
+
+    for (size_t i = 0; i < circles.size(); ++i) {
+        Candidate candidate;
+        candidate.circle = circles[i];
+        candidate.tableCentre = centres[i];
+        candidate.roi = balls[i];
+        candidate.baselineType = types[i];
+        candidate.colours = colours[i];
+
+        identityEvidence(candidate);
+        original.push_back(candidate);
+    }
+
+    // Reanalyse originally white candidates with a larger ROI.
+    auto candidates = original;
+
+    for (size_t i = 0; i < candidates.size(); ++i) {
+        if (original[i].baselineType.type == "White") {
+            candidates[i] = rawWhitePadding(image, original[i], model, 1);
+        }
+    }
+
+    // Resolve duplicate-white ambiguity using the original evidence.
+    const int selectedCue = selectAmbiguousCue(original);
+    reserveCueIdentity(candidates, selectedCue);
+
+    // Assign each numbered identity at most once.
+    const auto numbers = assignUnique(candidates);
+
+    if (selectedCue >= 0 && numbers[selectedCue] != 0)
+        throw std::runtime_error("Cue reservation failed");
+
+    // Save final predictions before loading labels for evaluation.
+    std::vector<std::string> finalTypes;
+
+    for (int number : numbers) {
+        finalTypes.push_back(number < 0 ? "Unknown" : number == 0 ? "White" : number <= 8 ? "Solid" : "Striped");
+    }
+
+    saveFinalResults(
+        image, directory, circles, centres, finalTypes, numbers);
+
+    // Evaluate and save the summary.
+    const IdentityRecognitionResult evaluation = evaluateBallIdentities(numbers, context);
+
+    std::ofstream csv(directory / "identity_evaluation.csv");
+    if (!csv.is_open())
+        throw std::runtime_error("Could not create identity evaluation CSV");
+
+    csv << "TP,FP,FN,correct,groundTruth,unknown,"
+           "identityAccuracy,endToEndAccuracy\n";
+
+    csv << evaluation.detection.TP << ','
+        << evaluation.detection.FP << ','
+        << evaluation.detection.FN << ','
+        << evaluation.correct << ','
+        << evaluation.groundTruthCount << ','
+        << evaluation.unknown << ','
+        << evaluation.accuracy << ','
+        << evaluation.endToEndAccuracy << '\n';
 
     finishOutputFile(csv);
-    return evaluateBallTypes(results, circles, filename);
+    return evaluation;
 }
 
 /*
@@ -1172,21 +1434,30 @@ void saveDetectionEvaluation(const std::filesystem::path& directory, const Evalu
     finishOutputFile(csv);
 }
 
-TypeRecognitionResult evaluateBallTypes(const std::vector<BallTypeResult>& types, const std::vector<cv::Vec3f>& circles, const std::string& filename) {
 
-    if (types.size() != circles.size())
-        throw std::runtime_error("Types and circles have different counts");
+EvaluationContext prepareEvaluation(
+    const std::vector<cv::Vec3f>& circles,
+    const std::string& filename) {
 
-    const auto truth = loadLabelledGroundTruth(GROUND_TRUTH_PATH, filename);
+    EvaluationContext context;
+    context.truth = loadLabelledGroundTruth(GROUND_TRUTH_PATH, filename);
 
-    if (truth.empty())
-        throw std::runtime_error("No ground truth available for: " + filename);
+    if (context.truth.empty())
+        throw std::runtime_error("No ground truth for: " + filename);
 
-    std::vector<cv::Point2f> trueCentres;
-    for (const LabelledBall& ball : truth)
-        trueCentres.push_back(ball.centre);
+    std::vector<cv::Point2f> centres;
+    for (const LabelledBall& ball : context.truth)
+        centres.push_back(ball.centre);
 
-    const EvaluationResult matching = evaluateDetections(transformCentres(circles), trueCentres, MATCH_TOLERANCE);
+    context.matching = evaluateDetections(
+        transformCentres(circles), centres, MATCH_TOLERANCE);
+
+    return context;
+}
+
+TypeRecognitionResult evaluateBallTypes(const std::vector<BallTypeResult>& types, const EvaluationContext& context) {
+    const auto& truth = context.truth;
+    const auto& matching = context.matching;
 
     TypeRecognitionResult result;
     result.types = types;
@@ -1213,24 +1484,9 @@ TypeRecognitionResult evaluateBallTypes(const std::vector<BallTypeResult>& types
     return result;
 }
 
-ColourRecognitionResult evaluateBallColours(
-    const std::vector<BallColourScores>& colours,
-    const std::vector<cv::Vec3f>& circles,
-    const std::string& filename) {
-
-    if (colours.size() != circles.size())
-        throw std::runtime_error("Colours and circles have different counts");
-
-    const auto truth = loadLabelledGroundTruth(GROUND_TRUTH_PATH, filename);
-
-    if (truth.empty())
-        throw std::runtime_error("No ground truth for: " + filename);
-
-    std::vector<cv::Point2f> trueCentres;
-    for (const LabelledBall& ball : truth)
-        trueCentres.push_back(ball.centre);
-
-    const auto matching = evaluateDetections(transformCentres(circles), trueCentres, MATCH_TOLERANCE);
+ColourRecognitionResult evaluateBallColours(const std::vector<BallColourScores>& colours, const EvaluationContext& context) {
+    const auto& truth = context.truth;
+    const auto& matching = context.matching;
 
     ColourRecognitionResult result;
     result.colours = colours;
@@ -1261,6 +1517,87 @@ ColourRecognitionResult evaluateBallColours(
         result.endToEndAccuracy = double(result.correct) / result.groundTruthCount;
 
     return result;
+}
+
+IdentityRecognitionResult evaluateBallIdentities(const std::vector<int>& numbers, const EvaluationContext& context) {
+    const auto& truth = context.truth;
+    const auto& matching = context.matching;
+
+    IdentityRecognitionResult result;
+    result.numbers = numbers;
+    result.groundTruthCount = static_cast<int>(truth.size());
+
+    result.detection = matching;
+
+    for (size_t i = 0; i < numbers.size(); ++i) {
+        if (numbers[i] < 0)
+            ++result.unknown;
+
+        const int g = result.detection.predictionToGroundTruth[i];
+
+        if (g >= 0 && numbers[i] == truth[g].number)
+            ++result.correct;
+    }
+
+    if (result.detection.TP > 0)
+        result.accuracy = double(result.correct) / result.detection.TP;
+
+    result.endToEndAccuracy = double(result.correct) / result.groundTruthCount;
+
+    return result;
+}
+
+void printOverallEvaluation(const OverallEvaluation& totals) {
+    const auto percent = [](int correct, int total) -> std::string {
+        if (total == 0)
+            return "N/A";
+
+        std::ostringstream text;
+        text << std::fixed << std::setprecision(2) << 100.0 * correct / total << "%";
+        return text.str();
+    };
+
+    const int groundTruth = totals.TP + totals.FN;
+    const int detections = totals.TP + totals.FP;
+
+    const auto row = [&](const std::string& stage, int correct, int matched, int annotated) {
+        std::cout << std::left << std::setw(16) << stage
+                  << std::setw(12) << correct
+                  << std::setw(20) << percent(correct, matched)
+                  << percent(correct, annotated) << '\n';
+    };
+
+    std::cout << "\n"
+              << "============================================================\n"
+              << "              OVERALL EVALUATION: TABLE1–6\n"
+              << "============================================================\n";
+
+    std::cout << "Annotated balls: " << groundTruth << " | Detections: " << detections << '\n';
+
+    std::cout << "TP: " << totals.TP << " | FP: " << totals.FP << " | FN: " << totals.FN << "\n\n";
+
+    std::cout << "Detection precision: " << percent(totals.TP, detections) << '\n';
+
+    std::cout << "Detection recall: " << percent(totals.TP, groundTruth) << '\n';
+
+    std::cout << "Detection F1: " << percent(2 * totals.TP, 2 * totals.TP + totals.FP + totals.FN) << "\n\n";
+
+    std::cout << std::left
+              << std::setw(16) << "Recognition"
+              << std::setw(12) << "Correct"
+              << std::setw(20) << "Matched accuracy"
+              << "End-to-end\n";
+
+    std::cout << "------------------------------------------------------------\n";
+
+    row("Type", totals.correctTypes, totals.TP, groundTruth);
+    row("Colour", totals.correctColours, totals.matchedColours, totals.colourGroundTruth);
+    row("Identity", totals.correctIdentities, totals.TP, groundTruth);
+
+    std::cout << "\nUnknown identity predictions: " << totals.unknownIdentities << '\n';
+
+    std::cout << "Colour metrics exclude the cue ball.\n"
+              << "============================================================\n";
 }
 
 /*
@@ -1480,7 +1817,7 @@ void runGridSearch() {
 
 void runMainPipeline() {
     const HoughParams params;
-
+    OverallEvaluation totals;
     const cv::Mat referenceImage = cv::imread(MEDIA_DIR + TUNNNING_IMG);
 
     // run histogram training -> to get the 8 reference colour histograms
@@ -1491,6 +1828,7 @@ void runMainPipeline() {
 
         const std::filesystem::path directory_detection = std::filesystem::path(DETECTION_DIR) / std::filesystem::path(filename).stem();
         const std::filesystem::path directory_recognition = std::filesystem::path(RECOGNITION_DIR) / std::filesystem::path(filename).stem();
+        const std::filesystem::path directory_final = std::filesystem::path(FINAL_RES_DIR) / std::filesystem::path(filename).stem();
 
         if (image.empty())
             throw std::runtime_error("Could not load: " + filename);
@@ -1504,12 +1842,14 @@ void runMainPipeline() {
         std::cout << "Precision: " << 100.0 * detection.evaluation.precision << "%\n"
                   << "Recall: " << 100.0 * detection.evaluation.recall << "%\n"
                   << "F1: " << 100.0 * detection.evaluation.f1 << "%\n";
+        
+        const EvaluationContext context = prepareEvaluation(detection.filteredCircles, filename);
 
         // Run Ball Extraction
         const std::vector<BallROI> balls = runExtraction(image, detection.filteredCircles, directory_detection);
 
         // Run Recognition Pipeline
-        const TypeRecognitionResult recognition = runTypeRecognition(image, balls, detection.filteredCircles, directory_recognition, filename);
+        const TypeRecognitionResult recognition = runTypeRecognition(image, balls, detection.filteredCircles, directory_recognition, filename, context);
 
         std::cout << "---------Ball Type Results---------\n";
         std::cout << filename << ": " << recognition.correct << "/" << recognition.matched << " matched balls correctly typed\n";
@@ -1523,7 +1863,7 @@ void runMainPipeline() {
         // run colour recognition
         const ColourRecognitionResult colourRecognition = runColourRecognition(
             image, balls, detection.filteredCircles,
-            colourModel, directory_recognition, filename);
+            colourModel, directory_recognition, filename, context);
 
         std::cout << "---------Ball Colour Results---------\n";
         std::cout << filename << ": "
@@ -1532,8 +1872,7 @@ void runMainPipeline() {
                 << " matched numbered balls correctly coloured\n";
 
         if (colourRecognition.matched > 0) {
-            std::cout << "Colour accuracy: "
-                    << 100.0 * colourRecognition.accuracy << "%\n";
+            std::cout << "Colour accuracy: " << 100.0 * colourRecognition.accuracy << "%\n";
         } else {
             std::cout << "Colour accuracy: N/A\n";
         }
@@ -1542,9 +1881,48 @@ void runMainPipeline() {
                 << colourRecognition.correct << "/"
                 << colourRecognition.groundTruthCount
                 << " (" << 100.0 * colourRecognition.endToEndAccuracy << "%)\n";
+        
+        // run identity recognition
+        const IdentityRecognitionResult identity = runIdentityRecognition(image, balls, 
+                detection.filteredCircles, recognition.types, colourRecognition.colours, 
+                colourModel, directory_final, filename, context);
+
+        std::cout << "---------Ball Identity Results---------\n";
+        std::cout << filename << ": "
+                << identity.correct << "/" << identity.detection.TP
+                << " matched balls correctly numbered\n";
+
+        if (identity.detection.TP > 0) {
+            std::cout << "Identity accuracy: " << 100.0 * identity.accuracy << "%\n";
+        } else {
+            std::cout << "Identity accuracy: N/A\n";
+        }
+
+        std::cout << "Correctly detected and numbered: "
+                << identity.correct << "/" << identity.groundTruthCount
+                << " (" << 100.0 * identity.endToEndAccuracy << "%)\n";
+
+        std::cout << "Unknown predictions: " << identity.unknown << '\n';
 
         std::cout << "\n";
+        
+        // final evaluation
+        if (filename != TUNNNING_IMG) {
+            totals.TP += detection.evaluation.TP;
+            totals.FP += detection.evaluation.FP;
+            totals.FN += detection.evaluation.FN;
+
+            totals.correctTypes += recognition.correct;
+
+            totals.correctColours += colourRecognition.correct;
+            totals.matchedColours += colourRecognition.matched;
+            totals.colourGroundTruth += colourRecognition.groundTruthCount;
+
+            totals.correctIdentities += identity.correct;
+            totals.unknownIdentities += identity.unknown;
+        }
     }
+    printOverallEvaluation(totals);
 }
 
 void runExperiments() {

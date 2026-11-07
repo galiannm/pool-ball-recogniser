@@ -480,7 +480,7 @@ BallTypeResult classifyBallType(const KMeansResult& segmentation) {
 }
 
 // ==================================================
-// COLOUR HISTOGRAMS AND UNIQUE IDENTITY ASSIGNMENT  HERE NEXT
+// COLOUR HISTOGRAMS AND UNIQUE IDENTITY ASSIGNMENT 
 // ==================================================
 
 enum class BallHistogramSpace { HS, HSV, HLS };
@@ -677,6 +677,8 @@ BallColourScores scoreBallColours(const BallROI& ball, const BallColourModel& mo
     result.margin = *best - second;
     return result;
 }
+
+//  HERE NEXT
 
 constexpr double typeWidth = 0.10;
 
