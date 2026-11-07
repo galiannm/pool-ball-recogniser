@@ -1,5 +1,6 @@
 #pragma once
 
+#include "visualisation/combineImages.h"
 #include <opencv2/opencv.hpp>
 #include <algorithm>
 #include <array>
@@ -30,12 +31,6 @@ struct HoughParams {
     int maxRadius = 30;
 };
 
-struct DetectionResult {
-    cv::Mat maskedImage;
-    std::vector<cv::Vec3f> rawCircles;
-    std::vector<cv::Vec3f> filteredCircles;
-};
-
 struct BallROI {
     cv::Mat image;
     cv::Mat mask;
@@ -55,12 +50,6 @@ struct KMeansResult {
     int k = 0;
     cv::Mat segmentedImage;
     std::vector<KMeansRegion> regions;
-
-    // Hue comparaisons between the two largest clusters
-    double hueDifference = -1;
-    double saturationDifference = 0;
-    double brightnessDifference = 0;
-    double bgrDistance = 0;
 };
 
 struct BallTypeResult {
@@ -74,6 +63,15 @@ struct BallTypeResult {
 struct LabelledBall {
     int number; // 1-15, 0 = cue ball
     cv::Point2f centre;
+};
+
+struct TypeRecognitionResult {
+    std::vector<BallTypeResult> types;
+    int matched = 0;
+    int correct = 0;
+    int groundTruthCount = 0;
+    double accuracy = 0;          // Correct types / matched detections.
+    double endToEndAccuracy = 0;  // Correct types / all annotated balls.
 };
 
 struct EvaluationResult {
@@ -95,7 +93,39 @@ struct EvaluationResult {
     std::vector<int> groundTruthToPrediction;
 };
 
-// Function declarations let the definitions appear in any order in myApp.cpp.
+struct DetectionResult {
+    cv::Mat maskedImage;
+    std::vector<cv::Vec3f> rawCircles;
+    std::vector<cv::Vec3f> filteredCircles;
+    EvaluationResult evaluation;
+};
+
+enum class BallHistogramSpace { HS, HSV, HLS };
+
+struct BallHistogramOptions {
+    int hueBins = 18, saturationBins = 8, toneBins = 8;
+    int lightMinV = 170, lightMaxS = 165;
+    int erosionKernel = 3, minimumBodyPixels = 12, neutralChroma = 15;
+};
+
+struct LabelledColourSample {
+    int number; // Training labels only: 1–15; cue (0) is excluded.
+    BallROI ball;
+};
+
+struct BallColourModel {
+    BallHistogramSpace space;
+    BallHistogramOptions options;
+    std::array<cv::Mat, 8> histograms; // Colours 1–8; 9–15 share colours 1–7.
+    std::array<int, 8> examples{};
+};
+
+struct BallColourScores {
+    cv::Mat bodyMask;
+    std::array<double, 8> similarity{};
+    int pixels = 0, bestColour = -1;
+    double margin = 0;
+};
 
 std::vector<std::string> getAllImages();
 
@@ -136,6 +166,8 @@ cv::Mat drawTableDiagram(const std::vector<cv::Point2f>& centres, const std::vec
 
 std::vector<cv::Vec3f> detectBalls(const cv::Mat& image, const HoughParams& params);
 
+void saveDetectionEvaluation(const std::filesystem::path& directory, const EvaluationResult& evaluation);
+
 DetectionResult runDetection(const cv::Mat& image, 
                             const HoughParams& params, 
                             const std::filesystem::path directory, 
@@ -147,6 +179,31 @@ std::vector<BallROI> runExtraction(
     const std::filesystem::path& directory);
 
 EvaluationResult evaluateDetections(const std::vector<cv::Point2f>& predictions, const std::vector<cv::Point2f>& groundTruth, double tolerance);
+
+KMeansResult segmentBallKMeans(const BallROI& ball, int k);
+
+std::vector<KMeansResult> runKMeans(
+    const std::vector<BallROI>& balls,
+    int k,
+    const std::filesystem::path& directory);
+
+cv::Mat drawBallTypes(
+    const cv::Mat& image,
+    const std::vector<cv::Vec3f>& circles,
+    const std::vector<BallTypeResult>& types);
+
+BallTypeResult classifyBallType(const KMeansResult& segmentation);
+
+TypeRecognitionResult evaluateBallTypes(
+    const std::vector<BallTypeResult>& types,
+    const std::vector<cv::Vec3f>& circles,
+    const std::string& filename);
+
+TypeRecognitionResult runTypeRecognition(
+    const std::vector<BallROI>& balls,
+    const std::vector<cv::Vec3f>& circles,
+    const std::filesystem::path& directory,
+    const std::string& filename);
 
 void saveFinalResults(const cv::Mat& image, const std::filesystem::path& directory, const std::vector<cv::Vec3f>& circles, const std::vector<cv::Point2f>& tableCentres, const std::vector<std::string>& types, const std::vector<int>& numbers);
 

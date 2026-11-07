@@ -29,14 +29,27 @@ inline const std::vector<cv::Point> TABLE_CORNERS = {{337, 35}, {1570, 21}, {188
 
 inline constexpr double BALL_DIAMETER_MM = 43.0;
 
+inline const int LIGHT_MIN_V = 170;
+inline const int LIGHT_MAX_S = 165;
+inline const int DARK_MAX_V = 90;
+
+inline const double WHITE_BALL_MIN = 85.0;
+inline const double SOLID_MIN = 70.0;
+
 inline const std::string RUN_MODE = "ALL"; // or "MAIN", "EXPERIMENTS"
 
-// ========Helper Functions
+// ========IMAGE LIST========
 std::vector<std::string> getAllImages() {
     auto images = VAL_IMG;
     images.insert(images.begin(), TUNNNING_IMG);
     return images;
 }
+
+/*
+=========================================
+            GEOMETRY
+=========================================
+*/
 
 std::vector<cv::Point> getTableCorners() {
     return TABLE_CORNERS;
@@ -75,97 +88,6 @@ std::vector<cv::Point2f> transformCentres(const std::vector<cv::Vec3f>& circles)
     return transformed;
 }
 
-/*
-=========================================
-            PREPROCESSING
-=========================================
-*/
-
-// ========DETECTION========
-
-// Removes detected circles whose transformed centres are closer than pocketRadius to any of the six pocket locations.
-std::vector<cv::Vec3f> filterPocketDetections(const std::vector<cv::Vec3f>& circles) {
-
-    // Table dimensions after perspective transformation
-    const float width = TABLE_WIDTH;
-    const float height = TABLE_HEIGHT;
-
-    // Approximate pocket locations in transformed coordinates
-    std::vector<cv::Point2f> pockets = {{0, 0}, {width / 2, 0}, {width - 1, 0}, {0, height - 1}, {width / 2, height - 1}, {width - 1, height - 1}};
-
-    const float pocketRadius = ESTIMATE_POCKET_RADIUS;
-
-    std::vector<cv::Point2f> transformedCentres = transformCentres(circles);
-    std::vector<cv::Vec3f> filtered;
-
-    for (size_t i = 0; i < circles.size(); ++i) {
-        bool nearPocket = false;
-
-        for (const cv::Point2f& pocket : pockets) {
-            if (cv::norm(transformedCentres[i] - pocket) < pocketRadius) {
-                nearPocket = true;
-                break;
-            }
-        }
-
-        if (!nearPocket) {
-            filtered.push_back(circles[i]);
-        }
-    }
-
-    return filtered;
-}
-
-// Keeps the pixels inside the table polygon and makes the rest of the image black.
-cv::Mat maskTable(const cv::Mat& image) {
-    if (image.empty())
-        return {};
-
-    cv::Mat mask = cv::Mat::zeros(image.size(), CV_8UC1);
-    cv::fillConvexPoly(mask, getTableCorners(), cv::Scalar(255));
-
-    cv::Mat maskedImage;
-    cv::bitwise_and(image, image, maskedImage, mask);
-
-    return maskedImage;
-}
-
-// ========RECOGNITION========
-
-// Crops the image around a detected circle and creates a mask identifying the pixels inside that circle.
-BallROI extractBall(const cv::Mat& image, const cv::Vec3f& detectedCircle) {
-    BallROI result;
-
-    if (image.empty())
-        return result;
-
-    // Extract circle information from Hough detection
-    int x = cvRound(detectedCircle[0]);
-    int y = cvRound(detectedCircle[1]);
-    int radius = std::max(1, cvRound(detectedCircle[2]));
-
-    // Define square region around the ball
-    cv::Rect roi(x - radius, y - radius, 2 * radius + 1, 2 * radius + 1);
-
-    // Ensure ROI stays inside the image
-    roi &= cv::Rect(0, 0, image.cols, image.rows);
-
-    if (roi.empty())
-        return result;
-
-    // Extract the original colour pixels
-    result.image = image(roi).clone();
-    result.mask = cv::Mat::zeros(result.image.size(), CV_8UC1);
-
-    cv::Point localCentre(x - roi.x, y - roi.y);
-
-    cv::circle(result.mask, localCentre, radius, cv::Scalar(255), cv::FILLED);
-
-    return result;
-}
-
-// ========VISUALISATION/RESULTS========
-
 // Creates an overhead view of the image by applying the table perspective transformation.
 cv::Mat transformImage(const cv::Mat& image) {
     cv::Mat matrix = getTableTransformation();
@@ -173,6 +95,12 @@ cv::Mat transformImage(const cv::Mat& image) {
     cv::warpPerspective(image, transformed, matrix, cv::Size(TABLE_WIDTH, TABLE_HEIGHT), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
     return transformed;
 }
+
+/*
+=========================================
+            FILE INPUT/OUTPUT
+=========================================
+*/
 
 // Creates any missing parent directories and saves an image.
 void saveImage(const std::filesystem::path& path, const cv::Mat& image) {
@@ -190,43 +118,6 @@ void finishOutputFile(std::ofstream& file) {
 
     if (!file)
         throw std::runtime_error("Could not finish writing output CSV");
-}
-
-// get the label of the ball based on its number (0 = cue ball, 1-15 = numbered balls)
-std::string finalBallLabel(int number) {
-    if (number == 0)
-        return "Cue";
-
-    if (number >= 1 && number <= 15)
-        return std::to_string(number);
-
-    return "Unknown";
-}
-
-// Sets a drawing colour for each predicted ball identity.
-cv::Scalar diagramBallColour(int number) {
-    switch (number >= 9 && number <= 15 ? number - 8 : number) {
-    case 0:
-        return {245, 245, 245};
-    case 1:
-        return {20, 215, 245};
-    case 2:
-        return {200, 70, 30};
-    case 3:
-        return {45, 45, 220};
-    case 4:
-        return {145, 55, 125};
-    case 5:
-        return {20, 130, 245};
-    case 6:
-        return {60, 145, 35};
-    case 7:
-        return {50, 40, 115};
-    case 8:
-        return {25, 25, 25};
-    default:
-        return {145, 145, 145};
-    }
 }
 
 // Reads the annotated positions and identities for one image, representing the cue ball with identity zero.
@@ -305,9 +196,102 @@ std::vector<cv::Point2f> loadGroundTruth(
 
 /*
 =========================================
-            VISUALIZATION
+            VISUALISATION
 =========================================
 */
+
+// get the label of the ball based on its number (0 = cue ball, 1-15 = numbered balls)
+std::string finalBallLabel(int number) {
+    if (number == 0)
+        return "Cue";
+
+    if (number >= 1 && number <= 15)
+        return std::to_string(number);
+
+    return "Unknown";
+}
+
+// Sets a drawing colour for each predicted ball identity.
+cv::Scalar diagramBallColour(int number) {
+    switch (number >= 9 && number <= 15 ? number - 8 : number) {
+    case 0:
+        return {245, 245, 245};
+    case 1:
+        return {20, 215, 245};
+    case 2:
+        return {200, 70, 30};
+    case 3:
+        return {45, 45, 220};
+    case 4:
+        return {145, 55, 125};
+    case 5:
+        return {20, 130, 245};
+    case 6:
+        return {60, 145, 35};
+    case 7:
+        return {50, 40, 115};
+    case 8:
+        return {25, 25, 25};
+    default:
+        return {145, 145, 145};
+    }
+}
+
+// combine multiple images into one
+cv::Mat combineImages(const std::vector<ImagePanel>& panels, int columns) {
+    if (columns <= 0)
+        throw std::invalid_argument("Image grid columns must be positive");
+
+    constexpr int padding = 8;
+    constexpr int labelHeight = 24;
+    constexpr double fontScale = 0.4;
+    int width = 0;
+    int height = 0;
+    int count = 0;
+
+    for (const auto& panel : panels) {
+        if (panel.image.empty())
+            continue;
+        if (panel.image.depth() != CV_8U || (panel.image.channels() != 1 && panel.image.channels() != 3 && panel.image.channels() != 4))
+            throw std::invalid_argument("Image panels must be 8-bit grayscale, BGR, or BGRA");
+
+        int baseline = 0;
+        const auto labelSize = cv::getTextSize(panel.label, cv::FONT_HERSHEY_SIMPLEX, fontScale, 1, &baseline);
+        width = std::max({width, panel.image.cols, labelSize.width});
+        height = std::max(height, panel.image.rows);
+        ++count;
+    }
+
+    if (count == 0)
+        return {};
+
+    columns = std::min(columns, count);
+    const int rows = (count + columns - 1) / columns;
+    const int cellWidth = width + 2 * padding;
+    const int cellHeight = height + labelHeight + 2 * padding;
+    cv::Mat combined(rows * cellHeight, columns * cellWidth, CV_8UC3, cv::Scalar(32, 32, 32));
+
+    int index = 0;
+    for (const auto& panel : panels) {
+        if (panel.image.empty())
+            continue;
+
+        cv::Mat colour;
+        if (panel.image.channels() == 1)
+            cv::cvtColor(panel.image, colour, cv::COLOR_GRAY2BGR);
+        else if (panel.image.channels() == 4)
+            cv::cvtColor(panel.image, colour, cv::COLOR_BGRA2BGR);
+        else
+            colour = panel.image;
+
+        const int x = (index % columns) * cellWidth + padding;
+        const int y = (index / columns) * cellHeight + padding;
+        cv::putText(combined, panel.label, cv::Point(x, y + 15), cv::FONT_HERSHEY_SIMPLEX, fontScale, cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
+        colour.copyTo(combined(cv::Rect(x + (width - colour.cols) / 2, y + labelHeight + (height - colour.rows) / 2, colour.cols, colour.rows)));
+        ++index;
+    }
+    return combined;
+}
 
 // draws the detected circles on top of the original image, with a red outline and a blue centre dot.
 cv::Mat drawDetectedBalls(const cv::Mat& image, const std::vector<cv::Vec3f>& circles) {
@@ -383,11 +367,86 @@ cv::Mat drawTableDiagram(const std::vector<cv::Point2f>& centres, const std::vec
     return diagram;
 }
 
+// draw ball predicted ball type onto the table
+cv::Mat drawBallTypes(
+    const cv::Mat& image,
+    const std::vector<cv::Vec3f>& circles,
+    const std::vector<BallTypeResult>& types) {
+
+    if (circles.size() != types.size())
+        throw std::runtime_error("Circles and types have different counts");
+
+    cv::Mat result = drawDetectedBalls(image, circles);
+
+    for (size_t i = 0; i < circles.size(); ++i) {
+        const cv::Point centre(cvRound(circles[i][0]),
+                               cvRound(circles[i][1]));
+
+        const std::string label = types[i].type;
+
+        const cv::Point position = centre + cv::Point(-20, -cvRound(circles[i][2]) - 5);
+
+        // Black outline makes the white text easier to read.
+        cv::putText(result, label, position, cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(0, 0, 0), 3, cv::LINE_AA);
+
+        cv::putText(result, label, position, cv::FONT_HERSHEY_SIMPLEX, 0.45, cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
+    }
+
+    return result;
+}
+
 /*
 =========================================
             DETECTION
 =========================================
 */
+
+// Keeps the pixels inside the table polygon and makes the rest of the image black.
+cv::Mat maskTable(const cv::Mat& image) {
+    if (image.empty())
+        return {};
+
+    cv::Mat mask = cv::Mat::zeros(image.size(), CV_8UC1);
+    cv::fillConvexPoly(mask, getTableCorners(), cv::Scalar(255));
+
+    cv::Mat maskedImage;
+    cv::bitwise_and(image, image, maskedImage, mask);
+
+    return maskedImage;
+}
+
+// Removes detected circles whose transformed centres are closer than pocketRadius to any of the six pocket locations.
+std::vector<cv::Vec3f> filterPocketDetections(const std::vector<cv::Vec3f>& circles) {
+
+    // Table dimensions after perspective transformation
+    const float width = TABLE_WIDTH;
+    const float height = TABLE_HEIGHT;
+
+    // Approximate pocket locations in transformed coordinates
+    std::vector<cv::Point2f> pockets = {{0, 0}, {width / 2, 0}, {width - 1, 0}, {0, height - 1}, {width / 2, height - 1}, {width - 1, height - 1}};
+
+    const float pocketRadius = ESTIMATE_POCKET_RADIUS;
+
+    std::vector<cv::Point2f> transformedCentres = transformCentres(circles);
+    std::vector<cv::Vec3f> filtered;
+
+    for (size_t i = 0; i < circles.size(); ++i) {
+        bool nearPocket = false;
+
+        for (const cv::Point2f& pocket : pockets) {
+            if (cv::norm(transformedCentres[i] - pocket) < pocketRadius) {
+                nearPocket = true;
+                break;
+            }
+        }
+
+        if (!nearPocket) {
+            filtered.push_back(circles[i]);
+        }
+    }
+
+    return filtered;
+}
 
 // Finds circle candidates using Hough detection after converting the image to greyscale and blurring it.
 std::vector<cv::Vec3f> detectBalls(const cv::Mat& image, const HoughParams& params) {
@@ -429,27 +488,51 @@ DetectionResult runDetection(const cv::Mat& image,
     const auto predictions = transformCentres(result.filteredCircles);
     const auto groundTruth = loadGroundTruth(GROUND_TRUTH_PATH, filename);
 
-    const EvaluationResult evaluation =evaluateDetections(predictions, groundTruth, MATCH_TOLERANCE);
+    result.evaluation = evaluateDetections(predictions, groundTruth, MATCH_TOLERANCE);
+    saveDetectionEvaluation(directory, result.evaluation);
 
     // save detection results
     saveImage(directory / "masked.png", result.maskedImage);
     saveImage(directory / "raw_circles.png", drawDetectedBalls(result.maskedImage, result.rawCircles));
     saveImage(directory / "filtered_circles.png", drawDetectedBalls(result.maskedImage, result.filteredCircles));
 
-    std::ofstream csv(directory / "detection_evaluation.csv");
-    if (!csv.is_open())
-        throw std::runtime_error("Could not create detection evaluation CSV");
+    return result;
+}
 
-    csv << "TP,FP,FN,precision,recall,F1,meanError\n";
-    csv << evaluation.TP << ','
-        << evaluation.FP << ','
-        << evaluation.FN << ','
-        << evaluation.precision << ','
-        << evaluation.recall << ','
-        << evaluation.f1 << ','
-        << evaluation.meanError << '\n';
+/*
+=========================================
+            EXTRACTION
+=========================================
+*/
 
-    finishOutputFile(csv);
+// Crops the image around a detected circle and creates a mask identifying the pixels inside that circle.
+BallROI extractBall(const cv::Mat& image, const cv::Vec3f& detectedCircle) {
+    BallROI result;
+
+    if (image.empty())
+        return result;
+
+    // Extract circle information from Hough detection
+    int x = cvRound(detectedCircle[0]);
+    int y = cvRound(detectedCircle[1]);
+    int radius = std::max(1, cvRound(detectedCircle[2]));
+
+    // Define square region around the ball
+    cv::Rect roi(x - radius, y - radius, 2 * radius + 1, 2 * radius + 1);
+
+    // Ensure ROI stays inside the image
+    roi &= cv::Rect(0, 0, image.cols, image.rows);
+
+    if (roi.empty())
+        return result;
+
+    // Extract the original colour pixels
+    result.image = image(roi).clone();
+    result.mask = cv::Mat::zeros(result.image.size(), CV_8UC1);
+
+    cv::Point localCentre(x - roi.x, y - roi.y);
+
+    cv::circle(result.mask, localCentre, radius, cv::Scalar(255), cv::FILLED);
 
     return result;
 }
@@ -462,25 +545,275 @@ std::vector<BallROI> runExtraction(
 
     std::vector<BallROI> balls;
 
+    std::vector<ImagePanel> cropPanels;
+    std::vector<ImagePanel> maskPanels;
+
     for (size_t i = 0; i < circles.size(); ++i) {
         BallROI ball = extractBall(image, circles[i]);
 
-        const std::string name = "ball_" + std::to_string(i + 1);
-
-        saveImage(directory / "ROI" / (name + ".png"), ball.image);
-        saveImage(directory / "ROI" / (name + "_mask.png"), ball.mask);
+        const std::string label = "Ball " + std::to_string(i + 1);
+        cropPanels.push_back({label, ball.image});
+        maskPanels.push_back({label, ball.mask});
 
         balls.push_back(ball);
     }
+
+    const cv::Mat crops = combineImages(cropPanels, 4);
+    const cv::Mat masks = combineImages(maskPanels, 4);
+
+    if (!crops.empty())
+        saveImage(directory / "ROI" / "ball_crops.png", crops);
+
+    if (!masks.empty())
+        saveImage(directory / "ROI" / "ball_masks.png", masks);
 
     return balls;
 }
 
 /*
 =========================================
-            RECOGNITION
+            RECOGNITION 
 =========================================
 */
+
+/*
+======================
+      BALL TYPE 
+======================
+*/
+
+// =============K MEANS CLUSTERING=============
+
+/*
+Apply K Means clustering
+    1. collect the pixels inside the ball mask
+    2. build the input matrix (each row has one pixel's three colour vals, BGR)
+    3. Run K means
+    4. create the segmented image 
+    5. describe each cluster
+*/
+KMeansResult segmentBallKMeans(const BallROI& ball, int k) {
+    KMeansResult result;
+    result.k = k;
+
+    if (ball.image.empty() || ball.mask.empty() || k < 2)
+        return result;
+
+    // Collect ball pixels
+    std::vector<cv::Point> pixels;
+
+    for (int y = 0; y < ball.image.rows; ++y) {
+        for (int x = 0; x < ball.image.cols; ++x) {
+
+            if (ball.mask.at<uchar>(y, x) != 0)
+                pixels.emplace_back(x, y);
+        }
+    }
+
+    int total = static_cast<int>(pixels.size());
+
+    if (total < k)
+        return result;
+
+    // Prepare BGR samples for K-means
+    cv::Mat samples(total, 3, CV_32F);
+
+    for (int i = 0; i < total; ++i) {
+
+        cv::Vec3b colour = ball.image.at<cv::Vec3b>(pixels[i]);
+
+        samples.at<float>(i, 0) = colour[0];
+        samples.at<float>(i, 1) = colour[1];
+        samples.at<float>(i, 2) = colour[2];
+    }
+
+    // K-means clustering
+    cv::Mat labels;
+    cv::Mat centres;
+
+    cv::TermCriteria criteria(cv::TermCriteria::EPS + cv::TermCriteria::MAX_ITER, 50, 0.2);
+
+    // Fixed seed for reproducibility
+    uint64 previousState = cv::theRNG().state;
+    cv::theRNG().state = 12345;
+    cv::kmeans(samples, k, labels, criteria, 3, cv::KMEANS_PP_CENTERS, centres);
+    cv::theRNG().state = previousState;
+
+    // Create cluster masks
+    std::vector<cv::Mat> masks(k);
+
+    for (int j = 0; j < k; ++j) {
+        masks[j] = cv::Mat::zeros(ball.image.size(), CV_8UC1);
+    }
+
+    result.segmentedImage = cv::Mat::zeros(ball.image.size(), CV_8UC3);
+
+    // Reconstruct segmented image
+    for (int i = 0; i < total; ++i) {
+
+        int cluster = labels.at<int>(i, 0);
+        cv::Point p = pixels[i];
+        cv::Vec3b colour(cv::saturate_cast<uchar>(centres.at<float>(cluster, 0)), cv::saturate_cast<uchar>(centres.at<float>(cluster, 1)), cv::saturate_cast<uchar>(centres.at<float>(cluster, 2)));
+        result.segmentedImage.at<cv::Vec3b>(p) = colour;
+        masks[cluster].at<uchar>(p) = 255;
+    }
+
+    // Extract cluster information
+    for (int j = 0; j < k; ++j) {
+
+        int area = cv::countNonZero(masks[j]);
+
+        if (area == 0)
+            continue;
+
+        KMeansRegion region;
+
+        region.mask = masks[j];
+        region.percentage = 100.0 * area / total;
+        region.colour = cv::Vec3b(cv::saturate_cast<uchar>(centres.at<float>(j, 0)), cv::saturate_cast<uchar>(centres.at<float>(j, 1)), cv::saturate_cast<uchar>(centres.at<float>(j, 2)));
+
+        cv::Mat bgr(1, 1, CV_8UC3);
+        bgr.at<cv::Vec3b>(0, 0) = region.colour;
+
+        cv::Mat hsv;
+        cv::cvtColor(bgr, hsv, cv::COLOR_BGR2HSV);
+
+        region.hsv = hsv.at<cv::Vec3b>(0, 0);
+        result.regions.push_back(region);
+    }
+
+    // Sort largest regions first
+    std::sort(result.regions.begin(), result.regions.end(), [](const KMeansRegion& a, const KMeansRegion& b) {
+        return a.percentage > b.percentage;
+    });
+
+    return result;
+}
+
+std::vector<KMeansResult> runKMeans(
+    const std::vector<BallROI>& balls,
+    int k,
+    const std::filesystem::path& directory) {
+
+    std::vector<KMeansResult> results;
+    std::vector<ImagePanel> panels;
+
+    for (size_t i = 0; i < balls.size(); ++i) {
+        results.push_back(segmentBallKMeans(balls[i], k));
+
+        panels.push_back({
+            "Ball " + std::to_string(i + 1),
+            results.back().segmentedImage
+        });
+    }
+
+    const cv::Mat grid = combineImages(panels, 4);
+
+    if (!grid.empty())
+        saveImage(directory / "kmeans_grid.png", grid);
+
+    return results;
+}
+
+// =============CLASSIFY TYPE=============
+
+// Estimates whether a ball is white, solid or striped from the proportions of light, dark and coloured clusters.
+BallTypeResult classifyBallType(const KMeansResult& segmentation) {
+    BallTypeResult result;
+
+    if (segmentation.regions.empty())
+        return result;
+
+    for (const KMeansRegion& region : segmentation.regions) {
+
+        // Convert representative BGR colour to HSV
+        cv::Mat bgr(1, 1, CV_8UC3);
+        bgr.at<cv::Vec3b>(0, 0) = region.colour;
+
+        cv::Mat hsv;
+        cv::cvtColor(bgr, hsv, cv::COLOR_BGR2HSV);
+
+        cv::Vec3b pixel = hsv.at<cv::Vec3b>(0, 0);
+
+        int S = pixel[1];
+        int V = pixel[2];
+
+        if (V >= LIGHT_MIN_V && S <= LIGHT_MAX_S) {
+            result.lightPercent += region.percentage;
+        } else if (V <= DARK_MAX_V) {
+            result.darkPercent += region.percentage;
+        } else {
+            result.colouredPercent += region.percentage;
+        }
+    }
+
+    // Classify using cluster proportions
+    if (result.lightPercent >= WHITE_BALL_MIN) {
+        result.type = "White";
+    } else if (result.colouredPercent + result.darkPercent >= SOLID_MIN) {
+        result.type = "Solid";
+    } else if (result.lightPercent > 0 && result.colouredPercent + result.darkPercent > 0) {
+        result.type = "Striped";
+    }
+
+    return result;
+}
+
+/*
+======================
+      BALL COLOUR 
+======================
+*/
+
+// =============COLOUR HISTOGRAMS=============
+
+
+/*
+======================
+    FULL PIPELINE
+======================
+*/
+
+/*
+Run the Recognition pipeline:
+    1. Run the K means segmentation
+    2. Classify the ball type
+    3. TODO
+*/
+TypeRecognitionResult runTypeRecognition(
+    const cv::Mat& image,
+    const std::vector<BallROI>& balls,
+    const std::vector<cv::Vec3f>& circles,
+    const std::filesystem::path& directory,
+    const std::string& filename) {
+
+    std::vector<BallTypeResult> results;
+    std::filesystem::create_directories(directory);
+
+    std::ofstream csv(directory / "ball_types.csv");
+    if (!csv.is_open())
+        throw std::runtime_error("Could not create ball types CSV");
+
+    csv << "candidate,type,lightPercent,colouredPercent,darkPercent\n";
+    
+    const auto segmentations = runKMeans(balls, K_MEAN_CLUSTERS, directory);
+
+    for (size_t i = 0; i < balls.size(); ++i) {
+        const BallTypeResult type = classifyBallType(segmentations[i]);
+
+        results.push_back(type);
+
+        csv << i + 1 << ','
+            << type.type << ','
+            << type.lightPercent << ','
+            << type.colouredPercent << ','
+            << type.darkPercent << '\n';
+    }
+    saveImage(directory / "table_types.png", drawBallTypes(image, circles, results));
+
+    finishOutputFile(csv);
+    return evaluateBallTypes(results, circles, filename);
+}
 
 /*
 =========================================
@@ -558,6 +891,77 @@ EvaluationResult evaluateDetections(const std::vector<cv::Point2f>& predictions,
         result.f1 = 2 * result.precision * result.recall / (result.precision + result.recall);
     if (result.TP > 0)
         result.meanError = totalError / result.TP;
+
+    return result;
+}
+
+// Helper to save the detection evaluation results
+void saveDetectionEvaluation(
+    const std::filesystem::path& directory,
+    const EvaluationResult& evaluation) {
+
+    std::filesystem::create_directories(directory);
+
+    std::ofstream csv(directory / "detection_evaluation.csv");
+    if (!csv.is_open())
+        throw std::runtime_error("Could not create detection evaluation CSV");
+
+    csv << "TP,FP,FN,precision,recall,F1,meanError\n";
+    csv << evaluation.TP << ','
+        << evaluation.FP << ','
+        << evaluation.FN << ','
+        << evaluation.precision << ','
+        << evaluation.recall << ','
+        << evaluation.f1 << ','
+        << evaluation.meanError << '\n';
+
+    finishOutputFile(csv);
+}
+
+TypeRecognitionResult evaluateBallTypes(
+    const std::vector<BallTypeResult>& types,
+    const std::vector<cv::Vec3f>& circles,
+    const std::string& filename) {
+
+    if (types.size() != circles.size())
+        throw std::runtime_error("Types and circles have different counts");
+
+    const auto truth = loadLabelledGroundTruth(GROUND_TRUTH_PATH, filename);
+
+    if (truth.empty())
+        throw std::runtime_error("No ground truth available for: " + filename);
+
+    std::vector<cv::Point2f> trueCentres;
+    for (const LabelledBall& ball : truth)
+        trueCentres.push_back(ball.centre);
+
+    const EvaluationResult matching = evaluateDetections(
+        transformCentres(circles), trueCentres, MATCH_TOLERANCE);
+
+    TypeRecognitionResult result;
+    result.types = types;
+    result.matched = matching.TP;
+    result.groundTruthCount = static_cast<int>(truth.size());
+
+    for (size_t i = 0; i < types.size(); ++i) {
+        const int j = matching.predictionToGroundTruth[i];
+
+        if (j < 0)
+            continue;
+
+        const int number = truth[j].number;
+        const std::string trueType =
+            number == 0 ? "White" : number <= 8 ? "Solid" : "Striped";
+
+        if (types[i].type == trueType)
+            ++result.correct;
+    }
+
+    if (result.matched > 0)
+        result.accuracy = double(result.correct) / result.matched;
+
+    result.endToEndAccuracy =
+        double(result.correct) / result.groundTruthCount;
 
     return result;
 }
@@ -643,7 +1047,7 @@ void runGridSearch() {
         return;
     }
 
-    // DEFINE PARAMETER SEARCH SPACE (480 configurations)
+    // define parameter search space (480 configurations)
     std::vector<double> dpValues = {1.0, 1.5, 2.0};
     std::vector<double> minDistValues = {15, 18, 20, 22, 25};
     std::vector<double> param1Values = {75, 100, 125, 150};
@@ -672,7 +1076,7 @@ void runGridSearch() {
     int count = 0;
     const size_t totalConfigurations = dpValues.size() * minDistValues.size() * param1Values.size() * param2Values.size();
 
-    // TEST EVERY PARAMETER COMBINATION
+    // test every parameter combination
     for (double dp : dpValues) {
         for (double minDist : minDistValues) {
             for (double p1 : param1Values) {
@@ -689,7 +1093,8 @@ void runGridSearch() {
                     params.maxRadius = 30;
 
                     // Detect balls
-                    std::vector<cv::Vec3f> circles = detectBalls(maskedImage, params);
+                    const auto rawCircles = detectBalls(maskedImage, params);
+                    const auto circles = filterPocketDetections(rawCircles);
 
                     // Transform detected centres
                     std::vector<cv::Point2f> predictions = transformCentres(circles);
@@ -762,7 +1167,8 @@ void runGridSearch() {
         std::cout << "Mean error: N/A" << std::endl;
 
     // save the visualisation of the best configuration
-    std::vector<cv::Vec3f> bestCircles = detectBalls(maskedImage, bestParams);
+    const auto bestRawCircles = detectBalls(maskedImage, bestParams);
+    const auto bestCircles = filterPocketDetections(bestRawCircles);
     cv::Mat bestImage = drawDetectedBalls(maskedImage, bestCircles);
 
     saveImage(output_dir + "best_detection.jpeg", bestImage);
@@ -785,16 +1191,42 @@ void runMainPipeline() {
             throw std::runtime_error("Could not load: " + filename);
 
         const std::filesystem::path directory_detection = std::filesystem::path(DETECTION_DIR) / std::filesystem::path(filename).stem();
+        const std::filesystem::path directory_recognition = std::filesystem::path(RECOGNITION_DIR) / std::filesystem::path(filename).stem();
 
         // Run detection.
         const DetectionResult detection = runDetection(image, params, directory_detection, filename);
 
-        // Run Ball Extraction
-        const std::vector<BallROI> balls = runExtraction(image, detection.filteredCircles, directory_detection);
-
+        std::cout << "---------Detection Results---------\n";
         std::cout << filename
                   << ": " << detection.rawCircles.size() << " raw circles, "
                   << detection.filteredCircles.size() << " after filtering\n";
+        
+        std::cout << "Precision: " << 100.0 * detection.evaluation.precision << "%\n"
+            << "Recall: " << 100.0 * detection.evaluation.recall << "%\n"
+            << "F1: " << 100.0 * detection.evaluation.f1 << "%\n";
+
+        
+        // Run Ball Extraction
+        const std::vector<BallROI> balls = runExtraction(image, detection.filteredCircles, directory_detection);
+        
+        // Run Recognition Pipeline
+        const TypeRecognitionResult recognition = runTypeRecognition(image, balls, detection.filteredCircles, directory_recognition, filename);        
+
+        std::cout << "---------Ball Type Results---------\n";
+        std::cout << filename
+                << ": " << recognition.correct
+                << "/" << recognition.matched
+                << " matched balls correctly typed\n";
+        
+        if (recognition.matched > 0) {
+            std::cout << "Type accuracy: " << 100.0 * recognition.accuracy << "%\n";
+        } 
+
+        std::cout << "Correctly detected and typed: "
+            << recognition.correct << "/" << recognition.groundTruthCount
+            << " (" << 100.0 * recognition.endToEndAccuracy << "%)\n";
+        
+        std::cout << "\n";
     }
 }
 

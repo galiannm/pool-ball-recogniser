@@ -288,7 +288,7 @@ BallROI extractBall(const cv::Mat& image, const cv::Vec3f& detectedCircle) {
 
 /*
 Groups the masked ball pixels into K colour clusters and records their colours, masks and proportions.
-HERE NEXT*/
+*/
 KMeansResult segmentBallKMeans(const BallROI& ball, int k) {
     KMeansResult result;
     result.k = k;
@@ -423,7 +423,7 @@ KMeansResult segmentBallKMeans(const BallROI& ball, int k) {
 }
 
 // ======================================
-// K-MEANS WHITE-COVERAGE CLASSIFICATION
+// K-MEANS WHITE-COVERAGE CLASSIFICATION HERE NEXT
 // ======================================
 
 /*
