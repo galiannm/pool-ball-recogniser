@@ -6,6 +6,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenCV 4 REQUIRED)
 
+# Controlled lighting alternatives around the current final pipeline. This target
+# includes the parent application without its standalone main or the legacy modules.
+add_executable(IlluminationExperiments experiments/illuminationNormalization.cpp)
+target_include_directories(IlluminationExperiments PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(IlluminationExperiments PRIVATE ${OpenCV_LIBS})
+target_compile_definitions(IlluminationExperiments PRIVATE
+    POOL_EXPERIMENT_PROJECT_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/..")
+
 # Modular demonstrations and validation; the consolidated submission is separate.
 add_executable(PoolBallDetection
     main.cpp

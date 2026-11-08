@@ -1,0 +1,121 @@
+"""Compose report figures from current exports and report-only application diagnostics.
+Run from any directory after export_evidence.cpp has been compiled/run at project root.
+This script does not run or modify the application pipeline.
+"""
+from pathlib import Path
+import csv
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from PIL import Image
+
+HERE=Path(__file__).resolve().parent
+ROOT=HERE.parent
+A=HERE/'assets'
+plt.rcParams.update({'font.family':'DejaVu Sans','font.size':8,'axes.spines.top':False,'axes.spines.right':False,'pdf.fonttype':42})
+def read(path): return np.array(Image.open(path))
+def panel(ax,path,title):
+    ax.imshow(read(path),cmap='gray',vmin=0,vmax=255)
+    ax.set_title(title,fontsize=8,pad=3)
+    ax.axis('off')
+def save(fig,name):
+    fig.savefig(A/name,bbox_inches='tight',pad_inches=.04,dpi=220)
+    plt.close(fig)
+
+fig,axs=plt.subplots(1,4,figsize=(7,1.15),layout='constrained')
+paths=[ROOT/'final_output/detection/AllBalls/masked.png',A/'detection_grey_blur.png',ROOT/'final_output/detection/AllBalls/raw_circles.png',ROOT/'final_output/detection/AllBalls/filtered_circles.png']
+for j,(ax,path,title) in enumerate(zip(axs,paths,['Table mask','Smoothed ball crop','Raw pocket circle','Pocket rejected'])):
+ img=read(path)
+ if j==1:img=img[120:225,1120:1260]
+ if j>=2:img=img[0:75,920:1010]
+ ax.imshow(img,cmap='gray',vmin=0,vmax=255);ax.set_title(title,fontsize=8,pad=3);ax.axis('off')
+save(fig,'detection_stages.pdf')
+
+fig,axs=plt.subplots(3,4,figsize=(6.8,2.65),layout='constrained')
+for row,(prefix,label) in enumerate([('Table2_candidate_12','Solid 1'),('Table2_candidate_5','Stripe 9'),('Table1_candidate_6','Cue')]):
+ for col,(suffix,title) in enumerate([('original','Original'),('mask','Circular mask'),('kmeans','K=2 clusters'),('body','Histogram body pixels')]):
+  panel(axs[row,col],A/f'{prefix}_{suffix}.png',f'{label}: {title}' if col==0 else title)
+save(fig,'recognition_stages.pdf')
+
+w=np.linspace(0,1,501)
+fig,ax=plt.subplots(figsize=(3.4,1.7),layout='constrained')
+for low,high,label in [(0,.3,'Solid'),(.3,.85,'Stripe'),(.85,1,'Cue')]:
+ d=np.maximum.reduce([np.zeros_like(w),low-w,w-high]);ax.plot(w,np.exp(-.5*(d/.1)**2),label=label)
+ax.set(xlabel='Visible light fraction w',ylabel='Type compatibility',ylim=(-.02,1.08))
+ax.legend(loc='lower center',ncol=3,fontsize=7,frameon=False)
+save(fig,'type_support.pdf')
+
+rows=list(csv.DictReader((A/'colour_scores.csv').open()))
+selected=[next(r for r in rows if r['image']=='Table2' and r['trueNumber']==n) for n in ['1','9','8']]
+fig,ax=plt.subplots(figsize=(3.6,1.7),layout='constrained')
+cols=['yellow','blue','red','purple','orange','green','maroon','black']
+values=np.array([[float(r[c]) for c in cols] for r in selected])
+ax.imshow(values,vmin=0,vmax=1,cmap='Blues',aspect='auto')
+ax.set_xticks(range(8),cols,rotation=40,ha='right',fontsize=7)
+ax.set_yticks(range(3),['Solid 1','Stripe 9','Black 8'])
+for (y,x),v in np.ndenumerate(values):ax.text(x,y,f'{v:.2f}',ha='center',va='center',fontsize=6,color='white' if v>.55 else 'black')
+save(fig,'colour_scores.pdf')
+
+fig,axs=plt.subplots(2,2,figsize=(4.6,1.7),layout='constrained')
+for row,(prefix,label) in enumerate([('Table1_candidate_6','Cue: r=24.15'),('Table1_candidate_7','White patch: r=17.55')]):
+ panel(axs[row,0],A/f'{prefix}_original.png',label)
+ panel(axs[row,1],A/f'{prefix}_padded.png','Recognition radius +1 pixel')
+save(fig,'white_padding.pdf')
+
+fig,axs=plt.subplots(3,2,figsize=(6.9,3.1),layout='constrained')
+counts=[(11,14,2),(16,16,0),(15,15,1),(14,14,1),(13,14,0),(11,13,0)]
+for i,ax in enumerate(axs.flat,1):
+ c,m,miss=counts[i-1]
+ panel(ax,ROOT/f'final_output/final/Table{i}/original_numbered.png',f'Table{i}: {c}/{m} matched identities; {miss} misses')
+save(fig,'final_gallery.pdf')
+
+fig,axs=plt.subplots(1,3,figsize=(6.9,1.65),layout='constrained')
+for ax,prefix,title in zip(axs,['Table1_candidate_7','Table6_candidate_13','Table6_candidate_11'],['Table1: true 14 → Unknown','Table6: true 10 → 4','Table6: true 3 → 11']):panel(ax,A/f'{prefix}_context.png',title)
+save(fig,'failure_details.pdf')
+
+fig,axs=plt.subplots(2,3,figsize=(6.7,1.65),layout='constrained')
+for row,(prefix,label) in enumerate([('Table2_candidate_3','True cue'),('Table4_candidate_9','True solid')]):
+ for col,(suffix,title) in enumerate([('original',label),('kmeans','K=2: correct'),('cca_light','Light mask: CCA → stripe')]):panel(axs[row,col],A/f'{prefix}_{suffix}.png',title)
+save(fig,'cca_examples.pdf')
+
+# Same pixel window for each detection variant; no resizing or repositioning of circles.
+fig,axs=plt.subplots(1,3,figsize=(6.9,1.65),layout='constrained')
+for ax,suffix,title in zip(axs,['baseline','local','watershed'],['Baseline: 15 TP / 0 FP','Local Hough: 16 TP / 1 FP','Watershed: 15 TP / 1 FP']):
+ img=read(A/f'guided_Table3_{suffix}.png')
+ ax.imshow(img[70:290,1270:1590]);ax.axis('off');ax.set_title(title,fontsize=8)
+save(fig,'guided_details.pdf')
+
+# Diagnostic region generated by the actual simplified watershed experiment.
+paths=sorted(A.glob('guided_Table3_diagnostic_*.png'),key=lambda p:int(p.stem.rsplit('_',1)[1]))
+if paths:
+ fig,axs=plt.subplots(1,3,figsize=(6.9,1.35),layout='constrained')
+ for ax,path,title in zip(axs,paths[:3],['Crowded search crop','Foreground and marker cores','Watershed basins']):panel(ax,path,title)
+ save(fig,'guided_stages.pdf')
+
+# Per-identity counts from saved predictions and the same application matching.
+truth={}
+with (ROOT/'data/ground_truth/BallLocationsNew.csv').open(newline='') as f:
+ for r in csv.reader(f):
+  if r and r[0].startswith('Table'):
+   truth[r[0].split('.')[0]]=[0 if i==15 else i+1 for i in range(16) if 2*i+2<len(r) and r[2*i+1] and r[2*i+2]]
+evidence=list(csv.DictReader((A/'candidate_evidence.csv').open()))
+counts={n:[0,0,0] for n in range(16)}
+for image,ids in truth.items():
+ for n in ids:counts[n][0]+=1
+for r in evidence:
+ if r['image']=='AllBalls' or int(r['trueNumber'])<0:continue
+ n=int(r['trueNumber']);counts[n][1]+=1;counts[n][2]+=int(r['predictedNumber'])==n
+fig,ax=plt.subplots(figsize=(6.8,1.8),layout='constrained')
+x=np.arange(16);matched=[counts[n][1] for n in range(16)];correct=[counts[n][2] for n in range(16)]
+ax.bar(x,[counts[n][0] for n in range(16)],color='#e4e8ec',label='Annotated')
+ax.bar(x-.16,matched,width=.3,color='#87b7d3',label='Detected')
+ax.bar(x+.16,correct,width=.3,color='#255775',label='Correct identity')
+ax.set_xticks(x,['Cue']+list(map(str,range(1,16))))
+ax.set(xlabel='True identity',ylabel='Balls',ylim=(0,7.5),yticks=[0,2,4,6])
+ax.legend(loc='upper center',ncol=3,frameon=False,fontsize=7)
+save(fig,'identity_counts.pdf')
+with (A/'group_counts.csv').open('w') as f:
+ f.write('identity,annotated,matched,correct\n')
+ for n,c in counts.items():f.write(f'{n},{c[0]},{c[1]},{c[2]}\n')
+print('Report figures generated from current exports and diagnostic evidence.')

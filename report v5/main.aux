@@ -1,0 +1,43 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyperFirstAtBeginDocument{\AtBeginDocument}
+\HyperFirstAtBeginDocument{\ifx\hyper@anchor\@undefined
+\global\let\oldnewlabel\newlabel
+\gdef\newlabel#1#2{\newlabelxx{#1}#2}
+\gdef\newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
+\AtEndDocument{\ifx\hyper@anchor\@undefined
+\let\newlabel\oldnewlabel
+\fi}
+\fi}
+\global\let\hyper@last\relax 
+\gdef\HyperFirstAtBeginDocument#1{#1}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Processing and design}{1}{section.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Final Detection and Recognition pipeline.\relax }}{1}{figure.caption.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Table restriction and circular detection}{1}{subsection.1.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces AllBalls: full table mask, smoothed ball detail, and the same pocket before/after filtering. The raw 17 candidates become 16 matched detections.\relax }}{1}{figure.caption.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Ball regions, type estimation and colour references}{2}{subsection.1.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Original crops, extraction masks, two-cluster segmentation and selected histogram pixels. Rows show yellow solid 1, yellow stripe 9 and a cue. Black outside the masks means excluded pixels. The cue is not a body-colour reference.\relax }}{2}{figure.caption.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Soft evidence and joint identity assignment}{3}{subsection.1.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Yellow partners have similar colour preferences but different white coverage.\relax }}{3}{figure.caption.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Table1 cue and white patch before/after expansion. The patch's light coverage falls from 100\% to 93.98\%, but it remains Unknown: padding is not a general repair.\relax }}{3}{figure.caption.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}Table coordinates and final representation}{4}{subsection.1.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Table2: all genuine identities are correct; an extra detection remains Unknown.\relax }}{4}{figure.caption.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.5}Alternatives Considered}{4}{subsection.1.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces An actual Table3 search region, foreground with marker cores, and watershed basins. Coloured regions are segmentation labels, not ball identities.\relax }}{4}{figure.caption.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Results and analysis}{5}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Evaluation protocol and final performance}{5}{subsection.2.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Final pipeline on every validation image. Centre error is in table units; identity fractions use matched detections.\relax }}{5}{table.caption.8}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Standalone appearance estimates versus final joint recognition.\relax }}{5}{table.caption.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Scene-level successes and failures}{7}{subsection.2.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces All six validation outputs. Fractions count correct matched identities; they are not complete-scene accuracy. False detections and Unknowns remain visible.\relax }}{7}{figure.caption.10}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Table1 white patch; Table6 blue stripe 10 assigned 4; Table6 red solid 3 assigned 11. Titles give matched truth; image labels are predictions.\relax }}{7}{figure.caption.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}What the controlled experiments show}{8}{subsection.2.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces CCA regressions: Table2 cue and Table4 solid, both initially correct. Their light masks trigger the fixed stripe rule.\relax }}{8}{figure.caption.12}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Pooled results. NFP: false detections assigned real identities. Correct identities are out of 90 annotations.\relax }}{8}{table.caption.13}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces The same Table3 window: local Hough recovers a ball with a false circle; the watershed area check rejects the recovery but retains that false circle.\relax }}{8}{figure.caption.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Group performance, robustness and improvements}{9}{subsection.2.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Counts by true identity: annotated examples, matched detections and correct final identities. Unequal sample counts remain visible.\relax }}{9}{figure.caption.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{References and assistance}{9}{section*.16}\protected@file@percent }
+\gdef \@abspage@last{9}

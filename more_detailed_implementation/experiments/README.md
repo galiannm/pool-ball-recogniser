@@ -1,3 +1,11 @@
+# Lighting correction with the current main pipeline
+
+The independent `IlluminationExperiments` target compares the current final pipeline
+against neutral-pixel white balancing and CLAHE in Lab lightness. See
+[illuminationNormalization.md](illuminationNormalization.md) for commands, controls,
+parameters and output descriptions. The historical runners below use the older
+modular implementations instead.
+
 # Radius padding experiment
 
 Run these commands from the repository root:

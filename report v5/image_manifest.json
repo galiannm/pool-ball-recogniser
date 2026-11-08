@@ -1,0 +1,62 @@
+[
+  {
+    "path": "final_output/final/Table2/original_numbered.png",
+    "sha256": "a1f3e2eab7ef793f2910d3c38616aa869a19b1686830606a315f3a4160871e1c"
+  },
+  {
+    "path": "final_output/final/Table2/table_diagram.png",
+    "sha256": "31e8edf46f791fc5dbcba3a949c53f54b1fecb261affba225be832e86d7083ce"
+  },
+  {
+    "path": "final_output/final/Table2/table_numbered.png",
+    "sha256": "08fce78e2abf8019802129a23716d4433486ca811286cbe2e2c5fa6b92562d33"
+  },
+  {
+    "path": "report v5/assets/cca_examples.pdf",
+    "sha256": "e07b3e110505f10e85aa33e53da43c6a969db00817f65b28413f0e1fc2e3b4d0"
+  },
+  {
+    "path": "report v5/assets/colour_scores.pdf",
+    "sha256": "9a4185cd2b04e6787576fc22224fc6c2bb78e7eb2f2d7efc9a4a5025f1b8ebbd"
+  },
+  {
+    "path": "report v5/assets/detection_stages.pdf",
+    "sha256": "82e32b1becf9830059c4f487e5a2dc34645550bedc0fc951230f0749dcbaea86"
+  },
+  {
+    "path": "report v5/assets/failure_details.pdf",
+    "sha256": "2c6f45928174a49e2918c27748ecc9769921b6f01c0470423941401c0665830b"
+  },
+  {
+    "path": "report v5/assets/final_gallery.pdf",
+    "sha256": "17bdfc3e728c32e3a6fafcb25dfc17c652570ef40e95c0b72e56b0e707649db7"
+  },
+  {
+    "path": "report v5/assets/guided_details.pdf",
+    "sha256": "27e74b01af25a3c24d4982dbad5089ec0f1df5a344d97d31e95d2e39cc7c2069"
+  },
+  {
+    "path": "report v5/assets/guided_stages.pdf",
+    "sha256": "b55bd6f4fe1d477feb1cc0989cff9c5d267f781b83a778bf6c9e679a040ea0fc"
+  },
+  {
+    "path": "report v5/assets/identity_counts.pdf",
+    "sha256": "2b068c87624da4cb5edefdc5b2331019825c67bcb7fc1687917ad437fa5a14cd"
+  },
+  {
+    "path": "report v5/assets/pipeline.png",
+    "sha256": "27a3e8ddbb98e5c3e314ee5d82954dac46a5563f3feac1b77158784d2d1810ea"
+  },
+  {
+    "path": "report v5/assets/recognition_stages.pdf",
+    "sha256": "ce9e706210bd91b18320c31ab0b697ce3b7716ea9408ece734759b144e205c4d"
+  },
+  {
+    "path": "report v5/assets/type_support.pdf",
+    "sha256": "f98cf8ac497e804dce9f734492126be9fb4e53233bf402af2cb6af15ba66b2cc"
+  },
+  {
+    "path": "report v5/assets/white_padding.pdf",
+    "sha256": "17c2973dcb2baa64f890ec9003272ff2cd2c2c080c282991610f3d0e1ffac784"
+  }
+]
