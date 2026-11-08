@@ -1,6 +1,5 @@
 #pragma once
 
-#include "visualisation/combineImages.h"
 #include <opencv2/opencv.hpp>
 #include <algorithm>
 #include <array>
@@ -93,6 +92,14 @@ struct EvaluationResult {
     std::vector<int> groundTruthToPrediction;
 };
 
+struct BallGroupCounts {
+    int annotated = 0;
+    int matched = 0;
+    int correctColour = 0;
+    int correctType = 0;
+    int correctIdentity = 0;
+};
+
 struct OverallEvaluation {
     int TP = 0;
     int FP = 0;
@@ -106,6 +113,8 @@ struct OverallEvaluation {
 
     int correctIdentities = 0;
     int unknownIdentities = 0;
+
+    std::map<std::string, BallGroupCounts> groups;
 };
 
 struct EvaluationContext {
@@ -176,6 +185,29 @@ struct IdentityRecognitionResult {
     double endToEndAccuracy = 0;  
 };
 
+struct CCAExp {
+    int lightCount = 0;
+    int nonLightCount = 0;
+    double largestLightPct = 0;
+    double largestNonLightPct = 0;
+    double boundaryLightPct = 0;
+    cv::Mat lightMask;
+    cv::Mat nonLightMask;
+};
+
+struct ImagePanel {
+    std::string label;
+    cv::Mat image;
+};
+
+struct GuidedExperimentResult {
+    cv::Mat foreground;
+    std::vector<cv::Vec3f> baseline;
+    std::vector<cv::Vec3f> guided;
+    std::vector<cv::Vec3f> watershed;
+    std::vector<ImagePanel> diagnostics;
+};
+
 // HSV histogram colour recognition.
 const char* bodyColourName(int colour);
 
@@ -217,7 +249,8 @@ ColourRecognitionResult runColourRecognition(
     const std::vector<cv::Vec3f>& circles,
     const BallColourModel& model,
     const std::filesystem::path& directory,
-    const std::string& filename);
+    const std::string& filename,
+    const EvaluationContext& context);
 
 std::vector<std::string> getAllImages();
 
@@ -299,7 +332,8 @@ TypeRecognitionResult runTypeRecognition(
     const std::vector<BallROI>& balls,
     const std::vector<cv::Vec3f>& circles,
     const std::filesystem::path& directory,
-    const std::string& filename);
+    const std::string& filename,
+    const EvaluationContext& context);
 
 std::string identityType(int number);
 
@@ -328,13 +362,34 @@ IdentityRecognitionResult runIdentityRecognition(
     const std::vector<BallColourScores>& colours,
     const BallColourModel& model,
     const std::filesystem::path& directory,
-    const std::string& filename);
+    const std::string& filename,
+    const EvaluationContext& context);
+
+void accumulateBallGroups(const std::vector<int>& numbers, const EvaluationContext& context, std::map<std::string, BallGroupCounts>& groups);
+
+void printBallGroupEvaluation(const std::map<std::string, BallGroupCounts>& groups);
 
 void printOverallEvaluation(const OverallEvaluation& totals);
 
 void saveFinalResults(const cv::Mat& image, const std::filesystem::path& directory, const std::vector<cv::Vec3f>& circles, const std::vector<cv::Point2f>& tableCentres, const std::vector<std::string>& types, const std::vector<int>& numbers);
 
 void runGridSearch();
+
+CCAExp experimentCCA(const BallROI& ball, const KMeansResult& seg);
+
+std::string experimentCCAType(const BallTypeResult& base, const CCAExp& spatial);
+
+void runK2CCAExperiment();
+
+cv::Mat makeExperimentForeground(const cv::Mat& image);
+
+GuidedExperimentResult detectGuidedHoughWatershed(
+    const cv::Mat& image,
+    const std::vector<cv::Vec3f>& baseline);
+
+void runGuidedHoughWatershedExperiment();
+
+void runGuidedRecognitionExperiment();
 
 void runMainPipeline();
 
