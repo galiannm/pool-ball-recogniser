@@ -1,0 +1,13 @@
+Fixed A/B/C/D experiment. One implementation, no main-pipeline changes.
+Best-effort mode=1. Original conservative outputs are not overwritten.
+A: current K2 type + frozen AllBalls HSV body histograms.
+B: independent identity scores, no uniqueness. C: Hungarian unique identities. D: C plus size weighting.
+Type compatibility exp(-0.5*(distance/0.10)^2), distance to light-fraction intervals: cue [.85,1], solid [0,.30], stripe [.30,.85].
+Numbered identity score = type compatibility * histogram similarity. Cue score = light fraction * cue compatibility.
+Unknown score=0. All supported identities allowed; no .35 cutoff or .15 shortlist. Scores <=1e-9 count as numerical zero. Require usable histogram evidence or a baseline White classification.
+C/D: 16 identity columns plus one Unknown column per candidate. Missing identities allowed. Exactly tied Unknown is preferred by 1e-9. No removal based only on overlap.
+D: inverse homography Jacobian in source pixels/mm; 43mm diameter; major semiaxis estimates apparent sphere radius. One median radius scale from AllBalls detections only.
+D geometry support exp(-0.5*(log(radius/expected)/log(1.5))^2); identity multiplier .75+.25*support. Invalid geometry is neutral (multiplier 1). Unknown score remains the policy's fixed value.
+Geometry is approximate: homography describes the cloth plane, not sphere height or camera calibration.
+All weights fixed before evaluation. Scores and normalised relative supports are not calibrated probabilities.
+No K6 or tuned CCA. Frozen histogram body mask: 3x3 erosion, HSV V>=170/S<=165 light exclusion; 18x8x8 bins; chroma<15 hue canonicalisation; min12 body pixels; original smoothing/normalisation.

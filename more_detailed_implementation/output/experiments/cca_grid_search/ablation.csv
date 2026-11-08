@@ -1,0 +1,9 @@
+ruleMask,configId,minComponentPercent,boundaryKernel,cueEnabled,stripeEnabled,solidEnabled,cueMinLight,cueLargestLight,cueMinBoundary,stripeLargestLight,stripeMinBoundary,stripeMinNonLight,solidMinNonLight,solidMaxBoundary,solidMaxComponents,solidLargestNonLight,groundTruth,matched,typeCorrect,numberCorrect,typeAccuracy,numberAccuracy,endToEndNumberRecall,changedTypes,typeFixed,typeWorsened,numberFixed,numberWorsened
+0,3,2.000000,5,0,0,0,85,80,75,20,20,10,70,12,1,0,90,86,81,74,0.941860,0.860465,0.822222,0,0,0,0,0
+1,19326,2.000000,5,1,0,0,85,80,75,20,20,10,70,12,1,0,90,86,81,74,0.941860,0.860465,0.822222,0,0,0,0,0
+2,19503,2.000000,5,0,1,0,85,80,75,20,20,15,70,12,1,0,90,86,81,74,0.941860,0.860465,0.822222,0,0,0,0,0
+3,19900,2.000000,5,1,1,0,85,80,75,20,20,15,70,12,1,0,90,86,81,74,0.941860,0.860465,0.822222,0,0,0,0,0
+4,20242,2.000000,5,0,0,1,85,80,75,20,20,10,70,20,1,0,90,86,82,75,0.953488,0.872093,0.833333,1,1,0,1,0
+5,20535,2.000000,5,1,0,1,85,80,75,20,20,10,70,20,1,0,90,86,82,75,0.953488,0.872093,0.833333,1,1,0,1,0
+6,21008,2.000000,5,0,1,1,85,80,75,20,20,15,70,20,1,0,90,86,82,75,0.953488,0.872093,0.833333,1,1,0,1,0
+7,21661,2.000000,5,1,1,1,85,80,75,20,20,15,70,20,1,0,90,86,82,75,0.953488,0.872093,0.833333,1,1,0,1,0

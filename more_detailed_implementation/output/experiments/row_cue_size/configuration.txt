@@ -1,0 +1,8 @@
+Row-only size prior, fitted once from pocket-filtered AllBalls Hough circles without labels.
+Theil-Sen slope: median pairwise dr/drow for pairs >=10 row pixels apart; slope floored at0. Intercept: median(radius-slope*row). Expected radius=max(1,intercept+slope*row).
+Model: radius=20.274191+0.009677*row; training rows 143.250000..197.250000.
+Only images with >=2 original K2 White candidates activate size scoring. On those images multiply every candidate's cue score only by min(1,originalHoughRadius/expectedRadius)^2. This is an apparent area support heuristic, not a calibrated probability. All numbered scores stay unchanged.
+Factor applies to every candidate to avoid moving cue claims to a non-White fallback. No bonus for oversize circles. Pad1 profile expands original White ROIs only; size always uses original geometry.
+Largest-cue ablations instead reserve cue for the original White candidate with greatest radius/expectedRadius, and exclude every other cue claim; active only with>=2 original White candidates. This is an explicitly forced heuristic.
+All six variants use unchanged K2, frozen AllBalls HSV histograms, type width.10, best-effort unique assignment. No candidates removed, no stored centres/radii/table coordinates changed. No chamfer combination.
+All settings fixed before evaluation; experiment follows observed Table1-6 errors, so results remain exploratory.

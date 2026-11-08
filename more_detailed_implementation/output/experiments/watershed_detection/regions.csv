@@ -1,0 +1,11 @@
+image,region,x,y,width,height,houghSeeds,expectedRadius,clothSamples,clothDistanceThreshold,status
+AllBalls.jpeg,1,1077,77,522,186,15,21.600000,15921,20.544233,segmented
+Table1.jpeg,1,1229,73,354,255,14,24.150000,16208,16.000000,segmented
+Table2.jpeg,1,1228,41,328,260,11,22.200001,15759,16.000000,segmented
+Table3.jpeg,1,127,129,202,221,2,27.450001,5669,20.067877,segmented
+Table3.jpeg,2,1405,61,188,274,4,24.000000,10362,16.457175,segmented
+Table4.jpeg,1,1400,61,182,281,5,20.850000,10024,16.000000,segmented
+Table5.jpeg,1,1397,40,186,299,5,22.200001,11100,16.000000,segmented
+Table5.jpeg,2,37,264,255,219,3,27.450001,6920,38.943503,segmented
+Table6.jpeg,1,71,264,213,164,2,27.450001,5011,26.239714,segmented
+Table6.jpeg,2,1395,43,188,302,5,23.400000,11313,16.000000,segmented

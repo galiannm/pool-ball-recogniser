@@ -1,0 +1,1 @@
+PASS: robust linear fit with a severe radius outlier; equal-row constant fallback; negative slope prior; size factor monotonic/capped; targeted cue conflict switches correctly while preserving stripe alternatives.

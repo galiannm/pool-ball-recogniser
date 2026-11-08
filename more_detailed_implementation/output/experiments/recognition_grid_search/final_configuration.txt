@@ -1,0 +1,13 @@
+Frozen recognition-search winner 2153; not a new search.
+K=6; padding=0; cloth=false; K-means=BGR; RNG seed=12345
+Light: V >= 170 and S <= 125
+Cue: light >= 85%; Solid: non-light >= 80%
+Reporting dark V <= 90; eligible body cluster >= 2%
+Black: S < 60, V <= 90, type Solid
+Hue bounds: red < 6 or >= 170; orange < 15; yellow < 35; green [45,90); blue [100,125); purple [125,165)
+Maroon: red hue and V < 150; striped body number += 8
+
+final_results/: K=6 tuned only, original strict black cutoff retained.
+final_results_cca/: same recognition + CCA winner 20242: solid override only; 8-connectivity; component area >= 2%; boundary erosion ellipse 5x5; non-light >= 70%; light boundary <= 20%; exactly one eligible non-light component.
+final_results_current/: current application classifier, K=2, including its recent inclusive black cutoff S <= 60.
+All profiles share identical Hough circles and transformations. No new parameters selected.

@@ -1,0 +1,8 @@
+image,split,groundTruth,matched,falsePositives,missed
+AllBalls.jpeg,reference,16,16,0,0
+Table1.jpeg,tuning,16,14,1,2
+Table2.jpeg,tuning,16,16,1,0
+Table3.jpeg,tuning,16,15,0,1
+Table4.jpeg,tuning,15,14,0,1
+Table5.jpeg,tuning,14,14,0,0
+Table6.jpeg,tuning,13,13,0,0

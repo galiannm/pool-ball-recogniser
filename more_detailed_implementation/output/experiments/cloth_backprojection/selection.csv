@@ -1,0 +1,2 @@
+configId,enabled,hBins,sBins,similarityThreshold,maximumClothFraction,samplingInsetKernel,exclusionMargin,minimumSamples,minimumCircleCoverage,safeConfigurations,selectionRule
+9,1,18,16,0.800000,0.900000,11,4,1000,0.800000,36,AllBalls_recall_screen_then_high_similarity_high_fraction_coarse_bins

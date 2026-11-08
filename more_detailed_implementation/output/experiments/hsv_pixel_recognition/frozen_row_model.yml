@@ -1,0 +1,10 @@
+%YAML:1.0
+---
+trainingImage: "AllBalls.jpeg"
+sampleCount: 16
+intercept: 20.274191364165276
+slope: 0.0096774357621387773
+minimumTrainingRow: 143.25
+maximumTrainingRow: 197.25
+negativeSlopeClamped: 0
+meanAbsoluteTrainingResidual: 1.0372984370877665

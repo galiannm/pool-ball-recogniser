@@ -1,0 +1,2 @@
+angularSamples,tolerancePixels,minimumRadialAlignment,cannyLow,cannyHigh,blurKernel,blurSigma,mode
+72,2.500000,0.600000,37.500000,75.000000,5,1.5,measurement_only

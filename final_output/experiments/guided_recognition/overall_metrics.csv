@@ -1,4 +1,0 @@
-method,TP,FP,FN,groundTruth,correctTypes,correctColours,matchedColours,correctIdentities,unknown,identityAccuracy,endToEndAccuracy
-baseline,86,2,4,90,76,73,80,80,2,0.9302325581395349,0.8888888888888888
-guided_hough,89,8,1,90,79,74,83,81,5,0.9101123595505618,0.9
-guided_hough_watershed,88,6,2,90,78,74,82,80,2,0.9090909090909091,0.8888888888888888

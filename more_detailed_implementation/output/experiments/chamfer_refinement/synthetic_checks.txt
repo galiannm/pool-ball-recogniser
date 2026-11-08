@@ -1,0 +1,1 @@
+PASS: shifted/undersized synthetic circle refines to its edge; flat image keeps original; neighbour interiors cannot provide edge support; image-border scoring is finite.
