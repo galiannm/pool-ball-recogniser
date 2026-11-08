@@ -1,0 +1,8 @@
+image,matched,baselineCorrect,ccaCorrect,corrected,regressed
+Table1.jpeg,14,8,8,0,0
+Table2.jpeg,16,15,14,0,1
+Table3.jpeg,15,14,13,0,1
+Table4.jpeg,14,14,13,0,1
+Table5.jpeg,14,14,14,0,0
+Table6.jpeg,13,11,11,0,0
+ALL,86,76,73,0,3

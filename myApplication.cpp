@@ -288,7 +288,7 @@ BallROI extractBall(const cv::Mat& image, const cv::Vec3f& detectedCircle) {
 
 /*
 Groups the masked ball pixels into K colour clusters and records their colours, masks and proportions.
-HERE NEXT*/
+*/
 KMeansResult segmentBallKMeans(const BallROI& ball, int k) {
     KMeansResult result;
     result.k = k;
@@ -480,7 +480,7 @@ BallTypeResult classifyBallType(const KMeansResult& segmentation) {
 }
 
 // ==================================================
-// COLOUR HISTOGRAMS AND UNIQUE IDENTITY ASSIGNMENT
+// COLOUR HISTOGRAMS AND UNIQUE IDENTITY ASSIGNMENT 
 // ==================================================
 
 enum class BallHistogramSpace { HS, HSV, HLS };
@@ -677,6 +677,8 @@ BallColourScores scoreBallColours(const BallROI& ball, const BallColourModel& mo
     result.margin = *best - second;
     return result;
 }
+
+//  HERE NEXT
 
 constexpr double typeWidth = 0.10;
 
