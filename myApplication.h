@@ -185,49 +185,43 @@ struct IdentityRecognitionResult {
     double endToEndAccuracy = 0;  
 };
 
-struct CCAExp {
-    int lightCount = 0;
-    int nonLightCount = 0;
-    double largestLightPct = 0;
-    double largestNonLightPct = 0;
-    double boundaryLightPct = 0;
-    cv::Mat lightMask;
-    cv::Mat nonLightMask;
-};
-
 struct ImagePanel {
     std::string label;
     cv::Mat image;
 };
 
-struct GuidedExperimentResult {
-    cv::Mat foreground;
-    std::vector<cv::Vec3f> baseline;
-    std::vector<cv::Vec3f> guided;
-    std::vector<cv::Vec3f> watershed;
-    std::vector<ImagePanel> diagnostics;
+struct PastImage {
+    std::string filename;
+    std::filesystem::path directory;
+
+    cv::Mat image;
+    DetectionResult detection;
+    EvaluationContext context;
+
+    std::vector<BallROI> balls;
+    std::vector<KMeansResult> segmentations;
+};
+
+struct PastSummaryRow {
+    std::string image;
+    std::string method;
+
+    int correct = 0;
+    int matched = 0;
+    int annotated = 0;
+    int unknown = 0;
 };
 
 // HSV histogram colour recognition.
 const char* bodyColourName(int colour);
 
-void validate(const BallHistogramOptions& options);
-
 cv::Mat makeColourFeatures(const BallROI& ball, const BallHistogramOptions& options);
-
 cv::Mat smoothHistogram(const cv::Mat& histogram, const BallHistogramOptions& options);
-
 cv::Mat histogramBodyMask(const BallROI& ball, const BallHistogramOptions& options = {});
-
-cv::Mat buildColourHistogram(const cv::Mat& features, const cv::Mat& mask,
-                            const BallHistogramOptions& options);
-
-BallColourModel buildReferenceHistograms(
-    const std::vector<LabelledColourSample>& samples,
-    const BallHistogramOptions& options = {});
+cv::Mat buildColourHistogram(const cv::Mat& features, const cv::Mat& mask, const BallHistogramOptions& options);
+BallColourModel buildReferenceHistograms( const std::vector<LabelledColourSample>& samples, const BallHistogramOptions& options = {});
 
 BallColourModel buildColourReferenceModel(const cv::Mat& referenceImage);
-
 BallColourScores scoreBallColours(const BallROI& ball, const BallColourModel& model);
 
 ColourRecognitionResult evaluateBallColours(
@@ -255,104 +249,58 @@ ColourRecognitionResult runColourRecognition(
 std::vector<std::string> getAllImages();
 
 std::vector<cv::Point> getTableCorners();
-
 cv::Mat getTableTransformation();
-
 std::vector<cv::Point2f> transformCentres(const std::vector<cv::Vec3f>& circles);
-
 std::vector<cv::Vec3f> filterPocketDetections(const std::vector<cv::Vec3f>& circles);
 
 cv::Mat maskTable(const cv::Mat& image);
-
 BallROI extractBall(const cv::Mat& image, const cv::Vec3f& detectedCircle);
-
 cv::Mat transformImage(const cv::Mat& image);
 
 void saveImage(const std::filesystem::path& path, const cv::Mat& image);
-
 void finishOutputFile(std::ofstream& file);
 
 std::string finalBallLabel(int number);
-
 cv::Scalar diagramBallColour(int number);
-
 std::vector<LabelledBall> loadLabelledGroundTruth(const std::string& csvPath, const std::string& imageName);
-
-std::vector<cv::Point2f> loadGroundTruth(
-    const std::string& csvPath,
-    const std::string& imageName,
-    std::vector<int>* ballIds = nullptr);
+std::vector<cv::Point2f> loadGroundTruth(const std::string& csvPath, const std::string& imageName, std::vector<int>* ballIds = nullptr);
 
 cv::Mat drawDetectedBalls(const cv::Mat& image, const std::vector<cv::Vec3f>& circles);
-
 void drawFinalLabel(cv::Mat& image, cv::Point centre, int number, cv::Point offset = {});
-
 cv::Mat drawTableDiagram(const std::vector<cv::Point2f>& centres, const std::vector<int>& numbers);
 
 std::vector<cv::Vec3f> detectBalls(const cv::Mat& image, const HoughParams& params);
-
 void saveDetectionEvaluation(const std::filesystem::path& directory, const EvaluationResult& evaluation);
+DetectionResult runDetection(const cv::Mat& image, const HoughParams& params, const std::filesystem::path directory, const std::string& filename);
 
-DetectionResult runDetection(const cv::Mat& image, 
-                            const HoughParams& params, 
-                            const std::filesystem::path directory, 
-                            const std::string& filename);
-
-std::vector<BallROI> runExtraction(
-    const cv::Mat& image,
-    const std::vector<cv::Vec3f>& circles,
-    const std::filesystem::path& directory);
+std::vector<BallROI> runExtraction(const cv::Mat& image, const std::vector<cv::Vec3f>& circles, const std::filesystem::path& directory);
 
 EvaluationResult evaluateDetections(const std::vector<cv::Point2f>& predictions, const std::vector<cv::Point2f>& groundTruth, double tolerance);
-
-EvaluationContext prepareEvaluation(
-    const std::vector<cv::Vec3f>& circles,
-    const std::string& filename);
+EvaluationContext prepareEvaluation(const std::vector<cv::Vec3f>& circles, const std::string& filename);
 
 KMeansResult segmentBallKMeans(const BallROI& ball, int k);
 
-std::vector<KMeansResult> runKMeans(
-    const std::vector<BallROI>& balls,
-    int k,
-    const std::filesystem::path& directory);
-
-cv::Mat drawBallTypes(
-    const cv::Mat& image,
-    const std::vector<cv::Vec3f>& circles,
-    const std::vector<BallTypeResult>& types);
-
+std::vector<KMeansResult> runKMeans(const std::vector<BallROI>& balls, int k, const std::filesystem::path& directory);
+cv::Mat drawBallTypes(const cv::Mat& image, const std::vector<cv::Vec3f>& circles, const std::vector<BallTypeResult>& types);
 BallTypeResult classifyBallType(const KMeansResult& segmentation);
-
-TypeRecognitionResult evaluateBallTypes(
-    const std::vector<BallTypeResult>& types,
-    const EvaluationContext& context);
+std::string identityType(int number);
+TypeRecognitionResult evaluateBallTypes(const std::vector<BallTypeResult>& types, const EvaluationContext& context);
 
 TypeRecognitionResult runTypeRecognition(
-    const cv::Mat& image,
-    const std::vector<BallROI>& balls,
-    const std::vector<cv::Vec3f>& circles,
-    const std::filesystem::path& directory,
-    const std::string& filename,
-    const EvaluationContext& context);
-
-std::string identityType(int number);
+    const cv::Mat& image,const std::vector<BallROI>& balls,
+    const std::vector<cv::Vec3f>& circles, const std::filesystem::path& directory,
+    const std::string& filename, const EvaluationContext& context);
 
 void identityEvidence(Candidate& candidate);
 
-Candidate rawWhitePadding(const cv::Mat& image, const Candidate& original,
-                         const BallColourModel& model, int padding);
-
+Candidate rawWhitePadding(const cv::Mat& image, const Candidate& original, const BallColourModel& model, int padding);
 int selectAmbiguousCue(const std::vector<Candidate>& candidates);
-
 void reserveCueIdentity(std::vector<Candidate>& candidates, int selected);
 
 std::vector<int> maximumAssignment(const std::vector<std::vector<double>>& weights);
-
 std::vector<int> assignUnique(const std::vector<Candidate>& candidates);
 
-IdentityRecognitionResult evaluateBallIdentities(
-    const std::vector<int>& numbers,
-    const EvaluationContext& context);
+IdentityRecognitionResult evaluateBallIdentities(const std::vector<int>& numbers, const EvaluationContext& context);
 
 IdentityRecognitionResult runIdentityRecognition(
     const cv::Mat& image,
@@ -366,33 +314,23 @@ IdentityRecognitionResult runIdentityRecognition(
     const EvaluationContext& context);
 
 void accumulateBallGroups(const std::vector<int>& numbers, const EvaluationContext& context, std::map<std::string, BallGroupCounts>& groups);
-
 void printBallGroupEvaluation(const std::map<std::string, BallGroupCounts>& groups);
-
 void printOverallEvaluation(const OverallEvaluation& totals);
 
-void saveFinalResults(const cv::Mat& image, const std::filesystem::path& directory, const std::vector<cv::Vec3f>& circles, const std::vector<cv::Point2f>& tableCentres, const std::vector<std::string>& types, const std::vector<int>& numbers);
+void saveFinalResults(const cv::Mat& image, const std::filesystem::path& directory, const std::vector<cv::Vec3f>& circles, const std::vector<cv::Point2f>& tableCentres, const std::vector<std::string>& types, const std::vector<int>& numbers, const EvaluationContext& context);
+
+PastImage preparePastImage(const std::string& filename, const std::filesystem::path& root);
+BallTypeResult pastHLSType(const BallROI& ball, cv::Mat& preview);
+int pastHueColour(const KMeansResult& segmentation);
+int pastHardIdentity(const BallTypeResult& type, int colour);
+void runPastHoughComparison(const PastImage& data, std::map<std::string, EvaluationResult>& totals);
+std::vector<BallTypeResult> runPastTypeComparison(const PastImage& data, std::vector<PastSummaryRow>& rows); 
+std::vector<BallColourScores> runPastColourComparison(const PastImage& data, const BallColourModel& model, std::vector<PastSummaryRow>& rows);
+void runPastIdentityComparison(const PastImage& data, 
+    const std::vector<BallTypeResult>& types, const std::vector<BallColourScores>& colours, 
+    const BallColourModel& model, std::vector<PastSummaryRow>& rows);
+void savePastSummaries(const std::filesystem::path& root, const std::vector<PastSummaryRow>& rows, const std::map<std::string, EvaluationResult>& detectionTotals);
 
 void runGridSearch();
-
-CCAExp experimentCCA(const BallROI& ball, const KMeansResult& seg);
-
-std::string experimentCCAType(const BallTypeResult& base, const CCAExp& spatial);
-
-void runK2CCAExperiment();
-
-cv::Mat makeExperimentForeground(const cv::Mat& image);
-
-GuidedExperimentResult detectGuidedHoughWatershed(
-    const cv::Mat& image,
-    const std::vector<cv::Vec3f>& baseline);
-
-void runGuidedHoughWatershedExperiment();
-
-void runGuidedRecognitionExperiment();
-
 void runMainPipeline();
-
-void runExperiments();
-
 void MyApplication();

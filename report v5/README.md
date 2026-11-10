@@ -50,10 +50,14 @@ performance; final identity comparisons include false numbered outputs.
 
 ## Layout
 
-Pages 1-4 describe the method and experimental designs. Pages 5-8 give evaluation,
-per-image outcomes, success/failure illustrations, controlled experiments, group
-counts, robustness and improvements. The final page includes references and an
-assistance acknowledgement.
+Pages 1-4 describe the final method and evaluation protocol. Pages 5-6 present
+the main results and failure analysis. Page 7 places the CCA and guided
+Hough/watershed methods beside their experimental results. Page 8 covers group
+counts, robustness, improvements, references and assistance.
+
+The 44 original `% CHANGE` notes remain in `main.tex`, with numbered `% EDIT`
+comments describing each revision. `% SOURCE` comments identify image and CSV
+inputs. Lighting-correction experiments are excluded from this report.
 
 The optional `gallery.tex` and figure-status `missing_figures.*` files are not
 included in `main.tex`. All figures needed by this report are present; the audit

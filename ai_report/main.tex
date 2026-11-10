@@ -47,16 +47,17 @@
 
 \section{Statement of AI use}
 
-I used ChatGPT as a technical assistant throughout this assignment to discuss computer vision methods,
-review design alternatives, help translate ideas into C++/OpenCV code, troubleshoot implementation
-problems, and improve the organisation and writing of my report. I proposed each approach that was used, 
-including the separation of ball detection and recognition, automated Hough parameter testing, colour-based
-recognition, and later segmentation and histogram-based experiments. ChatGPT also provided substantial
-code examples and, at several points, complete or corrected implementations; I reviewed, adapted, tested and
-evaluated this code against the assignment images. 
-
-For the written report, I used AI to write a template and help organise the strucuture of the report.
-It also helped with proof reading, and the phrasing of some paragraphs I had trouble formulating on my own.
+I used ChatGPT as a technical assistant throughout this assignment to discuss
+computer vision methods, review design alternatives, translate ideas into
+C++/OpenCV code, troubleshoot implementation problems, and improve the organisation
+and wording of my report. I proposed and selected the overall approaches adopted,
+including separate detection and recognition stages, automated Hough parameter
+testing, reference colour histograms, and the use of unique ball identities.
+ChatGPT supplied substantial code examples and, at several points, complete or
+corrected implementations, which I reviewed, adapted, tested and evaluated against
+the assignment images. I performed the results analysis myself and used ChatGPT
+to critique that analysis. I planned the report's structure and used ChatGPT to
+help rewrite and formulate sections.
 
 \section{Main Uses and Prompts}
 
@@ -66,7 +67,7 @@ It also helped with proof reading, and the phrasing of some paragraphs I had tro
 
 \begin{aiprompt}
 "I have a computer vision assignment I am working on. It is important that
-you do not give me a solution. Just act as a guide and help me though my own solution. 
+you do not give me a solution. I want to design the system by myself. Just act as a guide and help me though my own solution. 
 This assignment will use OpenCV and C++. 
 I will also provide my lecture notes so we can stay in the scope of the module.
 It is important to use traditional computer vision techinique and not a neural network.
@@ -139,7 +140,7 @@ Could you help me implement an experiment for this?"
 After testing this experiment the performance didn't not change much. So this was not included in the
 final pipeline. This led to another idea to improve detection; using a more permissive hough in
 the ball clusters and the current hough everywhere else. This experiment manage to catch 1 missing ball
-but added a lot more FP and complexity so was also left out of the final pipeline
+but added a lot more FP and complexity so was also left out of the final pipeline.
 
 \end{promptentry}
 \FloatBarrier
@@ -191,6 +192,7 @@ Can you help me write an experiment to test this?"
 
 \textbf{Impact on project:} Also helped me plan and implement this experiment. 
 Some initial tests on the validation image were performing worse. So it was left as an experiment
+and not included in the final report.
 
 \end{promptentry}
 \FloatBarrier
@@ -199,14 +201,13 @@ Some initial tests on the validation image were performing worse. So it was left
 
 \begin{aiprompt}
 "maybe since we have the training image we could use histogram backprojection / Bhattacharyya for better 
-colour recogntion?"
+colour recogntion? We could use the AllBalls image for reference."
 \end{aiprompt}
 \FloatBarrier
 
 \textbf{Impact on project:} The biggest help AI provided in helping me plan and implement
-the histogram training based on the colours of the balls in the training image. Backprojection was only
-used to visulise the similarities and instead the Bhattacharyya distance was used to compute histogram
-comparaison
+the histogram training based on the colours of the balls in the training image. 
+Help a lot with the code implementation.
 
 \end{promptentry}
 \FloatBarrier
@@ -222,7 +223,7 @@ exactly"
 \end{aiprompt}
 
 \textbf{Impact on project:} Gave the name of the algorithm I was missing (hungarian algorithm)
-proposed a Guassian function for the scores.
+proposed a Guassian function for the scores. Helped implement the code for the algorithm.
 
 \end{promptentry}
 \FloatBarrier
@@ -230,12 +231,15 @@ proposed a Guassian function for the scores.
 \begin{promptentry}
 
 \begin{aiprompt}
-"Yes that makes sense. A Gaussian function makes sense, we could also try a linear one first, 
-maybe its peformance can be similar."
+"Yes that makes sense. A Gaussian function makes sense, we could also try a linear one first. 
+But probably the smooth decisions that the Gaussian would give a better performace than decisions 
+based on a threshold that the linear function would give.
+What do you think?"
 \end{aiprompt}
 
-\textbf{Impact on project:} We implement this 'uniqueness' experiment using both linear and gaussian
-functions. Guassian ultimatly performed better.
+\textbf{Impact on project:} We implement this soft scores experiment using both linear and gaussian
+functions. Only the Gaussian one was retained as it performed significantly better. Helped with the
+code implementation.
 
 \end{promptentry}
 \FloatBarrier
@@ -251,7 +255,7 @@ white circle of the balls instead of the full ball."
 \end{aiprompt}
 
 \textbf{Impact on project:} We tested multiple padding 1-5 pixels. 1pixel worked the 
-best and is what was kept
+best and is what was kept.
 
 \end{promptentry}
 \FloatBarrier
@@ -289,6 +293,14 @@ help me write a function in the chat do to this"
 that was designed.
 
 \subsection{Help for Result Visualisation}
+
+\begin{aiprompt}
+"could you help me write a function to created a top view grid of the results of the system.
+I think that would be more clear than what I currently have. Which is a top view of the table 
+with the detected circle and the label"
+\end{aiprompt}
+
+\textbf{Impact on project:} Help implement a function to draw this results grid with the dected and recognised balls.
 
 \subsection{Report writting}
 

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2023.10.7)  8 NOV 2026 17:22
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2023.10.7)  8 NOV 2026 17:58
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -513,111 +513,118 @@ Package hyperref Info: Link coloring OFF on input line 13.
 \@outlinefile=\write3
 \openout3 = `main.out'.
 
-<assets/pipeline.png, id=48, 749.80125pt x 290.08376pt>
+<assets/pipeline.png, id=60, 749.80125pt x 290.08376pt>
 File: assets/pipeline.png Graphic file (type png)
 <use assets/pipeline.png>
-Package pdftex.def Info: assets/pipeline.png  used on input line 33.
-(pdftex.def)             Requested size: 455.24411pt x 176.12753pt.
-<assets/detection_stages.pdf, id=50, 486.20908pt x 82.86911pt>
+Package pdftex.def Info: assets/pipeline.png  used on input line 38.
+(pdftex.def)             Requested size: 437.0374pt x 169.08527pt.
+<assets/detection_stages.pdf, id=62, 505.64862pt x 87.89348pt>
 File: assets/detection_stages.pdf Graphic file (type pdf)
 <use assets/detection_stages.pdf>
-Package pdftex.def Info: assets/detection_stages.pdf  used on input line 59.
-(pdftex.def)             Requested size: 409.71692pt x 69.83464pt.
+Package pdftex.def Info: assets/detection_stages.pdf  used on input line 77.
+(pdftex.def)             Requested size: 455.24411pt x 79.13423pt.
  [1
 
 {/usr/local/texlive/2023/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/loc
 al/texlive/2023/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc} <./assets/
 pipeline.png> <./assets/detection_stages.pdf>]
-<assets/recognition_stages.pdf, id=83, 453.3647pt x 191.27412pt>
+<assets/recognition_stages.pdf, id=95, 453.3647pt x 151.52562pt>
 File: assets/recognition_stages.pdf Graphic file (type pdf)
 <use assets/recognition_stages.pdf>
-Package pdftex.def Info: assets/recognition_stages.pdf  used on input line 92.
-(pdftex.def)             Requested size: 455.24411pt x 192.07332pt.
+Package pdftex.def Info: assets/recognition_stages.pdf  used on input line 123.
+
+(pdftex.def)             Requested size: 364.19667pt x 121.72699pt.
  [2 <./assets/recognition_stages.pdf>]
-<assets/type_support.pdf, id=121, 245.47662pt x 122.61761pt>
+<assets/type_support.pdf, id=133, 245.47662pt x 122.61761pt>
 File: assets/type_support.pdf Graphic file (type pdf)
 <use assets/type_support.pdf>
-Package pdftex.def Info: assets/type_support.pdf  used on input line 151.
+Package pdftex.def Info: assets/type_support.pdf  used on input line 207.
 (pdftex.def)             Requested size: 213.96529pt x 106.88037pt.
-<assets/colour_scores.pdf, id=122, 259.93063pt x 122.61761pt>
+<assets/colour_scores.pdf, id=134, 259.93063pt x 122.61761pt>
 File: assets/colour_scores.pdf Graphic file (type pdf)
 <use assets/colour_scores.pdf>
-Package pdftex.def Info: assets/colour_scores.pdf  used on input line 152.
+Package pdftex.def Info: assets/colour_scores.pdf  used on input line 208.
 (pdftex.def)             Requested size: 232.17198pt x 109.52596pt.
-<assets/white_padding.pdf, id=123, 270.77786pt x 122.61761pt>
+ [3 <./assets/type_support.pdf> <./assets/colour_scores.pdf>]
+<assets/white_padding.pdf, id=162, 305.77423pt x 122.61761pt>
 File: assets/white_padding.pdf Graphic file (type pdf)
 <use assets/white_padding.pdf>
-Package pdftex.def Info: assets/white_padding.pdf  used on input line 177.
-(pdftex.def)             Requested size: 250.38564pt x 113.38768pt.
- [3 <./assets/type_support.pdf> <./assets/colour_scores.pdf> <./assets/white_pa
-dding.pdf>]
-<../final_output/final/Table2/original_numbered.png, id=168, 1938.24126pt x 510
-.90875pt>
-File: ../final_output/final/Table2/original_numbered.png Graphic file (type png
-)
-<use ../final_output/final/Table2/original_numbered.png>
-Package pdftex.def Info: ../final_output/final/Table2/original_numbered.png  us
-ed on input line 206.
+Package pdftex.def Info: assets/white_padding.pdf  used on input line 252.
+(pdftex.def)             Requested size: 218.51521pt x 87.62787pt.
+<../final_output/final/AllBalls/original_numbered.png, id=163, 1938.24126pt x 5
+10.90875pt>
+File: ../final_output/final/AllBalls/original_numbered.png Graphic file (type p
+ng)
+<use ../final_output/final/AllBalls/original_numbered.png>
+Package pdftex.def Info: ../final_output/final/AllBalls/original_numbered.png  
+used on input line 280.
 (pdftex.def)             Requested size: 145.68144pt x 38.39445pt.
-<../final_output/final/Table2/table_numbered.png, id=169, 1439.3775pt x 685.561
-25pt>
-File: ../final_output/final/Table2/table_numbered.png Graphic file (type png)
-<use ../final_output/final/Table2/table_numbered.png>
-Package pdftex.def Info: ../final_output/final/Table2/table_numbered.png  used 
-on input line 207.
+<../final_output/final/AllBalls/table_numbered.png, id=164, 1439.3775pt x 685.5
+6125pt>
+File: ../final_output/final/AllBalls/table_numbered.png Graphic file (type png)
+
+<use ../final_output/final/AllBalls/table_numbered.png>
+Package pdftex.def Info: ../final_output/final/AllBalls/table_numbered.png  use
+d on input line 281.
 (pdftex.def)             Requested size: 145.68144pt x 69.38654pt.
-<../final_output/final/Table2/table_diagram.png, id=170, 1439.3775pt x 685.5612
-5pt>
-File: ../final_output/final/Table2/table_diagram.png Graphic file (type png)
-<use ../final_output/final/Table2/table_diagram.png>
-Package pdftex.def Info: ../final_output/final/Table2/table_diagram.png  used o
-n input line 208.
+<../final_output/final/AllBalls/table_diagram.png, id=165, 1439.3775pt x 685.56
+125pt>
+File: ../final_output/final/AllBalls/table_diagram.png Graphic file (type png)
+<use ../final_output/final/AllBalls/table_diagram.png>
+Package pdftex.def Info: ../final_output/final/AllBalls/table_diagram.png  used
+ on input line 282.
 (pdftex.def)             Requested size: 145.68144pt x 69.38654pt.
-<assets/guided_stages.pdf, id=171, 442.58978pt x 97.32312pt>
-File: assets/guided_stages.pdf Graphic file (type pdf)
-<use assets/guided_stages.pdf>
-Package pdftex.def Info: assets/guided_stages.pdf  used on input line 244.
-(pdftex.def)             Requested size: 400.61703pt x 88.09785pt.
- [4 <../final_output/final/Table2/original_numbered.png (PNG copy)> <../final_o
-utput/final/Table2/table_numbered.png (PNG copy)> <../final_output/final/Table2
-/table_diagram.png (PNG copy)> <./assets/guided_stages.pdf>] [5] [6]
-<assets/final_gallery.pdf, id=205, 481.00537pt x 223.79562pt>
+ [4 <./assets/white_padding.pdf> <../final_output/final/AllBalls/original_numbe
+red.png (PNG copy)> <../final_output/final/AllBalls/table_numbered.png (PNG cop
+y)> <../final_output/final/AllBalls/table_diagram.png (PNG copy)>]
+<assets/final_gallery.pdf, id=194, 481.00537pt x 223.79562pt>
 File: assets/final_gallery.pdf Graphic file (type pdf)
 <use assets/final_gallery.pdf>
-Package pdftex.def Info: assets/final_gallery.pdf  used on input line 318.
+Package pdftex.def Info: assets/final_gallery.pdf  used on input line 356.
 (pdftex.def)             Requested size: 427.93057pt x 199.10234pt.
-<assets/failure_details.pdf, id=206, 461.2631pt x 119.00412pt>
+ [5 <./assets/final_gallery.pdf>]
+<assets/failure_details.pdf, id=223, 450.59654pt x 133.45811pt>
 File: assets/failure_details.pdf Graphic file (type pdf)
 <use assets/failure_details.pdf>
-Package pdftex.def Info: assets/failure_details.pdf  used on input line 342.
-(pdftex.def)             Requested size: 409.71692pt x 105.70813pt.
- [7 <./assets/final_gallery.pdf> <./assets/failure_details.pdf>]
+Package pdftex.def Info: assets/failure_details.pdf  used on input line 398.
+(pdftex.def)             Requested size: 427.93057pt x 126.74374pt.
+ [6 <./assets/failure_details.pdf>]
 <assets/cca_examples.pdf, id=249, 401.3012pt x 119.00412pt>
 File: assets/cca_examples.pdf Graphic file (type pdf)
 <use assets/cca_examples.pdf>
-Package pdftex.def Info: assets/cca_examples.pdf  used on input line 373.
-(pdftex.def)             Requested size: 336.88313pt x 99.90465pt.
-<assets/guided_details.pdf, id=250, 485.27682pt x 119.00412pt>
-File: assets/guided_details.pdf Graphic file (type pdf)
-<use assets/guided_details.pdf>
-Package pdftex.def Info: assets/guided_details.pdf  used on input line 395.
-(pdftex.def)             Requested size: 427.93057pt x 104.94547pt.
- [8 <./assets/cca_examples.pdf> <./assets/guided_details.pdf>]
-<assets/identity_counts.pdf, id=292, 491.19463pt x 129.84462pt>
+Package pdftex.def Info: assets/cca_examples.pdf  used on input line 460.
+(pdftex.def)             Requested size: 273.14923pt x 81.00343pt.
+<assets/guided_comparison.pdf, id=250, 507.93254pt x 87.28555pt>
+File: assets/guided_comparison.pdf Graphic file (type pdf)
+<use assets/guided_comparison.pdf>
+Package pdftex.def Info: assets/guided_comparison.pdf  used on input line 499.
+(pdftex.def)             Requested size: 427.93057pt x 73.54045pt.
+ [7 <./assets/cca_examples.pdf> <./assets/guided_comparison.pdf>]
+<assets/identity_counts.pdf, id=297, 491.19463pt x 147.94624pt>
 File: assets/identity_counts.pdf Graphic file (type pdf)
 <use assets/identity_counts.pdf>
-Package pdftex.def Info: assets/identity_counts.pdf  used on input line 410.
-(pdftex.def)             Requested size: 427.93057pt x 113.1224pt.
- [9 <./assets/identity_counts.pdf>] (./main.aux)
+Package pdftex.def Info: assets/identity_counts.pdf  used on input line 524.
+(pdftex.def)             Requested size: 427.93057pt x 128.89278pt.
+LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 5
+77.
+
+(/usr/local/texlive/2023/texmf-dist/tex/latex/base/t1cmtt.fd
+File: t1cmtt.fd 2022/07/10 v2.5l Standard LaTeX font definitions
+)
+Package microtype Info: Loading generic protrusion settings for font family
+(microtype)             `cmtt' (encoding: T1).
+(microtype)             For optimal results, create family-specific settings.
+(microtype)             See the microtype manual for details.
+ [8 <./assets/identity_counts.pdf>] (./main.aux)
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: E4BFA2DE40C22B755D10F679C246FC2D;2703.
+(rerunfilecheck)             Checksum: 82717E8F44B5248D6E33664B290E0DEC;3123.
  ) 
 Here is how much of TeX's memory you used:
- 14206 strings out of 476025
- 230039 string characters out of 5790017
- 1864388 words of memory out of 5000000
- 34292 multiletter control sequences out of 15000+600000
- 528280 words of font info for 131 fonts, out of 8000000 for 9000
+ 14230 strings out of 476025
+ 230697 string characters out of 5790017
+ 1861388 words of memory out of 5000000
+ 34311 multiletter control sequences out of 15000+600000
+ 528543 words of font info for 132 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  75i,11n,76p,1001b,449s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
@@ -634,11 +641,12 @@ live/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texli
 ve/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive
 /2023/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texlive/2
 023/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/202
-3/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb>
-Output written on main.pdf (9 pages, 5866168 bytes).
+3/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/local/texlive/2023/
+texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
+Output written on main.pdf (8 pages, 5352875 bytes).
 PDF statistics:
- 384 PDF objects out of 1000 (max. 8388607)
- 249 compressed objects within 3 object streams
- 37 named destinations out of 1000 (max. 500000)
- 30884 words of extra memory for PDF output out of 35830 (max. 10000000)
+ 396 PDF objects out of 1000 (max. 8388607)
+ 260 compressed objects within 3 object streams
+ 38 named destinations out of 1000 (max. 500000)
+ 31415 words of extra memory for PDF output out of 35830 (max. 10000000)
 

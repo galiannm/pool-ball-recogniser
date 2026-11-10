@@ -38,7 +38,8 @@ inline const double SOLID_MIN = 70.0;
 
 inline constexpr double TYPE_WIDTH = 0.10;
 
-inline const std::string RUN_MODE = "ALL"; // or "MAIN", "EXPERIMENTS"
+inline const cv::Scalar DETECTION_COLOUR{255, 0, 255}; // magenta
+inline const cv::Scalar ERROR_COLOUR{0, 255, 255}; // yellow
 
 // ========IMAGE LIST========
 std::vector<std::string> getAllImages() {
@@ -302,7 +303,7 @@ cv::Mat drawDetectedBalls(const cv::Mat& image, const std::vector<cv::Vec3f>& ci
         int radius = cvRound(detected[2]);
 
         // Draw circle boundary
-        cv::circle(result, center, radius, cv::Scalar(0, 0, 255), 2);
+        cv::circle(result, center, radius, DETECTION_COLOUR, 2, cv::LINE_AA);
 
         // Draw centre
         cv::circle(result, center, 2, cv::Scalar(255, 0, 0), -1);
@@ -314,21 +315,21 @@ cv::Mat drawDetectedBalls(const cv::Mat& image, const std::vector<cv::Vec3f>& ci
 // Draws a readable predicted ball label near a centre while keeping the text inside the image.
 void drawFinalLabel(cv::Mat& image, cv::Point centre, int number, cv::Point offset) {
     const std::string label = finalBallLabel(number);
-    const double scale = number < 0 ? 0.36 : 0.45;
+    const double scale = number < 0 ? 0.36 : 0.65;
     int baseline = 0;
 
-    const cv::Size text = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, scale, 1, &baseline);
+    const cv::Size text = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, scale, 2, &baseline);
     cv::Point anchor(centre.x - text.width / 2 + offset.x, centre.y + text.height / 2 + offset.y);
 
     anchor.x = std::clamp(anchor.x, 2, std::max(2, image.cols - text.width - 2));
     anchor.y = std::clamp(anchor.y, text.height + 2, std::max(text.height + 2, image.rows - baseline - 2));
 
-    cv::putText(image, label, anchor, cv::FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(0, 0, 0), 3, cv::LINE_AA);
-    cv::putText(image, label, anchor, cv::FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
+    cv::putText(image, label, anchor, cv::FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(0, 0, 0), 4, cv::LINE_AA);
+    cv::putText(image, label, anchor, cv::FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(255, 255, 255), 2, cv::LINE_AA);
 }
 
 // Creates an overhead table diagram showing the predicted ball positions, colours and identity labels.
-cv::Mat drawTableDiagram(const std::vector<cv::Point2f>& centres, const std::vector<int>& numbers) {
+cv::Mat drawTableDiagram(const std::vector<cv::Point2f>& centres, const std::vector<int>& numbers, const std::vector<cv::Scalar>& outlineColours = {}) {
     cv::Mat diagram(TABLE_HEIGHT, TABLE_WIDTH, CV_8UC3, cv::Scalar(65, 115, 45));
     cv::rectangle(diagram, {0, 0}, {diagram.cols - 1, diagram.rows - 1}, cv::Scalar(160, 190, 160), 1);
 
@@ -358,7 +359,8 @@ cv::Mat drawTableDiagram(const std::vector<cv::Point2f>& centres, const std::vec
                 ball.copyTo(diagram(patch), mask);
             }
         }
-        cv::circle(diagram, fixedCentre, fixedRadius, cv::Scalar(230, 230, 230), 1, cv::LINE_AA, shift);
+        const cv::Scalar outline = outlineColours.empty() ? DETECTION_COLOUR : outlineColours[i];
+        cv::circle(diagram, fixedCentre, fixedRadius, outline, 4, cv::LINE_AA, shift);
     }
 
     for (size_t i = 0; i < centres.size(); ++i)
@@ -831,12 +833,6 @@ const char* bodyColourName(int colour) {
 
 // =============COLOUR HISTOGRAMS=============
 
-void validate(const BallHistogramOptions& p) {
-    if (p.hueBins < 2 || p.saturationBins < 2 || p.toneBins < 2 || p.erosionKernel < 1 || p.erosionKernel % 2 == 0 || p.minimumBodyPixels < 1 || p.lightMinV < 0 || p.lightMinV > 255 || p.lightMaxS < 0 || p.lightMaxS > 255 ||
-        p.neutralChroma < 0 || p.neutralChroma > 255)
-        throw std::invalid_argument("Invalid ball histogram settings");
-}
-
 // Converts a ball crop to HSV and sets the hue of nearly neutral pixels to zero.
 cv::Mat makeColourFeatures(const BallROI& ball, const BallHistogramOptions& p) {
     cv::Mat features;
@@ -900,6 +896,7 @@ cv::Mat histogramBodyMask(const BallROI& ball, const BallHistogramOptions& p) {
 
 // Builds a smoothed, normalised colour histogram from the pixels selected by the supplied mask.
 cv::Mat buildColourHistogram(const cv::Mat& features, const cv::Mat& mask, const BallHistogramOptions& p) {
+    // TODO
     const int channels[] = {0, 1, 2}, bins[] = {p.hueBins, p.saturationBins, p.toneBins};
     const float hue[] = {0, 180}, other[] = {0, 256};
     const float* ranges[] = {hue, other, other};
@@ -1313,8 +1310,7 @@ IdentityRecognitionResult runIdentityRecognition( const cv::Mat& image, const st
         finalTypes.push_back(number < 0 ? "Unknown" : number == 0 ? "White" : number <= 8 ? "Solid" : "Striped");
     }
 
-    saveFinalResults(
-        image, directory, circles, centres, finalTypes, numbers);
+    saveFinalResults(image, directory, circles, centres, finalTypes, numbers, context);
 
     // Evaluate and save the summary.
     const IdentityRecognitionResult evaluation = evaluateBallIdentities(numbers, context);
@@ -1700,28 +1696,44 @@ Saves the final results to a directory:
     - balls.csv: a CSV file containing the predicted ball information (candidate number, predicted type, predicted number, original coordinates, radius, and transformed coordinates).
 */
 void saveFinalResults(const cv::Mat& image, const std::filesystem::path& directory, const std::vector<cv::Vec3f>& circles, const std::vector<cv::Point2f>& tableCentres, const std::vector<std::string>& types,
-                      const std::vector<int>& numbers) {
+                      const std::vector<int>& numbers, const EvaluationContext& context) {
     if (circles.size() != tableCentres.size() || circles.size() != types.size() || circles.size() != numbers.size())
         throw std::runtime_error("Final result vectors have inconsistent candidate counts");
 
     std::filesystem::create_directories(directory);
+
     cv::Mat original = image.clone();
+    std::vector<cv::Scalar> outlineColours;
+
+    for (size_t i = 0; i < circles.size(); ++i) {
+        const int g = context.matching.predictionToGroundTruth[i];
+        const bool correct = g >= 0 && numbers[i] == context.truth[g].number;
+        const cv::Scalar colour = correct ? DETECTION_COLOUR : ERROR_COLOUR;
+
+        outlineColours.push_back(colour);
+
+        const cv::Point centre(cvRound(circles[i][0]), cvRound(circles[i][1]));
+
+        cv::circle(original, centre, cvRound(circles[i][2]), colour, 2, cv::LINE_AA);
+        cv::circle(original, centre, 2, cv::Scalar(255, 0, 0), cv::FILLED);
+    }
+
     const cv::Mat rectified = transformImage(image);
-    cv::Mat overhead = rectified.clone();
+    cv::Mat overhead = transformImage(original);
 
     for (size_t i = 0; i < circles.size(); ++i) {
         const cv::Point sourceCentre(cvRound(circles[i][0]), cvRound(circles[i][1]));
-        cv::circle(original, sourceCentre, cvRound(circles[i][2]), cv::Scalar(0, 220, 255), 2, cv::LINE_AA);
+
         drawFinalLabel(original, sourceCentre, numbers[i]);
 
         const cv::Point tableCentre(cvRound(tableCentres[i].x), cvRound(tableCentres[i].y));
-        cv::drawMarker(overhead, tableCentre, cv::Scalar(0, 220, 255), cv::MARKER_CROSS, 9, 1, cv::LINE_AA);
+
         drawFinalLabel(overhead, tableCentre, numbers[i], {0, -12});
     }
     saveImage(directory / "original_numbered.png", original);
     saveImage(directory / "table_rectified.png", rectified);
     saveImage(directory / "table_numbered.png", overhead);
-    saveImage(directory / "table_diagram.png", drawTableDiagram(tableCentres, numbers));
+    saveImage(directory / "table_diagram.png", drawTableDiagram(tableCentres, numbers, outlineColours));
 
     std::ofstream csv(directory / "balls.csv");
     if (!csv.is_open())
@@ -1900,644 +1912,493 @@ void runGridSearch() {
 }
 
 /*
-======================
-    CCA + K MEANS
-======================
+=========================================
+            PAST SOLUTIONS
+=========================================
 */
 
-// TODO_CHECK
-CCAExp experimentCCA(const BallROI& ball, const KMeansResult& seg) {
-    CCAExp out;
-    out.lightMask=cv::Mat::zeros(ball.image.size(), CV_8U);
+PastImage preparePastImage(const std::string& filename, const std::filesystem::path& root) {
+    PastImage data;
 
-    for(const auto& r:seg.regions) {
-        if(r.hsv[2]>=170 && r.hsv[1]<=165) {
-            cv::bitwise_or(out.lightMask, r.mask, out.lightMask);
-        }
-    }
+    data.filename = filename;
+    data.directory = root / std::filesystem::path(filename).stem();
+    data.image = cv::imread(MEDIA_DIR + filename);
 
-    cv::subtract(ball.mask,out.lightMask,out.nonLightMask);
-    const double area=std::max(1,cv::countNonZero(ball.mask));
+    if (data.image.empty())
+        throw std::runtime_error("Could not load: " + filename);
 
-    auto measure=[&](const cv::Mat& mask,int& count,double& largest){
-        cv::Mat labels, stats, centroids;
-        const int n=cv::connectedComponentsWithStats(mask, labels, stats, centroids, 8);
-        count = 0;
-        int big = 0;
-        for(int i=1;i<n;++i) {
-            const int pixels=stats.at<int>(i, cv::CC_STAT_AREA);
-            if (100.0*pixels/area >= 2.0) {
-                ++count;big=std::max(big, pixels);
-            }
-        }
-        largest=100.0*big/area;
-    };
+    data.detection = runDetection(data.image, HoughParams{}, data.directory / "selected_hough", filename);
+    data.context = prepareEvaluation(data.detection.filteredCircles, filename);
+    data.balls = runExtraction(data.image, data.detection.filteredCircles, data.directory);
+    data.segmentations = runKMeans(data.balls, 2, data.directory);
 
-    measure(out.lightMask, out.lightCount, out.largestLightPct);
-    measure(out.nonLightMask, out.nonLightCount, out.largestNonLightPct);
-
-    cv::Mat eroded, boundary, coverage;
-    cv::erode(ball.mask, eroded, cv::getStructuringElement(cv::MORPH_ELLIPSE, {5,5}));
-    cv::subtract(ball.mask, eroded, boundary);
-    cv::bitwise_and(boundary, out.lightMask, coverage);
-    out.boundaryLightPct=100.0 * cv::countNonZero(coverage) / std::max(1, cv::countNonZero(boundary));
-    
-    return out;
-}
-
-std::string experimentCCAType(const BallTypeResult& base, const CCAExp& spatial) {
-    const double nonLight=base.colouredPercent+base.darkPercent;
-
-    if (base.lightPercent>=85 && spatial.largestLightPct>=80 && spatial.boundaryLightPct>=75 && spatial.nonLightCount==0) 
-        return "White";
-    if (spatial.largestLightPct>=20 && spatial.boundaryLightPct>=20 && nonLight>=10) 
-        return "Striped";
-    if (nonLight>=70 && spatial.boundaryLightPct<=12 && spatial.nonLightCount==1) 
-        return "Solid";
-    return base.type;
-}
-
-void runK2CCAExperiment() {
-    const std::filesystem::path directory = std::filesystem::path(EXPERIMENT_DIR) / "k2_cca";
-
-    std::filesystem::create_directories(directory);
-
-    std::ofstream metrics(directory / "metrics.csv");
-    std::ofstream changes(directory / "changes.csv");
-
-    if (!metrics.is_open() || !changes.is_open())
-        throw std::runtime_error("Could not create CCA experiment CSVs");
-
-    metrics << "image,matched,baselineCorrect,ccaCorrect,corrected,regressed\n";
-
-    changes << "image,candidate,trueType,baselineType,ccaType,"
-               "lightComponents,nonLightComponents,"
-               "largestLightPercent,boundaryLightPercent\n";
-
-    int totalMatched = 0;
-    int totalBaselineCorrect = 0;
-    int totalCCACorrect = 0;
-    int totalCorrected = 0;
-    int totalRegressed = 0;
-
-    for (const std::string& filename : VAL_IMG) {
-        const cv::Mat image = cv::imread(MEDIA_DIR + filename);
-
-        if (image.empty())
-            throw std::runtime_error("Could not load: " + filename);
-
-        // Both methods use exactly the same detections and crops.
-        const auto raw = detectBalls(maskTable(image), HoughParams{});
-        const auto circles = filterPocketDetections(raw);
-        const auto context = prepareEvaluation(circles, filename);
-
-        std::vector<BallTypeResult> baselineTypes;
-        std::vector<BallTypeResult> ccaTypes;
-        std::vector<ImagePanel> panels;
-
-        int corrected = 0;
-        int regressed = 0;
-
-        for (size_t i = 0; i < circles.size(); ++i) {
-            const BallROI ball = extractBall(image, circles[i]);
-            const auto segmentation = segmentBallKMeans(ball, 2);
-            const BallTypeResult baseline = classifyBallType(segmentation);
-            const CCAExp spatial = experimentCCA(ball, segmentation);
-
-            BallTypeResult cca = baseline;
-            cca.type = experimentCCAType(baseline, spatial);
-
-            baselineTypes.push_back(baseline);
-            ccaTypes.push_back(cca);
-
-            const int g = context.matching.predictionToGroundTruth[i];
-
-            if (g < 0)
-                continue;
-
-            const std::string expected = identityType(context.truth[g].number);
-
-            const bool baselineCorrect = baseline.type == expected;
-            const bool ccaCorrect = cca.type == expected;
-
-            corrected += !baselineCorrect && ccaCorrect;
-            regressed += baselineCorrect && !ccaCorrect;
-
-            // Record every changed prediction.
-            if (baseline.type != cca.type) {
-                changes << filename << ',' << i + 1 << ','
-                        << expected << ','
-                        << baseline.type << ',' << cca.type << ','
-                        << spatial.lightCount << ','
-                        << spatial.nonLightCount << ','
-                        << spatial.largestLightPct << ','
-                        << spatial.boundaryLightPct << '\n';
-            }
-
-            // Show changes and unresolved errors, rather than every ball.
-            if (baseline.type != cca.type || !baselineCorrect) {
-                const std::string label = "Candidate " + std::to_string(i + 1);
-
-                panels.push_back({
-                    label + " / true: " + expected, ball.image
-                });
-
-                panels.push_back({
-                    "K2: " + baseline.type, segmentation.segmentedImage
-                });
-
-                panels.push_back({
-                    "Light / CCA: " + cca.type, spatial.lightMask
-                });
-
-                panels.push_back({
-                    "Non-light regions", spatial.nonLightMask
-                });
-            }
-        }
-
-        const auto baselineEvaluation = evaluateBallTypes(baselineTypes, context);
-        const auto ccaEvaluation = evaluateBallTypes(ccaTypes, context);
-
-        metrics << filename << ','
-                << baselineEvaluation.matched << ','
-                << baselineEvaluation.correct << ','
-                << ccaEvaluation.correct << ','
-                << corrected << ',' << regressed << '\n';
-
-        totalMatched += baselineEvaluation.matched;
-        totalBaselineCorrect += baselineEvaluation.correct;
-        totalCCACorrect += ccaEvaluation.correct;
-        totalCorrected += corrected;
-        totalRegressed += regressed;
-
-        const auto imageDirectory = directory / std::filesystem::path(filename).stem();
-
-        const cv::Mat grid = combineImages(panels, 4);
-        if (!grid.empty())
-            saveImage(imageDirectory / "candidate_comparison.png", grid);
-
-        saveImage(
-            imageDirectory / "table_comparison.png",
-            combineImages({
-                {"K=2", drawBallTypes(image, circles, baselineTypes)},
-                {"K=2 + CCA", drawBallTypes(image, circles, ccaTypes)}}, 1));
-    }
-
-    metrics << "ALL," << totalMatched << ','
-            << totalBaselineCorrect << ','
-            << totalCCACorrect << ','
-            << totalCorrected << ','
-            << totalRegressed << '\n';
-
-    finishOutputFile(metrics);
-    finishOutputFile(changes);
-
-    std::cout << "\n---------K=2 + CCA Experiment---------\n"
-              << "K=2 correct types: "
-              << totalBaselineCorrect << "/" << totalMatched << '\n'
-              << "K=2 + CCA correct types: "
-              << totalCCACorrect << "/" << totalMatched << '\n'
-              << "Corrected predictions: " << totalCorrected << '\n'
-              << "Previously correct predictions lost: "
-              << totalRegressed << '\n';
+    return data;
 }
 
 /*
 ======================
-    WATERSHED +
-    GUIDED HOUGH
+    PAST RULES &
+    THRESHOLDS
 ======================
 */
 
-cv::Mat makeExperimentForeground(const cv::Mat& image) {
-    cv::Mat hsv, cloth;
-    cv::cvtColor(image, hsv, cv::COLOR_BGR2HSV);
+BallTypeResult pastHLSType(const BallROI& ball, cv::Mat& preview) {
+    BallTypeResult result;
 
-    // Fixed experimental cloth thresholds.
-    cv::inRange(hsv, cv::Scalar(35, 35, 30), cv::Scalar(95, 255, 255), cloth);
+    cv::Mat hls;
+    cv::cvtColor(ball.image, hls, cv::COLOR_BGR2HLS);
 
-    cv::Mat table = cv::Mat::zeros(image.size(), CV_8UC1);
-    cv::fillConvexPoly(table, TABLE_CORNERS, cv::Scalar(255));
+    preview = cv::Mat::zeros(ball.image.size(), CV_8UC3);
 
-    // Reduce contributions from the table boundary.
-    cv::erode(table, table, cv::getStructuringElement(cv::MORPH_ELLIPSE, {9, 9}));
+    const int total = cv::countNonZero(ball.mask);
+    if (total == 0)
+        return result;
 
-    cv::Mat foreground;
-    cv::bitwise_not(cloth, foreground);
-    cv::bitwise_and(foreground, table, foreground);
+    for (int y = 0; y < hls.rows; ++y) {
+        for (int x = 0; x < hls.cols; ++x) {
+            if (!ball.mask.at<uchar>(y, x))
+                continue;
 
-    cv::morphologyEx(foreground, foreground, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_ELLIPSE, {3, 3}));
+            const auto pixel = hls.at<cv::Vec3b>(y, x);
+            const int lightness = pixel[1];
+            const int saturation = pixel[2];
 
-    // Keep the foreground restricted to the table after closing.
-    cv::bitwise_and(foreground, table, foreground);
-    return foreground;
-}
+            cv::Vec3b colour(100, 100, 100);
 
-GuidedExperimentResult detectGuidedHoughWatershed(
-    const cv::Mat& image,
-    const std::vector<cv::Vec3f>& baseline) {
+            if (lightness >= 175 && saturation <= 85) {
+                ++result.lightPercent;
+                colour = {255, 255, 255};
+            } else if (lightness <= 65) {
+                ++result.darkPercent;
+                colour = {35, 35, 35};
+            } else if (saturation >= 85) {
+                ++result.colouredPercent;
+                colour = {255, 100, 0};
+            }
 
-    if (image.empty())
-        throw std::runtime_error("Empty guided-experiment image");
-
-    GuidedExperimentResult result;
-    result.baseline = baseline;
-    result.guided = baseline;
-    result.watershed = baseline;
-    result.foreground = makeExperimentForeground(image);
-
-    const auto centre = [](const cv::Vec3f& circle) {
-        return cv::Point(cvRound(circle[0]), cvRound(circle[1]));
-    };
-
-    const auto duplicate = [](const cv::Vec3f& candidate,
-                              const std::vector<cv::Vec3f>& circles) {
-        for (const auto& other : circles) {
-            const double distance = std::hypot(candidate[0] - other[0], candidate[1] - other[1]);
-
-            if (distance < 0.8 * std::min(candidate[2], other[2]))
-                return true;
+            preview.at<cv::Vec3b>(y, x) = colour;
         }
-        return false;
-    };
-
-    // Enlarged disks connect nearby baseline detections into groups.
-    cv::Mat groups = cv::Mat::zeros(image.size(), CV_8UC1);
-
-    for (const auto& circle : baseline) {
-        cv::circle(groups, centre(circle), cvRound(1.4 * circle[2]), cv::Scalar(255), cv::FILLED);
     }
 
-    cv::Mat labels, stats, centroids;
-    const int groupCount = cv::connectedComponentsWithStats(
-        groups, labels, stats, centroids);
+    result.lightPercent *= 100.0 / total;
+    result.darkPercent *= 100.0 / total;
+    result.colouredPercent *= 100.0 / total;
 
-    for (int group = 1; group < groupCount; ++group) {
-        int seedCount = 0;
-        double radiusSum = 0;
+    const double nonLight = result.darkPercent + result.colouredPercent;
 
-        for (const auto& circle : baseline) {
-            if (labels.at<int>(centre(circle)) == group) {
-                ++seedCount;
-                radiusSum += circle[2];
-            }
-        }
-
-        // Only search regions containing at least two nearby detections.
-        if (seedCount < 2)
-            continue;
-
-        const double expectedRadius = radiusSum / seedCount;
-        const int padding = cvCeil(expectedRadius);
-
-        cv::Rect crop(stats.at<int>(group, cv::CC_STAT_LEFT) - padding,
-                        stats.at<int>(group, cv::CC_STAT_TOP) - padding,
-                        stats.at<int>(group, cv::CC_STAT_WIDTH) + 2 * padding,
-                        stats.at<int>(group, cv::CC_STAT_HEIGHT) + 2 * padding);
-
-        crop &= cv::Rect(0, 0, image.cols, image.rows);
-
-        // More permissive than the baseline centre-vote threshold.
-        HoughParams localParams;
-        localParams.param2 = 22;
-        localParams.minDist = 12;
-
-        const auto localCircles = detectBalls(image(crop), localParams);
-        std::vector<cv::Vec3f> proposals;
-
-        for (const auto& local : localCircles) {
-            const cv::Vec3f candidate(
-                local[0] + crop.x, local[1] + crop.y, local[2]);
-
-            const cv::Point point = centre(candidate);
-
-            if (!cv::Rect(0, 0, image.cols, image.rows).contains(point))
-                continue;
-
-            if (result.foreground.at<uchar>(point) == 0)
-                continue;
-
-            if (filterPocketDetections({candidate}).empty())
-                continue;
-
-            if (duplicate(candidate, result.guided))
-                continue;
-
-            proposals.push_back(candidate);
-            result.guided.push_back(candidate);
-        }
-
-        // Baseline circles and new proposals provide watershed markers.
-        std::vector<cv::Vec3f> seeds;
-        for (const auto& circle : baseline) {
-            if (crop.contains(centre(circle))) {
-                seeds.push_back(circle);
-            }
-        }
-
-        const size_t firstProposal = seeds.size();
-        seeds.insert(seeds.end(), proposals.begin(), proposals.end());
-
-        cv::Mat foreground = result.foreground(crop).clone();
-
-        // Ensure marker cores belong to the provisional foreground.
-        for (const auto& seed : seeds) {
-            cv::circle(foreground, centre(seed) - crop.tl(), 3, cv::Scalar(255), cv::FILLED);
-        }
-
-        cv::Mat markers = cv::Mat::zeros(crop.size(), CV_32SC1);
-        markers.setTo(1, foreground == 0); // Known background.
-
-        for (size_t i = 0; i < seeds.size(); ++i) {
-            cv::circle(markers, centre(seeds[i]) - crop.tl(), 2, cv::Scalar(static_cast<int>(i) + 2), cv::FILLED);
-        }
-
-        cv::Mat smooth;
-        cv::GaussianBlur(image(crop), smooth, {5, 5}, 1.5);
-        cv::watershed(smooth, markers);
-
-        // Baseline circles are retained; only new proposals are filtered.
-        for (size_t i = firstProposal; i < seeds.size(); ++i) {
-            cv::Mat basin = markers == static_cast<int>(i) + 2;
-            cv::bitwise_and(basin, foreground, basin);
-
-            const double diskArea = CV_PI * seeds[i][2] * seeds[i][2];
-            const double areaRatio = cv::countNonZero(basin) / diskArea;
-
-            if (areaRatio >= 0.15 && areaRatio <= 2.0)
-                result.watershed.push_back(seeds[i]);
-        }
-
-        // Save diagnostic panels without treating basin colours as identities.
-        cv::Mat labels8, basinView;
-        markers.convertTo(labels8, CV_8U, 13);
-        cv::applyColorMap(labels8, basinView, cv::COLORMAP_TURBO);
-        basinView.setTo(cv::Scalar(0, 0, 0), markers <= 1);
-
-        const std::string name = "Region " + std::to_string(group);
-        result.diagnostics.push_back({name + ": original", image(crop)});
-        result.diagnostics.push_back({name + ": foreground", foreground});
-        result.diagnostics.push_back({name + ": basins", basinView});
-    }
+    if (result.lightPercent >= 85)
+        result.type = "White";
+    else if (nonLight >= 70)
+        result.type = "Solid";
+    else if (result.lightPercent > 0 && nonLight > 0)
+        result.type = "Striped";
 
     return result;
 }
 
-void runGuidedHoughWatershedExperiment() {
-    const std::filesystem::path directory =
-        std::filesystem::path(EXPERIMENT_DIR) / "guided_hough_watershed";
+int pastHueColour(const KMeansResult& segmentation) {
+    const KMeansRegion* body = nullptr;
 
-    std::filesystem::create_directories(directory);
+    for (const auto& region : segmentation.regions) {
+        if (region.percentage < 2)
+            continue;
 
-    std::ofstream csv(directory / "metrics.csv");
-    if (!csv.is_open())
-        throw std::runtime_error("Could not create guided experiment CSV");
+        if (region.hsv[2] >= 170 && region.hsv[1] <= 165)
+            continue;
 
-    csv << "image,method,TP,FP,FN,precision,recall,F1,recovered,lost\n";
-
-    const std::array<std::string, 3> names = {
-        "baseline", "guided_hough", "guided_hough_watershed"
-    };
-
-    std::array<int, 3> totalTP{}, totalFP{}, totalFN{};
-    std::array<int, 3> totalRecovered{}, totalLost{};
-
-    for (const std::string& filename : VAL_IMG) {
-        const cv::Mat image = cv::imread(MEDIA_DIR + filename);
-
-        if (image.empty())
-            throw std::runtime_error("Could not load: " + filename);
-
-        const auto raw = detectBalls(maskTable(image), HoughParams{});
-        const auto baseline = filterPocketDetections(raw);
-        const auto result = detectGuidedHoughWatershed(image, baseline);
-
-        const auto context = prepareEvaluation(baseline, filename);
-
-        std::vector<cv::Point2f> trueCentres;
-        for (const auto& ball : context.truth)
-            trueCentres.push_back(ball.centre);
-
-        const std::array<std::vector<cv::Vec3f>, 3> variants = {
-            result.baseline, 
-            result.guided, 
-            result.watershed
-        };
-
-        std::vector<ImagePanel> comparisons;
-
-        for (size_t method = 0; method < variants.size(); ++method) {
-            const auto evaluation = evaluateDetections(transformCentres(variants[method]), trueCentres, MATCH_TOLERANCE);
-
-            int recovered = 0;
-            int lost = 0;
-
-            for (size_t g = 0; g < context.truth.size(); ++g) {
-                const bool before =context.matching.groundTruthToPrediction[g] >= 0;
-                const bool after = evaluation.groundTruthToPrediction[g] >= 0;
-
-                recovered += !before && after;
-                lost += before && !after;
-            }
-
-            csv << filename << ',' << names[method] << ','
-                << evaluation.TP << ',' << evaluation.FP << ','
-                << evaluation.FN << ',' << evaluation.precision << ','
-                << evaluation.recall << ',' << evaluation.f1 << ','
-                << recovered << ',' << lost << '\n';
-
-            totalTP[method] += evaluation.TP;
-            totalFP[method] += evaluation.FP;
-            totalFN[method] += evaluation.FN;
-            totalRecovered[method] += recovered;
-            totalLost[method] += lost;
-
-            const std::string label =
-                names[method] +
-                " / TP " + std::to_string(evaluation.TP) +
-                " FP " + std::to_string(evaluation.FP) +
-                " FN " + std::to_string(evaluation.FN);
-
-            comparisons.push_back({label, drawDetectedBalls(image, variants[method])});
-        }
-
-        const auto imageDirectory = directory / std::filesystem::path(filename).stem();
-
-        saveImage(imageDirectory / "comparison.png", combineImages(comparisons, 1));
-        saveImage(imageDirectory / "foreground.png", result.foreground);
-
-        const cv::Mat diagnostics = combineImages(result.diagnostics, 3);
-        if (!diagnostics.empty())
-            saveImage(imageDirectory / "regions.png", diagnostics);
+        if (!body || region.percentage > body->percentage)
+            body = &region;
     }
 
-    const auto fraction = [](int numerator, int denominator) {
-        return denominator > 0 ? double(numerator) / denominator : 0.0;
-    };
+    if (!body)
+        return -1;
 
-    std::cout << "\n---------Guided Hough + Watershed Experiment---------\n";
-    for (size_t method = 0; method < names.size(); ++method) {
-        const int tp = totalTP[method];
-        const int fp = totalFP[method];
-        const int fn = totalFN[method];
+    const int h = body->hsv[0];
+    const int s = body->hsv[1];
+    const int v = body->hsv[2];
 
-        csv << "ALL," << names[method] << ','
-            << tp << ',' << fp << ',' << fn << ','
-            << fraction(tp, tp + fp) << ','
-            << fraction(tp, tp + fn) << ','
-            << fraction(2 * tp, 2 * tp + fp + fn) << ','
-            << totalRecovered[method] << ','
-            << totalLost[method] << '\n';
+    if (s <= 60)
+        return v <= 90 ? 8 : -1;  // Black.
+    if (h < 6 || h >= 170)
+        return v < 150 ? 7 : 3;   // Maroon / red.
+    if (h < 15)
+        return 5;                // Orange.
+    if (h < 35)
+        return 1;                // Yellow.
+    if (h >= 45 && h < 90)
+        return 6;                // Green.
+    if (h >= 100 && h < 130)
+        return 2;                // Blue.
+    if (h >= 130 && h < 165)
+        return 4;                // Purple.
 
-        std::cout << names[method]
-                  << ": TP=" << tp << " FP=" << fp << " FN=" << fn
-                  << " recovered=" << totalRecovered[method]
-                  << " lost=" << totalLost[method] << '\n';
-    }
-    std::cout << "\n";
-    finishOutputFile(csv);
+    return -1;
 }
 
-void runGuidedRecognitionExperiment() {
-    const std::filesystem::path root =
-        std::filesystem::path(EXPERIMENT_DIR) / "guided_recognition";
+int pastHardIdentity(const BallTypeResult& type, int colour) {
+    if (type.type == "White")
+        return 0;
 
-    std::filesystem::create_directories(root);
+    if (colour < 1 || colour > 8)
+        return -1;
 
-    // Use one shared colour model for every detection variant.
-    const cv::Mat referenceImage = cv::imread(MEDIA_DIR + TUNNNING_IMG);
-    const BallColourModel model = buildColourReferenceModel(referenceImage);
+    if (type.type == "Solid")
+        return colour;
 
-    const std::array<std::string, 3> names = {
-        "baseline",
-        "guided_hough",
-        "guided_hough_watershed"
+    if (type.type == "Striped" && colour <= 7)
+        return colour + 8;
+
+    return -1;
+}
+
+/*
+======================
+    MANUAL HOUGH
+======================
+*/
+
+void runPastHoughComparison(const PastImage& data, std::map<std::string, EvaluationResult>& totals) {
+    const HoughParams starting{1.0, 20.0, 80.0, 30.0, 15, 30};
+
+    const auto initial = runDetection(data.image, starting, data.directory / "starting_hough", data.filename);
+
+    const std::array<std::pair<std::string, DetectionResult>, 2> variants{{
+        {"starting_hough", initial},
+        {"selected_hough", data.detection}
+    }};
+
+    std::vector<ImagePanel> panels;
+
+    for (const auto& item : variants) {
+        const auto& result = item.second;
+        const auto& evaluation = result.evaluation;
+
+        panels.push_back({
+            item.first +
+                " TP=" + std::to_string(evaluation.TP) +
+                " FP=" + std::to_string(evaluation.FP) +
+                " FN=" + std::to_string(evaluation.FN),
+
+            drawDetectedBalls(
+                result.maskedImage, result.filteredCircles)
+        });
+
+        if (data.filename != TUNNNING_IMG) {
+            auto& total = totals[item.first];
+
+            total.TP += evaluation.TP;
+            total.FP += evaluation.FP;
+            total.FN += evaluation.FN;
+
+            total.meanError += evaluation.meanError * evaluation.TP;
+        }
+    }
+
+    saveImage(data.directory / "hough_comparison.png", combineImages(panels, 2));
+}
+
+/*
+======================
+    MANUAL HLS
+    RULES
+======================
+*/
+
+std::vector<BallTypeResult> runPastTypeComparison(const PastImage& data, std::vector<PastSummaryRow>& rows) {
+    const auto& circles = data.detection.filteredCircles;
+
+    std::vector<BallTypeResult> hls;
+    std::vector<BallTypeResult> k2;
+    std::vector<ImagePanel> pixels;
+
+    for (size_t i = 0; i < data.balls.size(); ++i) {
+        cv::Mat preview;
+
+        hls.push_back(pastHLSType(data.balls[i], preview));
+        k2.push_back(classifyBallType(data.segmentations[i]));
+
+        pixels.push_back({"Ball " + std::to_string(i + 1) + ": " + hls.back().type, preview});
+    }
+
+    for (const auto& method : {std::string("hls"), std::string("k2")}) {
+        const auto& types = method == "hls" ? hls : k2;
+        const auto evaluation = evaluateBallTypes(types, data.context);
+
+        rows.push_back({
+            data.filename,
+            "type_" + method,
+            evaluation.correct,
+            evaluation.matched,
+            evaluation.groundTruthCount
+        });
+    }
+
+    saveImage(
+        data.directory / "type_comparison.png",
+        combineImages({
+            {"HLS", drawBallTypes(data.image, circles, hls)},
+            {"K=2", drawBallTypes(data.image, circles, k2)}
+        }, 2));
+
+    if (!pixels.empty()) {
+        saveImage(
+            data.directory / "hls_grid.png",
+            combineImages(pixels, 4));
+    }
+
+    return k2;
+}
+
+/*
+======================
+    K MEANS HUE
+    RULES
+======================
+*/
+
+std::vector<BallColourScores> runPastColourComparison(const PastImage& data, const BallColourModel& model, std::vector<PastSummaryRow>& rows) {
+    const auto& circles = data.detection.filteredCircles;
+
+    std::vector<BallColourScores> hue;
+
+    for (const auto& segmentation : data.segmentations) {
+        BallColourScores colour;
+        colour.bestColour = pastHueColour(segmentation);
+
+        hue.push_back(colour);
+    }
+
+    const auto oldResult = evaluateBallColours(hue, data.context);
+    const auto current = runColourRecognition(data.image, data.balls, circles, model, data.directory / "histogram", data.filename, data.context);
+
+    rows.push_back({data.filename, "colour_hue", oldResult.correct, oldResult.matched, oldResult.groundTruthCount});
+    rows.push_back({data.filename, "colour_histogram", current.correct, current.matched, current.groundTruthCount});
+
+    saveImage(
+        data.directory / "colour_comparison.png",
+        combineImages({
+            {
+                "K=2 representative hue",
+                drawBallColours(data.image, circles, hue)
+            },
+            {
+                "HSV histogram",
+                drawBallColours(data.image, circles, current.colours)
+            }
+        }, 2));
+
+    return current.colours;
+}
+
+/*
+======================
+    PAST SOLUTIONS
+    COMPARAISONS
+======================
+*/
+
+void runPastIdentityComparison(
+    const PastImage& data,
+    const std::vector<BallTypeResult>& types,
+    const std::vector<BallColourScores>& colours,
+    const BallColourModel& model,
+    std::vector<PastSummaryRow>& rows) {
+
+    const auto& circles = data.detection.filteredCircles;
+    const auto centres = transformCentres(circles);
+    const auto directory = data.directory / "identity";
+
+    std::vector<Candidate> candidates;
+    std::vector<int> hardHue;
+    std::vector<int> hardHistogram;
+    std::vector<int> softLocal;
+
+    for (size_t i = 0; i < circles.size(); ++i) {
+        Candidate candidate;
+
+        candidate.circle = circles[i];
+        candidate.tableCentre = centres[i];
+        candidate.roi = data.balls[i];
+        candidate.baselineType = types[i];
+        candidate.colours = colours[i];
+
+        identityEvidence(candidate);
+        candidates.push_back(candidate);
+
+        hardHue.push_back(pastHardIdentity(types[i], pastHueColour(data.segmentations[i])));
+        hardHistogram.push_back(pastHardIdentity(types[i], colours[i].bestColour));
+
+        softLocal.push_back(candidate.eligible[candidate.localBest] ? candidate.localBest : -1);
+    }
+
+    const std::vector<std::pair<std::string, std::vector<int>>> variants{
+        {"hard_hue", hardHue},
+        {"hard_histogram", hardHistogram},
+        {"soft_local", softLocal},
+        {"soft_unique", assignUnique(candidates)}
     };
 
-    struct Totals {
-        int TP = 0;
-        int FP = 0;
-        int FN = 0;
-        int groundTruth = 0;
-        int correct = 0;
-        int unknown = 0;
-        int numberedFalsePositives = 0;
-    };
+    std::vector<ImagePanel> panels;
 
-    std::array<Totals, 3> totals{};
+    for (const auto& variant : variants) {
+        const auto evaluation = evaluateBallIdentities(
+            variant.second, data.context);
 
+        rows.push_back({
+            data.filename,
+            "identity_" + variant.first,
+            evaluation.correct,
+            evaluation.detection.TP,
+            evaluation.groundTruthCount,
+            evaluation.unknown
+        });
+
+        std::vector<std::string> labels;
+
+        for (int number : variant.second)
+            labels.push_back(identityType(number));
+
+        saveFinalResults(data.image, directory / variant.first, circles, centres, labels, variant.second, data.context);
+
+        panels.push_back({
+            variant.first,
+            cv::imread(
+                (directory / variant.first / "table_numbered.png").string())
+        });
+    }
+
+    // Reuse the complete current pipeline, including cue corrections.
+    const auto final = runIdentityRecognition(data.image, data.balls, circles, types, colours, model, directory / "final", data.filename, data.context);
+
+    rows.push_back({
+        data.filename, "identity_final",
+        final.correct, final.detection.TP,
+        final.groundTruthCount, final.unknown
+    });
+
+    panels.push_back({
+        "Final with cue corrections",
+        cv::imread(
+            (directory / "final" / "table_numbered.png").string())
+    });
+
+    saveImage(data.directory / "identity_comparison.png", combineImages(panels, 2));
+}
+
+/*
+======================
+    PAST SOLUTIONS
+    RESULTS
+======================
+*/
+
+void savePastSummaries(const std::filesystem::path& root, const std::vector<PastSummaryRow>& rows, const std::map<std::string, EvaluationResult>& detectionTotals) {
     std::ofstream csv(root / "recognition_comparison.csv");
-    if (!csv.is_open())
-        throw std::runtime_error("Could not create recognition comparison CSV");
 
-    csv << "image,method,TP,FP,FN,groundTruth,correctIdentities,"
-           "unknown,numberedFalsePositives,identityAccuracy,"
-           "endToEndAccuracy\n";
+    if (!csv)
+        throw std::runtime_error("Could not create comparison CSV");
 
-    const auto fraction = [](int numerator, int denominator) {
-        return denominator > 0 ? double(numerator) / denominator : 0.0;
+    const auto ratio = [](int numerator, int denominator) {
+        return denominator ? double(numerator) / denominator : 0.0;
     };
 
-    const auto writeRow = [&](const std::string& imageName, const std::string& method, const Totals& counts) {
-        csv << imageName << ',' << method << ','
-            << counts.TP << ','
-            << counts.FP << ','
-            << counts.FN << ','
-            << counts.groundTruth << ','
-            << counts.correct << ','
-            << counts.unknown << ','
-            << counts.numberedFalsePositives << ','
-            << fraction(counts.correct, counts.TP) << ','
-            << fraction(counts.correct, counts.groundTruth) << '\n';
+    csv << "image,method,correct,matched,annotated," "accuracy,endToEnd,unknown\n";
+
+    const auto write = [&](const PastSummaryRow& row) {
+        csv << row.image << ',' << row.method << ','
+            << row.correct << ',' << row.matched << ','
+            << row.annotated << ','
+            << ratio(row.correct, row.matched) << ','
+            << ratio(row.correct, row.annotated) << ','
+            << row.unknown << '\n';
     };
 
-    for (const std::string& filename : VAL_IMG) {
-        const cv::Mat image = cv::imread(MEDIA_DIR + filename);
+    std::map<std::string, PastSummaryRow> totals;
 
-        if (image.empty())
-            throw std::runtime_error("Could not load: " + filename);
+    for (const auto& row : rows) {
+        write(row);
 
-        const auto raw = detectBalls(maskTable(image), HoughParams{});
-        const auto baseline = filterPocketDetections(raw);
-        const auto guided = detectGuidedHoughWatershed(image, baseline);
+        if (row.image == TUNNNING_IMG)
+            continue;
 
-        const std::array<std::vector<cv::Vec3f>, 3> variants = {
-            baseline,
-            guided.guided,
-            guided.watershed
-        };
+        auto& total = totals[row.method];
 
-        for (size_t method = 0; method < variants.size(); ++method) {
-            const auto& circles = variants[method];
-
-            const auto directory = root / names[method] / std::filesystem::path(filename).stem();
-
-            // Each variant needs matching for its own detection list.
-            const auto context = prepareEvaluation(circles, filename);
-
-            // Identical recognition stages and settings for every variant.
-            const auto balls = runExtraction(image, circles, directory);
-
-            const auto types = runTypeRecognition(image, balls, circles, directory, filename, context);
-
-            const auto colours = runColourRecognition(
-                image, balls, circles, model,
-                directory, filename, context);
-
-            const auto identity = runIdentityRecognition(
-                image, balls, circles,
-                types.types, colours.colours,
-                model, directory, filename, context);
-
-            Totals counts;
-            counts.TP = context.matching.TP;
-            counts.FP = context.matching.FP;
-            counts.FN = context.matching.FN;
-            counts.groundTruth = identity.groundTruthCount;
-            counts.correct = identity.correct;
-            counts.unknown = identity.unknown;
-
-            // Check whether false detections receive actual identities.
-            for (size_t i = 0; i < circles.size(); ++i) {
-                const bool falseDetection = context.matching.predictionToGroundTruth[i] < 0;
-
-                if (falseDetection && identity.numbers[i] >= 0)
-                    ++counts.numberedFalsePositives;
-            }
-
-            writeRow(filename, names[method], counts);
-
-            auto& total = totals[method];
-            total.TP += counts.TP;
-            total.FP += counts.FP;
-            total.FN += counts.FN;
-            total.groundTruth += counts.groundTruth;
-            total.correct += counts.correct;
-            total.unknown += counts.unknown;
-            total.numberedFalsePositives += counts.numberedFalsePositives;
-        }
+        total.correct += row.correct;
+        total.matched += row.matched;
+        total.annotated += row.annotated;
+        total.unknown += row.unknown;
     }
 
-    std::cout << "\n---------Guided Detection + Recognition---------\n";
+    std::cout << "\nPast designs: Table1-6 (AllBalls excluded)\n";
 
-    for (size_t method = 0; method < names.size(); ++method) {
-        const auto& total = totals[method];
+    for (auto entry : totals) {
+        auto& total = entry.second;
 
-        writeRow("ALL", names[method], total);
+        total.image = "TOTAL_TABLE1_6";
+        total.method = entry.first;
 
-        std::cout << names[method]
-                  << ": TP=" << total.correct
-                  << "/" << total.groundTruth
-                  << " (" << 100.0 * fraction(total.correct, total.groundTruth) << "%)"
-                  << ", FP=" << total.FP
-                  << ", numbered FP="
-                  << total.numberedFalsePositives
-                  << ", unknown=" << total.unknown << '\n';
+        write(total);
+
+        std::cout
+            << total.method << ": "
+            << total.correct << '/' << total.matched << " matched; "
+            << total.correct << '/' << total.annotated
+            << " end-to-end\n\n";
     }
-    std::cout << "\n";
+
     finishOutputFile(csv);
+
+    for (auto entry : detectionTotals) {
+        auto& evaluation = entry.second;
+
+        evaluation.precision = ratio(evaluation.TP, evaluation.TP + evaluation.FP);
+        evaluation.recall = ratio(evaluation.TP, evaluation.TP + evaluation.FN);
+        evaluation.f1 = ratio(2 * evaluation.TP, 2 * evaluation.TP + evaluation.FP + evaluation.FN);
+        evaluation.meanError = evaluation.TP ? evaluation.meanError / evaluation.TP : 0;
+
+        saveDetectionEvaluation(root / "overall" / entry.first, evaluation);
+
+        std::cout
+            << entry.first
+            << ": TP=" << evaluation.TP
+            << " FP=" << evaluation.FP
+            << " FN=" << evaluation.FN
+            << " F1=" << 100 * evaluation.f1 << "%\n\n";
+    }
+
+    std::cout << "\n";
 }
+
+/*
+======================
+    PAST SOLUTIONS
+    RUNNER
+======================
+*/
+
+void runPastDesigns() {
+    const auto root = std::filesystem::path(EXPERIMENT_DIR) / "past_designs";
+
+    const cv::Mat reference = cv::imread(MEDIA_DIR + TUNNNING_IMG);
+    const auto model = buildColourReferenceModel(reference);
+
+    std::vector<PastSummaryRow> rows;
+    std::map<std::string, EvaluationResult> detectionTotals;
+
+    for (const auto& filename : getAllImages()) {
+        const auto data = preparePastImage(filename, root);
+
+        runPastHoughComparison(data, detectionTotals);
+
+        const auto types = runPastTypeComparison(data, rows);
+        const auto colours = runPastColourComparison(data, model, rows);
+
+        runPastIdentityComparison(data, types, colours, model, rows);
+    }
+
+    savePastSummaries(root, rows, detectionTotals);
+}
+
 
 /*
 =========================================
@@ -2657,36 +2518,19 @@ void runMainPipeline() {
     printOverallEvaluation(totals);
 }
 
-void runExperiments() {
-    // Run the grid search experiments
-    runGridSearch();
-
-    // run CCA experiment (not included in the main pipeline)
-    runK2CCAExperiment();
-
-    // run watershed / guided hough experiment (not included in the main pipeline)
-    runGuidedHoughWatershedExperiment();
-    runGuidedRecognitionExperiment();
-}
-
 void MyApplication() {
-    const bool runMain = RUN_MODE == "MAIN" || RUN_MODE == "ALL";
-    const bool runExp = RUN_MODE == "EXPERIMENTS" || RUN_MODE == "ALL";
+    const bool runGridSeachExp = true;
+    const bool runPast = true;
 
-    if (!runMain && !runExp) {
-        std::cout << "Error: Unknown Run Mode\n";
-        return;
+    if (runGridSeachExp) {
+        runGridSearch();
     }
 
-    if (runExp) {
-        std::cout << "=================RUNNING EXPERIMENTS=================\n";
-        runExperiments();
+    if (runPast){
+        runPastDesigns();
     }
 
-    if (runMain) {
-        std::cout << "=================RUNNING MAIN PIPELINE=================\n";
-        runMainPipeline();
-    }
+    runMainPipeline();
 }
 
 #ifdef POOL_BALL_STANDALONE
