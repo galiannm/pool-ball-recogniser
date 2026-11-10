@@ -315,17 +315,17 @@ cv::Mat drawDetectedBalls(const cv::Mat& image, const std::vector<cv::Vec3f>& ci
 // Draws a readable predicted ball label near a centre while keeping the text inside the image.
 void drawFinalLabel(cv::Mat& image, cv::Point centre, int number, cv::Point offset) {
     const std::string label = finalBallLabel(number);
-    const double scale = number < 0 ? 0.36 : 0.65;
+    const double scale = number < 0 ? 0.45 : 1.0;
     int baseline = 0;
 
-    const cv::Size text = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, scale, 2, &baseline);
+    const cv::Size text = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, scale, 3, &baseline);
     cv::Point anchor(centre.x - text.width / 2 + offset.x, centre.y + text.height / 2 + offset.y);
 
     anchor.x = std::clamp(anchor.x, 2, std::max(2, image.cols - text.width - 2));
     anchor.y = std::clamp(anchor.y, text.height + 2, std::max(text.height + 2, image.rows - baseline - 2));
 
-    cv::putText(image, label, anchor, cv::FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(0, 0, 0), 4, cv::LINE_AA);
-    cv::putText(image, label, anchor, cv::FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(255, 255, 255), 2, cv::LINE_AA);
+    cv::putText(image, label, anchor, cv::FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(0, 0, 0), 5, cv::LINE_AA);
+    cv::putText(image, label, anchor, cv::FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(255, 255, 255), 3, cv::LINE_AA);
 }
 
 // Creates an overhead table diagram showing the predicted ball positions, colours and identity labels.
@@ -333,7 +333,7 @@ cv::Mat drawTableDiagram(const std::vector<cv::Point2f>& centres, const std::vec
     cv::Mat diagram(TABLE_HEIGHT, TABLE_WIDTH, CV_8UC3, cv::Scalar(65, 115, 45));
     cv::rectangle(diagram, {0, 0}, {diagram.cols - 1, diagram.rows - 1}, cv::Scalar(160, 190, 160), 1);
 
-    const double radius = BALL_DIAMETER_MM / 2;
+    const double radius = (BALL_DIAMETER_MM / 2.0) * 1.4;
     constexpr int shift = 8;
     constexpr int fixedScale = 1 << shift;
 
@@ -355,7 +355,8 @@ cv::Mat drawTableDiagram(const std::vector<cv::Point2f>& centres, const std::vec
                 cv::circle(mask, localFixed, fixedRadius, cv::Scalar(255), cv::FILLED, cv::LINE_AA, shift);
                 cv::Mat ball(patch.size(), CV_8UC3, cv::Scalar(245, 245, 245));
                 const int y = cvRound(centres[i].y) - patch.y;
-                cv::rectangle(ball, {0, y - 10}, {patch.width - 1, y + 10}, colour, cv::FILLED);
+                const int stripeHalfWidth = cvRound(radius * 0.45);
+                cv::rectangle(ball, {0, y - stripeHalfWidth}, {patch.width - 1, y + stripeHalfWidth}, colour, cv::FILLED);
                 ball.copyTo(diagram(patch), mask);
             }
         }

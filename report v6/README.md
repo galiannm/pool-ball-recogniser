@@ -10,7 +10,10 @@ pages; the separate `ai_report` retains the detailed prompts and usage account.
 The current manuscript is a full prose rewrite from the author's development
 notes, including the evaluation and failure analysis. The previous compressed
 descriptions have been replaced with paragraphs describing the attempts,
-observations and reasons for the next step. All final table images remain unchanged.
+observations and reasons for the next step. All six final table views are retained.
+The latest figure refresh redraws their labels and diagram markers using the
+current application drawing functions and saved predictions. All prediction and
+evaluation CSVs remain unchanged; no detection or recognition is rerun.
 
 The latest revision follows the author's development notes: objective and stages,
 manual tuning to grid search, HLS to K-means, representative colour to histograms,
