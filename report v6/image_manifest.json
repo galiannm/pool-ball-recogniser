@@ -1,0 +1,194 @@
+[
+  {
+    "path": "final_output/final/AllBalls/table_numbered.png",
+    "sha256": "17a8fd1aa6a98623cb977583a802620cf65166f4a4872367e66a1d5a0185635b"
+  },
+  {
+    "path": "report v6/assets/colour_comparison.pdf",
+    "sha256": "38ed506805fcf959aaad9a55480c379fdf3607b50531edaff810419d7de03a79"
+  },
+  {
+    "path": "report v6/assets/cue_refinement.pdf",
+    "sha256": "63449c0e533873f6cdbef12218d2550e8676c0f07b0de2e6837958f9a4e6f20e"
+  },
+  {
+    "path": "report v6/assets/detection_preprocessing.pdf",
+    "sha256": "77fbb5e846b542cdc9c2dac97bd26499fc3d9519adeb9fb95ad8d7b583fd1f1f"
+  },
+  {
+    "path": "report v6/assets/failure_details.pdf",
+    "sha256": "30d7e2b4c329f4461c4dff9a939c4d62362934e39286587e4876a241e07d6ddf"
+  },
+  {
+    "path": "report v6/assets/final_views_1_2.pdf",
+    "sha256": "b4fffb811cc84eec6fd1634e65992b1c55c610959f36c728534ecaa87fa20f9d"
+  },
+  {
+    "path": "report v6/assets/final_views_3_4.pdf",
+    "sha256": "ac4ea2d26645011a5324018eebc31e356e5cc4d074fa7dc2b1b32463cba34151"
+  },
+  {
+    "path": "report v6/assets/final_views_5_6.pdf",
+    "sha256": "38697a0ecb7c1a26a13e51fb2cdc51d94bb36a462331e94a6545c070d5ff3cf8"
+  },
+  {
+    "path": "report v6/assets/hough_comparison.pdf",
+    "sha256": "9f76de87817729edb4bfb357b517e41752570e6188d1f165f89ffeb2d8f377f2"
+  },
+  {
+    "path": "report v6/assets/identity_counts.pdf",
+    "sha256": "f949cbcea23169a914d519c104abea4a259232d58e941ed59ddfa6a7a535046b"
+  },
+  {
+    "path": "report v6/assets/pipeline.png",
+    "sha256": "27a3e8ddbb98e5c3e314ee5d82954dac46a5563f3feac1b77158784d2d1810ea"
+  },
+  {
+    "path": "report v6/assets/reference_construction.pdf",
+    "sha256": "231440e63dbd70712c0fb8c5d11a5c284926f3e2e8c63bef47e3f096b27d94d3"
+  },
+  {
+    "path": "report v6/assets/type_development.pdf",
+    "sha256": "12db6fc11799affe48a79193facb216c54cc11d6f3c0320f25b53d751ba8b566"
+  },
+  {
+    "path": "final_output/final/Table1/table_numbered.png",
+    "sha256": "0249f030278a159f74c4ec32f3ffd850b4804a866095d6c68db9cc82ec5d3c86"
+  },
+  {
+    "path": "final_output/final/Table1/table_diagram.png",
+    "sha256": "77b291fdd7290ec81f02faa85ee189a93f2562c4669f84666b931d656d02bda2"
+  },
+  {
+    "path": "final_output/final/Table1/identity_evaluation.csv",
+    "sha256": "65867e1967d02428e914efac6ca044274e56b1814dbaca0789c2c1a6269b1637"
+  },
+  {
+    "path": "final_output/final/Table2/table_numbered.png",
+    "sha256": "a511da557a3158cb8711d48a75025f89b5a504d11ae69b661e9ac9a6978aff9c"
+  },
+  {
+    "path": "final_output/final/Table2/table_diagram.png",
+    "sha256": "5f651519f6db6db78749abaa1c2c0e3cc377bd21f91870d3588f7f27348980fb"
+  },
+  {
+    "path": "final_output/final/Table2/identity_evaluation.csv",
+    "sha256": "b0cb9e1475230196c257df7521eef4657e784941225365592cdc4b86a6b5501b"
+  },
+  {
+    "path": "final_output/final/Table3/table_numbered.png",
+    "sha256": "c5b9928829dfcf1fdf2185ece5df573e23607e451b0ac9b52a25fa85681060ca"
+  },
+  {
+    "path": "final_output/final/Table3/table_diagram.png",
+    "sha256": "7bb8d70b3339cbfda5d45f6f84c1149117f2f51e620581566beee0bed7171af3"
+  },
+  {
+    "path": "final_output/final/Table3/identity_evaluation.csv",
+    "sha256": "6b5e30d4c8b5eaa9a70d0e6a2f54c97cf9af815fc6dfd82ef1858f2e02495e19"
+  },
+  {
+    "path": "final_output/final/Table4/table_numbered.png",
+    "sha256": "2515804c296a6a95ecdd56113bab324371354cd3f337da2440a3310b81568097"
+  },
+  {
+    "path": "final_output/final/Table4/table_diagram.png",
+    "sha256": "01ede356c7b0232d510e2cf238eae3bbadf38a1ba23e1c698af25e0158ec0d18"
+  },
+  {
+    "path": "final_output/final/Table4/identity_evaluation.csv",
+    "sha256": "cb8303f52098f02fab466ebe047e868127671c3de768780dc6cbd2dcd347a116"
+  },
+  {
+    "path": "final_output/final/Table5/table_numbered.png",
+    "sha256": "1806db74aab0cb5e14f49f33f90b4e48362c9d0e55bd716f45205bff130f2885"
+  },
+  {
+    "path": "final_output/final/Table5/table_diagram.png",
+    "sha256": "49f4b19236f25e4fcfa397b6a29f0eaab96482aaf939bd45f077440cab65fb1e"
+  },
+  {
+    "path": "final_output/final/Table5/identity_evaluation.csv",
+    "sha256": "4284ae6961e199313ced955689ca326e82b87d062ee079b109fc90b3b004fb4a"
+  },
+  {
+    "path": "final_output/final/Table6/table_numbered.png",
+    "sha256": "5874fece6184712dfb7da6fa77daf620a6fd8e7bf2de459e3e322dae297c24ee"
+  },
+  {
+    "path": "final_output/final/Table6/table_diagram.png",
+    "sha256": "b5943ec9488feb7256f67083ab77fc0b51a12b6ee72704f2273fe15cc7d5cdd1"
+  },
+  {
+    "path": "final_output/final/Table6/identity_evaluation.csv",
+    "sha256": "ad8da567a18bd0a14d9624ab91a4a20806dab9cd1e8623cf13b2f32564518ad7"
+  },
+  {
+    "path": "final_output/final/AllBalls/identity_evaluation.csv",
+    "sha256": "4be1749f72f8c43896bb139655d3dcb82a420e9736a37a5fc71eedf6bc991e07"
+  },
+  {
+    "path": "final_output/detection/AllBalls/detection_evaluation.csv",
+    "sha256": "e8b06e663a7a38a2305ab89c5a9c470fd58a4b6312c4dcddac3b412b2f3c2ddb"
+  },
+  {
+    "path": "final_output/detection/AllBalls/raw_circles.png",
+    "sha256": "0bcc8dddcc6c437780e071866694d8bc9e4e74c2189a5fac7fb9df24aad18ff9"
+  },
+  {
+    "path": "final_output/detection/AllBalls/filtered_circles.png",
+    "sha256": "45856c18a662002d5adc2d902043b98aef1ba77ba93666d77324557322169d0f"
+  },
+  {
+    "path": "final_output/experiments/past_designs/AllBalls/starting_hough/raw_circles.png",
+    "sha256": "fcfc1a32461cf69ab3e8da35635423bdc76ba5eaec9e37593c136c1a442ec51a"
+  },
+  {
+    "path": "final_output/experiments/past_designs/AllBalls/starting_hough/filtered_circles.png",
+    "sha256": "3a3a0511df9d1e62cfc6ddced152d21cb24a9ef19c7d65f6d5c5af4dcc706963"
+  },
+  {
+    "path": "final_output/experiments/past_designs/AllBalls/starting_hough/detection_evaluation.csv",
+    "sha256": "0ab9eb23a98a409afda8da3ce79c3145e614cce5efa981e2b17a7ab6b671d5ad"
+  },
+  {
+    "path": "report v6/assets/detection_grey_blur.png",
+    "sha256": "3599fd0bfec442ada20fe0e6a01e8b917029f11362cd603003cbd4eeb8ea52e8"
+  },
+  {
+    "path": "final_output/experiments/past_designs/recognition_comparison.csv",
+    "sha256": "29dcd196d133ad03a2bf19bf24059f1dd9070442972114268851046a89f5618f"
+  },
+  {
+    "path": "final_output/experiments/past_designs/overall/starting_hough/detection_evaluation.csv",
+    "sha256": "24bfd14d41280aacf8f6cb79f143069e884f1533fc462aec8139deef91b6b334"
+  },
+  {
+    "path": "final_output/experiments/past_designs/overall/selected_hough/detection_evaluation.csv",
+    "sha256": "b6696a8b667eef73a0a567fdfc6a2af3020f6f2841e926730ea5445b5c015778"
+  },
+  {
+    "path": "report v6/assets/development_comparisons.csv",
+    "sha256": "a4c84a2e75a941a991b1aea652d7d8ff5e368fa3a7f4fc92b1208aee85b755a6"
+  },
+  {
+    "path": "report v6/assets/cue_decisions.csv",
+    "sha256": "25d341b16e94e22b41c0c4a4fc550e039bcdd8f94ce49bee59b45932be84b979"
+  },
+  {
+    "path": "report v6/assets/cca_changes.csv",
+    "sha256": "b5d1ad9842ac310bc61f29041a8c7c2c36a1283dc8669957f1c55f3007a8ee5b"
+  },
+  {
+    "path": "more_detailed_implementation/output/experiments/watershed_detection/metrics.csv",
+    "sha256": "06b5ca68385c6479419847d345b39d9d73cc1e160b6a221cb952e49ef2031d66"
+  },
+  {
+    "path": "report v6/assets/colour_method_evidence.csv",
+    "sha256": "645f0ceb52dba299bda21ac42bfb233b491c471d260234f026af32ee547d8349"
+  },
+  {
+    "path": "report v6/assets/colour_reference_histograms.csv",
+    "sha256": "af2a7ce1aade1f1da764ce6851eedd316534c276ddfb5d7be88390331242cb49"
+  }
+]

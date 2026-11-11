@@ -1,0 +1,12 @@
+A/B/C reproduce the best-effort experiment; D replaces size weighting with white-crop expansion.
+Only candidates whose original K2 hard type is White are probed. Padding 0,1,2,3,4 source pixels.
+No Hough centres, radii, counts or table coordinates change. Only D's recognition evidence can change.
+Cloth: per-image dominant hue from inset table (ellipse21), raw Hough radius+12 excluded; sample S>=50,V>=40; minimum1000 pixels, hue peak with +/-3 smoothing. Invalid cloth model skips expansion.
+Growth: coloured S>=80,V>=40, excluding light V>=170,S<=165, cloth hue distance<=10 with S>=50, and every other filtered candidate disk. Eight-connected coloured components must touch the original boundary band (dilate3-erode3) at >=3 pixels and add >=max(12,ceil(2% original disk area)) pixels.
+Recognition mask = complete original disk OR admitted coloured annulus; never all padded background.
+Require non-cue valid number evidence at two consecutive paddings with identical body colour and type. Select first confirming (larger) padding. Otherwise retain original evidence.
+Recompute K2 type and query histogram with the frozen AllBalls HSV models on accepted expanded mask. D reruns best-effort unique assignment; no size multiplier. Other candidates keep their original evidence.
+Best-effort Unknown=0 (+1e-9 tie preference), all supported identities, unchanged type width .10.
+Raw fixed-padding ablations: expand original White crops by +1,+2,+3,+4 with the full circular mask, no cloth/neighbour gates. Each is reported separately; no padding is selected from test labels. Added after inspecting the guarded run.
+No evaluation-image parameter search. This is an evaluation-informed follow-up to observed cue errors.
+Risk: cloth hue exclusion can also remove genuine green-body evidence; neighbour masks can hide real overlapping colour, and undetected neighbours/shadows can contaminate growth. All are logged.

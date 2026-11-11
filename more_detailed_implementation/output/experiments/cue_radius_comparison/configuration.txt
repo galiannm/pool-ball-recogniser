@@ -1,0 +1,5 @@
+One controlled comparison: original K2 + frozen HSV histograms + original-White padding1 + best-effort uniqueness.
+Only the cue reservation selector changes: none; largest original raw Hough radius; largest original radius/expected(row).
+Both selectors activate only with>=2 original K2 White candidates, consider the same candidates, use original radii, keep the first candidate on an exact tie and force the selected identity to cue. Other cue claims are excluded.
+Padded masks, type/colour evidence, numbered scores and original detection geometry are shared. The AllBalls row model is loaded unchanged, not refitted; its calibration is only used by the adjusted selector.
+No parameters searched. Labels are loaded only after all three predictions/exports. This follows inspected test results and remains an exploratory ablation. Main application/report unchanged.

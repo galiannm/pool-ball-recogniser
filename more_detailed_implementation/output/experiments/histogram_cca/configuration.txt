@@ -1,0 +1,8 @@
+Model source: "output/experiments/ball_colour_histograms/training/models.yml" (exact file snapshot in frozen_models.yml). No retraining.
+HSV colour histogram: 18x8x8; eroded-circle mask 3x3; exclude HSV V>=170,S<=165; minimum 12 body pixels; neutral BGR chroma <15; [1,2,1]/4 smoothing; L1 normalisation; 1-Bhattacharyya similarity. Identical model, query mask and scores for all profiles.
+K2 type: current production classifier and config::recognitionKMeansClusters.
+K6 type: frozen 2153, K=6, light V>=170 S<=125, cue>=85% light, solid>=80% non-light.
+CCA: frozen 20242, solid only, area cutoff 2%, 8-connectivity, ellipse 5x5 boundary; non-light>=70%, light boundary<=20%, exactly one eligible non-light component; otherwise fallback.
+Cue maps to 0, Solid to colours 1..8, Striped to colours 1..7 plus 8; stripe+black is Unknown.
+No hue thresholds or black S/V rule are used for number recognition here. No parameters selected or changed after evaluation. Main application unchanged.
+AllBalls colour training does not remove the earlier Table1-6 tuning of K6/CCA; combined scores are exploratory.

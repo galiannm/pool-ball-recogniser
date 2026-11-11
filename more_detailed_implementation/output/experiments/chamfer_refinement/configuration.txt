@@ -1,0 +1,8 @@
+Recognition-only boundary refinement; original Hough/pocket-filtered detections, radii and table centres remain unchanged in final_results.
+Refinement triggers on every original K2 White candidate, including true cue balls. Baseline and all variants use the identical best-effort uniqueness backend and frozen AllBalls HSV model.
+Fixed before annotation evaluation: grayscale Gaussian 5x5 sigma1; Canny L2 thresholds50/100; Sobel3; centres shift at most2 pixels per axis; radius growth integer0..8; 72 circle samples; edge gradient/radius absolute cosine>=cos45degrees; nearest eligible edge distance clipped3 pixels; other detected ball interiors at0.85radius excluded.
+Support gates: coverage(distance<=1.5)>=70%; >=9/12 sectors each containing>=3/6 supported angles; mean clipped distance<=1; <=15% template samples inside neighbour interiors.
+Minimum variant: smallest mean distance, accepted only if all support gates pass and cost improves by>.05px.
+Outer variant: largest radius meeting support gates within.15px of the absolute best mean cost; same-radius ties choose lowest cost. Original is fallback.
+These geometric scores are not probabilities. The oriented score is computed by a bounded local nearest-edge search; distance_transform.png is an unoriented diagnostic.
+No GT enters refinement or recognition. Labels loaded only after every prediction/export for an image. Experiments are evaluation-informed exploratory followups, not independent validation.

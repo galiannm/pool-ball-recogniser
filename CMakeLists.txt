@@ -6,91 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenCV 4 REQUIRED)
 
-# Small, incremental rebuild for inspecting masking and raw Hough candidates.
-add_executable(PoolBallLearning myApp.cpp)
-target_compile_definitions(PoolBallLearning PRIVATE POOL_BALL_STANDALONE)
-target_include_directories(PoolBallLearning PRIVATE ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(PoolBallLearning PRIVATE ${OpenCV_LIBS})
+# Both names build the current application, independently of the archived modules.
+foreach(application_target IN ITEMS PoolBallLearning PoolBallSubmission)
+    add_executable(${application_target} myApplication.cpp)
+    target_compile_definitions(${application_target} PRIVATE POOL_BALL_STANDALONE)
+    target_include_directories(${application_target} PRIVATE ${OpenCV_INCLUDE_DIRS})
+    target_link_libraries(${application_target} PRIVATE ${OpenCV_LIBS})
+endforeach()
 
-add_executable(PoolBallDetection
-    main.cpp
-    myApplication.cpp
-
-    detection/ballDetection.cpp
-    detection/geometricFilter.cpp
-
-    recognition/extractBall.cpp
-    recognition/colourAnalysis.cpp
-    recognition/kMeansSegmentation.cpp
-    recognition/ballTypeClassifier.cpp
-    recognition/connectedComponentAnalysis.cpp
-
-    geometry/perspectiveTransform.cpp
-
-    visualisation/visualisation.cpp
-    visualisation/combineImages.cpp
-
-    evaluation/evaluation.cpp
-    evaluation/gridSearch.cpp
-    evaluation/sanityCheck.cpp
-    evaluation/extractionDemo.cpp
-    evaluation/colourAnalysisDemo.cpp
-    evaluation/kMeansDemo.cpp
-
-    validation/validation.cpp
-    validation/kMeansValidation.cpp
-
-    io/output.cpp
-    io/finalResults.cpp
-)
-
-target_include_directories(PoolBallDetection PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${OpenCV_INCLUDE_DIRS}
-)
-target_link_libraries(PoolBallDetection PRIVATE ${OpenCV_LIBS})
-
-# Submission check: compiles only the raw C++ file and OpenCV.
-add_executable(PoolBallSubmission myApplication.cpp)
-target_compile_definitions(PoolBallSubmission PRIVATE POOL_BALL_STANDALONE)
-target_include_directories(PoolBallSubmission PRIVATE ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(PoolBallSubmission PRIVATE ${OpenCV_LIBS})
-
-# Independent runner: the main application and recognition code stay unchanged.
-add_executable(BallExperiments
-    experiments/main.cpp
-    experiments/radiusPadding.cpp
-    experiments/recognitionGridSearch.cpp
-    experiments/ccaGridSearch.cpp
-    experiments/watershedDetection.cpp
-    experiments/segmentationGuidedDetection.cpp
-    experiments/segmentationGuidedExperiment.cpp
-    experiments/clothBackprojection.cpp
-    experiments/backprojectionExperiment.cpp
-    experiments/circularEdgeSupport.cpp
-    experiments/circularEdgeExperiment.cpp
-    experiments/recognitionFinalResults.cpp
-    experiments/recognitionTuner.cpp
-    experiments/ballColourHistograms.cpp
-    experiments/ballHistogramExperiment.cpp
-    experiments/histogramCCA.cpp
-    experiments/identityHeuristics.cpp
-    experiments/chamferRefinement.cpp
-    experiments/hsvPixelRecognition.cpp
-    io/finalResults.cpp
-    io/output.cpp
-    visualisation/combineImages.cpp
-    recognition/connectedComponentAnalysis.cpp
-    evaluation/evaluation.cpp
-    detection/ballDetection.cpp
-    detection/geometricFilter.cpp
-    geometry/perspectiveTransform.cpp
-    recognition/extractBall.cpp
-    recognition/kMeansSegmentation.cpp
-    recognition/ballTypeClassifier.cpp
-)
-target_include_directories(BallExperiments PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${OpenCV_INCLUDE_DIRS}
-)
-target_link_libraries(BallExperiments PRIVATE ${OpenCV_LIBS})
+# The modular tools have their own CMake project in more_detailed_implementation/.

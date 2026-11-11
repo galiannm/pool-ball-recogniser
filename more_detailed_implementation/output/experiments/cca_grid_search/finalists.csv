@@ -1,0 +1,7 @@
+label,configId,profile,minComponentPercent,boundaryKernel,cueEnabled,stripeEnabled,solidEnabled,cueMinLight,cueLargestLight,cueMinBoundary,stripeLargestLight,stripeMinBoundary,stripeMinNonLight,solidMinNonLight,solidMaxBoundary,solidMaxComponents,solidLargestNonLight
+original_k2,1,original_k2,2.000000,5,0,0,0,85,80,75,20,20,10,70,12,1,0
+original_k2_cca,2,original_k2,2.000000,5,1,1,1,85,80,75,20,20,10,70,12,1,0
+tuned_k6,3,tuned_k6,2.000000,5,0,0,0,85,80,75,20,20,10,70,12,1,0
+tuned_k6_cca,4,tuned_k6,2.000000,5,1,1,1,85,80,75,20,20,10,70,12,1,0
+best_number,20242,tuned_k6,2.000000,5,0,0,1,85,80,75,20,20,10,70,20,1,0
+best_type,20242,tuned_k6,2.000000,5,0,0,1,85,80,75,20,20,10,70,20,1,0

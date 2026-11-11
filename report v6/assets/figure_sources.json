@@ -1,0 +1,645 @@
+[
+  {
+    "output": {
+      "path": "report v6/assets/detection_stages.pdf",
+      "sha256": "61b2e12628e3b9b73321b432037a4f14179d577dc16e271887250a069cf900b7"
+    },
+    "inputs": [
+      {
+        "path": "final_output/detection/AllBalls/masked.png",
+        "sha256": "0ab5a65e24f374197685d34d4e27b01e438dfef9859802cc2db2b62c0a7fff47"
+      },
+      {
+        "path": "report v6/assets/detection_grey_blur.png",
+        "sha256": "3599fd0bfec442ada20fe0e6a01e8b917029f11362cd603003cbd4eeb8ea52e8"
+      },
+      {
+        "path": "final_output/detection/AllBalls/raw_circles.png",
+        "sha256": "0bcc8dddcc6c437780e071866694d8bc9e4e74c2189a5fac7fb9df24aad18ff9"
+      },
+      {
+        "path": "final_output/detection/AllBalls/filtered_circles.png",
+        "sha256": "45856c18a662002d5adc2d902043b98aef1ba77ba93666d77324557322169d0f"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/detection-stages.pdf",
+      "sha256": "61b2e12628e3b9b73321b432037a4f14179d577dc16e271887250a069cf900b7"
+    },
+    "inputs": [
+      {
+        "path": "final_output/detection/AllBalls/masked.png",
+        "sha256": "0ab5a65e24f374197685d34d4e27b01e438dfef9859802cc2db2b62c0a7fff47"
+      },
+      {
+        "path": "report v6/assets/detection_grey_blur.png",
+        "sha256": "3599fd0bfec442ada20fe0e6a01e8b917029f11362cd603003cbd4eeb8ea52e8"
+      },
+      {
+        "path": "final_output/detection/AllBalls/raw_circles.png",
+        "sha256": "0bcc8dddcc6c437780e071866694d8bc9e4e74c2189a5fac7fb9df24aad18ff9"
+      },
+      {
+        "path": "final_output/detection/AllBalls/filtered_circles.png",
+        "sha256": "45856c18a662002d5adc2d902043b98aef1ba77ba93666d77324557322169d0f"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/detection_preprocessing.pdf",
+      "sha256": "77fbb5e846b542cdc9c2dac97bd26499fc3d9519adeb9fb95ad8d7b583fd1f1f"
+    },
+    "inputs": [
+      {
+        "path": "final_output/detection/AllBalls/masked.png",
+        "sha256": "0ab5a65e24f374197685d34d4e27b01e438dfef9859802cc2db2b62c0a7fff47"
+      },
+      {
+        "path": "report v6/assets/detection_grey_blur.png",
+        "sha256": "3599fd0bfec442ada20fe0e6a01e8b917029f11362cd603003cbd4eeb8ea52e8"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/hough_comparison.pdf",
+      "sha256": "9f76de87817729edb4bfb357b517e41752570e6188d1f165f89ffeb2d8f377f2"
+    },
+    "inputs": [
+      {
+        "path": "final_output/experiments/past_designs/AllBalls/starting_hough/raw_circles.png",
+        "sha256": "fcfc1a32461cf69ab3e8da35635423bdc76ba5eaec9e37593c136c1a442ec51a"
+      },
+      {
+        "path": "final_output/detection/AllBalls/raw_circles.png",
+        "sha256": "0bcc8dddcc6c437780e071866694d8bc9e4e74c2189a5fac7fb9df24aad18ff9"
+      },
+      {
+        "path": "final_output/detection/AllBalls/filtered_circles.png",
+        "sha256": "45856c18a662002d5adc2d902043b98aef1ba77ba93666d77324557322169d0f"
+      },
+      {
+        "path": "final_output/experiments/past_designs/AllBalls/starting_hough/detection_evaluation.csv",
+        "sha256": "0ab9eb23a98a409afda8da3ce79c3145e614cce5efa981e2b17a7ab6b671d5ad"
+      },
+      {
+        "path": "final_output/detection/AllBalls/detection_evaluation.csv",
+        "sha256": "e8b06e663a7a38a2305ab89c5a9c470fd58a4b6312c4dcddac3b412b2f3c2ddb"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/final_views.pdf",
+      "sha256": "34f7eabde9c28d99d36503ef474a6db6f376ba224b50af885ea56c9b2db71fc2"
+    },
+    "inputs": [
+      {
+        "path": "final_output/detection/Table1/detection_evaluation.csv",
+        "sha256": "df090dcf27197341dc2599703bef7e08ad34727306ba4d35d7a72c58ffabd4a9"
+      },
+      {
+        "path": "final_output/final/Table1/table_numbered.png",
+        "sha256": "0249f030278a159f74c4ec32f3ffd850b4804a866095d6c68db9cc82ec5d3c86"
+      },
+      {
+        "path": "final_output/final/Table1/table_diagram.png",
+        "sha256": "77b291fdd7290ec81f02faa85ee189a93f2562c4669f84666b931d656d02bda2"
+      },
+      {
+        "path": "final_output/final/Table1/identity_evaluation.csv",
+        "sha256": "65867e1967d02428e914efac6ca044274e56b1814dbaca0789c2c1a6269b1637"
+      },
+      {
+        "path": "final_output/detection/Table2/detection_evaluation.csv",
+        "sha256": "701e68f601a64de8734e8aa61ae0bb2eea75b6c5bee6c29858541cbb1288bc41"
+      },
+      {
+        "path": "final_output/final/Table2/table_numbered.png",
+        "sha256": "a511da557a3158cb8711d48a75025f89b5a504d11ae69b661e9ac9a6978aff9c"
+      },
+      {
+        "path": "final_output/final/Table2/table_diagram.png",
+        "sha256": "5f651519f6db6db78749abaa1c2c0e3cc377bd21f91870d3588f7f27348980fb"
+      },
+      {
+        "path": "final_output/final/Table2/identity_evaluation.csv",
+        "sha256": "b0cb9e1475230196c257df7521eef4657e784941225365592cdc4b86a6b5501b"
+      },
+      {
+        "path": "final_output/detection/Table3/detection_evaluation.csv",
+        "sha256": "b5ef1c8909145b1ec7bf44012aec3179071ef35d4f4b4ded66b5b1c8907a5b1f"
+      },
+      {
+        "path": "final_output/final/Table3/table_numbered.png",
+        "sha256": "c5b9928829dfcf1fdf2185ece5df573e23607e451b0ac9b52a25fa85681060ca"
+      },
+      {
+        "path": "final_output/final/Table3/table_diagram.png",
+        "sha256": "7bb8d70b3339cbfda5d45f6f84c1149117f2f51e620581566beee0bed7171af3"
+      },
+      {
+        "path": "final_output/final/Table3/identity_evaluation.csv",
+        "sha256": "6b5e30d4c8b5eaa9a70d0e6a2f54c97cf9af815fc6dfd82ef1858f2e02495e19"
+      },
+      {
+        "path": "final_output/detection/Table4/detection_evaluation.csv",
+        "sha256": "fd6a5b5431801c10c2623782f6284296087cdde5c06db4b785dd9fea9f842341"
+      },
+      {
+        "path": "final_output/final/Table4/table_numbered.png",
+        "sha256": "2515804c296a6a95ecdd56113bab324371354cd3f337da2440a3310b81568097"
+      },
+      {
+        "path": "final_output/final/Table4/table_diagram.png",
+        "sha256": "01ede356c7b0232d510e2cf238eae3bbadf38a1ba23e1c698af25e0158ec0d18"
+      },
+      {
+        "path": "final_output/final/Table4/identity_evaluation.csv",
+        "sha256": "cb8303f52098f02fab466ebe047e868127671c3de768780dc6cbd2dcd347a116"
+      },
+      {
+        "path": "final_output/detection/Table5/detection_evaluation.csv",
+        "sha256": "991be794ca7d9822a501bea3e47d41daea79b10d3010402237aa8ce8e104e962"
+      },
+      {
+        "path": "final_output/final/Table5/table_numbered.png",
+        "sha256": "1806db74aab0cb5e14f49f33f90b4e48362c9d0e55bd716f45205bff130f2885"
+      },
+      {
+        "path": "final_output/final/Table5/table_diagram.png",
+        "sha256": "49f4b19236f25e4fcfa397b6a29f0eaab96482aaf939bd45f077440cab65fb1e"
+      },
+      {
+        "path": "final_output/final/Table5/identity_evaluation.csv",
+        "sha256": "4284ae6961e199313ced955689ca326e82b87d062ee079b109fc90b3b004fb4a"
+      },
+      {
+        "path": "final_output/detection/Table6/detection_evaluation.csv",
+        "sha256": "a8a9abbf929e1d754ce4239d5b76ee46ead10a3a034780a62a1f7e43e97ba047"
+      },
+      {
+        "path": "final_output/final/Table6/table_numbered.png",
+        "sha256": "5874fece6184712dfb7da6fa77daf620a6fd8e7bf2de459e3e322dae297c24ee"
+      },
+      {
+        "path": "final_output/final/Table6/table_diagram.png",
+        "sha256": "b5943ec9488feb7256f67083ab77fc0b51a12b6ee72704f2273fe15cc7d5cdd1"
+      },
+      {
+        "path": "final_output/final/Table6/identity_evaluation.csv",
+        "sha256": "ad8da567a18bd0a14d9624ab91a4a20806dab9cd1e8623cf13b2f32564518ad7"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/final_views_1_2.pdf",
+      "sha256": "b4fffb811cc84eec6fd1634e65992b1c55c610959f36c728534ecaa87fa20f9d"
+    },
+    "inputs": [
+      {
+        "path": "final_output/detection/Table1/detection_evaluation.csv",
+        "sha256": "df090dcf27197341dc2599703bef7e08ad34727306ba4d35d7a72c58ffabd4a9"
+      },
+      {
+        "path": "final_output/final/Table1/table_numbered.png",
+        "sha256": "0249f030278a159f74c4ec32f3ffd850b4804a866095d6c68db9cc82ec5d3c86"
+      },
+      {
+        "path": "final_output/final/Table1/table_diagram.png",
+        "sha256": "77b291fdd7290ec81f02faa85ee189a93f2562c4669f84666b931d656d02bda2"
+      },
+      {
+        "path": "final_output/final/Table1/identity_evaluation.csv",
+        "sha256": "65867e1967d02428e914efac6ca044274e56b1814dbaca0789c2c1a6269b1637"
+      },
+      {
+        "path": "final_output/detection/Table2/detection_evaluation.csv",
+        "sha256": "701e68f601a64de8734e8aa61ae0bb2eea75b6c5bee6c29858541cbb1288bc41"
+      },
+      {
+        "path": "final_output/final/Table2/table_numbered.png",
+        "sha256": "a511da557a3158cb8711d48a75025f89b5a504d11ae69b661e9ac9a6978aff9c"
+      },
+      {
+        "path": "final_output/final/Table2/table_diagram.png",
+        "sha256": "5f651519f6db6db78749abaa1c2c0e3cc377bd21f91870d3588f7f27348980fb"
+      },
+      {
+        "path": "final_output/final/Table2/identity_evaluation.csv",
+        "sha256": "b0cb9e1475230196c257df7521eef4657e784941225365592cdc4b86a6b5501b"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/final_views_3_4.pdf",
+      "sha256": "ac4ea2d26645011a5324018eebc31e356e5cc4d074fa7dc2b1b32463cba34151"
+    },
+    "inputs": [
+      {
+        "path": "final_output/detection/Table3/detection_evaluation.csv",
+        "sha256": "b5ef1c8909145b1ec7bf44012aec3179071ef35d4f4b4ded66b5b1c8907a5b1f"
+      },
+      {
+        "path": "final_output/final/Table3/table_numbered.png",
+        "sha256": "c5b9928829dfcf1fdf2185ece5df573e23607e451b0ac9b52a25fa85681060ca"
+      },
+      {
+        "path": "final_output/final/Table3/table_diagram.png",
+        "sha256": "7bb8d70b3339cbfda5d45f6f84c1149117f2f51e620581566beee0bed7171af3"
+      },
+      {
+        "path": "final_output/final/Table3/identity_evaluation.csv",
+        "sha256": "6b5e30d4c8b5eaa9a70d0e6a2f54c97cf9af815fc6dfd82ef1858f2e02495e19"
+      },
+      {
+        "path": "final_output/detection/Table4/detection_evaluation.csv",
+        "sha256": "fd6a5b5431801c10c2623782f6284296087cdde5c06db4b785dd9fea9f842341"
+      },
+      {
+        "path": "final_output/final/Table4/table_numbered.png",
+        "sha256": "2515804c296a6a95ecdd56113bab324371354cd3f337da2440a3310b81568097"
+      },
+      {
+        "path": "final_output/final/Table4/table_diagram.png",
+        "sha256": "01ede356c7b0232d510e2cf238eae3bbadf38a1ba23e1c698af25e0158ec0d18"
+      },
+      {
+        "path": "final_output/final/Table4/identity_evaluation.csv",
+        "sha256": "cb8303f52098f02fab466ebe047e868127671c3de768780dc6cbd2dcd347a116"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/final_views_5_6.pdf",
+      "sha256": "38697a0ecb7c1a26a13e51fb2cdc51d94bb36a462331e94a6545c070d5ff3cf8"
+    },
+    "inputs": [
+      {
+        "path": "final_output/detection/Table5/detection_evaluation.csv",
+        "sha256": "991be794ca7d9822a501bea3e47d41daea79b10d3010402237aa8ce8e104e962"
+      },
+      {
+        "path": "final_output/final/Table5/table_numbered.png",
+        "sha256": "1806db74aab0cb5e14f49f33f90b4e48362c9d0e55bd716f45205bff130f2885"
+      },
+      {
+        "path": "final_output/final/Table5/table_diagram.png",
+        "sha256": "49f4b19236f25e4fcfa397b6a29f0eaab96482aaf939bd45f077440cab65fb1e"
+      },
+      {
+        "path": "final_output/final/Table5/identity_evaluation.csv",
+        "sha256": "4284ae6961e199313ced955689ca326e82b87d062ee079b109fc90b3b004fb4a"
+      },
+      {
+        "path": "final_output/detection/Table6/detection_evaluation.csv",
+        "sha256": "a8a9abbf929e1d754ce4239d5b76ee46ead10a3a034780a62a1f7e43e97ba047"
+      },
+      {
+        "path": "final_output/final/Table6/table_numbered.png",
+        "sha256": "5874fece6184712dfb7da6fa77daf620a6fd8e7bf2de459e3e322dae297c24ee"
+      },
+      {
+        "path": "final_output/final/Table6/table_diagram.png",
+        "sha256": "b5943ec9488feb7256f67083ab77fc0b51a12b6ee72704f2273fe15cc7d5cdd1"
+      },
+      {
+        "path": "final_output/final/Table6/identity_evaluation.csv",
+        "sha256": "ad8da567a18bd0a14d9624ab91a4a20806dab9cd1e8623cf13b2f32564518ad7"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/identity_counts.pdf",
+      "sha256": "f949cbcea23169a914d519c104abea4a259232d58e941ed59ddfa6a7a535046b"
+    },
+    "inputs": [
+      {
+        "path": "report v6/assets/group_counts.csv",
+        "sha256": "2d0e56f7b34d5c4ae2babc5a2e3b2db4169220ae45eacc8127c36ab627622d01"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/failure_details.pdf",
+      "sha256": "30d7e2b4c329f4461c4dff9a939c4d62362934e39286587e4876a241e07d6ddf"
+    },
+    "inputs": [
+      {
+        "path": "report v6/assets/candidate_evidence.csv",
+        "sha256": "a0473b0f5f8719d596e155aef413ca7b434fa86bf521be7c11ada8822b59e0aa"
+      },
+      {
+        "path": "Media/Table1.jpeg",
+        "sha256": "ce624f1c9f5234a4723281b6e24d1eddb19c94a698139591473df574cad2174f"
+      },
+      {
+        "path": "final_output/final/Table1/balls.csv",
+        "sha256": "1aaae9fc2fffa0803d7522d28755d2e985ec2aa3d6d8b27bccf2aaf37df44a32"
+      },
+      {
+        "path": "report v6/assets/Table1_candidate_7_original.png",
+        "sha256": "5e5370956c7e5259b28d76020095b2d4729ca2fa102cbd8fd485737f512ef0e3"
+      },
+      {
+        "path": "report v6/assets/Table1_candidate_7_body.png",
+        "sha256": "32dcfc5f3a005b6a58784cf17596ce9c58c16ba22e8da57e829b55f41bf069c4"
+      },
+      {
+        "path": "Media/Table6.jpeg",
+        "sha256": "145f10acc6708f8c1dd7c5505afef9691e7bbe94a9813c1a3af24fd396657b4f"
+      },
+      {
+        "path": "final_output/final/Table6/balls.csv",
+        "sha256": "38f14e5f143ba1220698c5eb7dfe7c2568df63137e59ef0676c466017e1c020b"
+      },
+      {
+        "path": "report v6/assets/Table6_candidate_13_original.png",
+        "sha256": "fb1add0e84102ca5d33404351d7e244c9065f27553a9d827ad01fac646c769ec"
+      },
+      {
+        "path": "report v6/assets/Table6_candidate_13_body.png",
+        "sha256": "2d691909f58a7a7c00c5c0117f47318ed13a766d1779861f2bab43aadbddead9"
+      },
+      {
+        "path": "Media/Table6.jpeg",
+        "sha256": "145f10acc6708f8c1dd7c5505afef9691e7bbe94a9813c1a3af24fd396657b4f"
+      },
+      {
+        "path": "final_output/final/Table6/balls.csv",
+        "sha256": "38f14e5f143ba1220698c5eb7dfe7c2568df63137e59ef0676c466017e1c020b"
+      },
+      {
+        "path": "report v6/assets/Table6_candidate_11_original.png",
+        "sha256": "f3f1f777ea5b90cfbffc31d7318f2ca757bafd6461fb4aaa6f9ba41ef7953628"
+      },
+      {
+        "path": "report v6/assets/Table6_candidate_11_kmeans.png",
+        "sha256": "43192766f9a1de1f2912af2eb4e2974b33e0a2f7ea41c6c4334ad83d1bb65352"
+      },
+      {
+        "path": "report v6/assets/Table6_candidate_11_mask.png",
+        "sha256": "ae670ecff9959b9579efab145dec20bc869c804657a97c23fe798ba58f0786dd"
+      },
+      {
+        "path": "final_output/recognition/Table6/ball_types.csv",
+        "sha256": "b5d71d58fd8dcda5e262c69cee8c906a6642b91143210843cc30c24c260975a6"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/reference_stages.pdf",
+      "sha256": "deaf870b1865aee68e93b3c78c9e62ac9538ed13dd71939d0297991e2c307c98"
+    },
+    "inputs": [
+      {
+        "path": "final_output/recognition/Table2/ball_colours.csv",
+        "sha256": "45461e99977b3bf2474ab7f8e85d73db764dc6abeb10b09fcdad48ec9e071e4f"
+      },
+      {
+        "path": "final_output/experiments/past_designs/Table2/identity/hard_hue/balls.csv",
+        "sha256": "0c0d4214b9535a70b05146dc62d89f6253f3ddc03ee8429468d81ad8821a84c5"
+      },
+      {
+        "path": "final_output/detection/Table2/ROI/ball_crops.png",
+        "sha256": "82c84f846e09cd15cdd42117ce015ae6e9bd06e87d24363fa4497457c5b12f9a"
+      },
+      {
+        "path": "final_output/recognition/Table1/ball_colours.csv",
+        "sha256": "103995cd7457f60ab147a8bbd0241fee1ac4eec2e824e21343031bab292ebe06"
+      },
+      {
+        "path": "final_output/experiments/past_designs/Table1/identity/hard_hue/balls.csv",
+        "sha256": "9a0d87077654c8dccd0d51b2a1ec2de6da6b56aaa30016c1b6eb4aba612d9567"
+      },
+      {
+        "path": "final_output/detection/Table1/ROI/ball_crops.png",
+        "sha256": "89281117b869822fcfa06d0a5e9438f9f7424139f608525b3f6392cfc1d7802e"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/reference_construction.pdf",
+      "sha256": "231440e63dbd70712c0fb8c5d11a5c284926f3e2e8c63bef47e3f096b27d94d3"
+    },
+    "inputs": []
+  },
+  {
+    "output": {
+      "path": "report v6/assets/colour_comparison.pdf",
+      "sha256": "38ed506805fcf959aaad9a55480c379fdf3607b50531edaff810419d7de03a79"
+    },
+    "inputs": [
+      {
+        "path": "final_output/recognition/Table2/ball_colours.csv",
+        "sha256": "45461e99977b3bf2474ab7f8e85d73db764dc6abeb10b09fcdad48ec9e071e4f"
+      },
+      {
+        "path": "final_output/experiments/past_designs/Table2/identity/hard_hue/balls.csv",
+        "sha256": "0c0d4214b9535a70b05146dc62d89f6253f3ddc03ee8429468d81ad8821a84c5"
+      },
+      {
+        "path": "final_output/detection/Table2/ROI/ball_crops.png",
+        "sha256": "82c84f846e09cd15cdd42117ce015ae6e9bd06e87d24363fa4497457c5b12f9a"
+      },
+      {
+        "path": "final_output/recognition/Table1/ball_colours.csv",
+        "sha256": "103995cd7457f60ab147a8bbd0241fee1ac4eec2e824e21343031bab292ebe06"
+      },
+      {
+        "path": "final_output/experiments/past_designs/Table1/identity/hard_hue/balls.csv",
+        "sha256": "9a0d87077654c8dccd0d51b2a1ec2de6da6b56aaa30016c1b6eb4aba612d9567"
+      },
+      {
+        "path": "final_output/detection/Table1/ROI/ball_crops.png",
+        "sha256": "89281117b869822fcfa06d0a5e9438f9f7424139f608525b3f6392cfc1d7802e"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/type_development.pdf",
+      "sha256": "12db6fc11799affe48a79193facb216c54cc11d6f3c0320f25b53d751ba8b566"
+    },
+    "inputs": [
+      {
+        "path": "report v6/assets/reference_0_original.png",
+        "sha256": "87380c5809123f8002ecc62869e07c93dff956cad9d3a21c189a22336113cf30"
+      },
+      {
+        "path": "report v6/assets/reference_0_mask.png",
+        "sha256": "7f7b7e978b19b450cada6dfd9cd52ca2727640d4c4e030c62b35271b9f57fd80"
+      },
+      {
+        "path": "report v6/assets/reference_0_hls.png",
+        "sha256": "ec961fc8b3fa63aeed38bdcdfd3bc9745d9188848e3dce541fa96b0d7adc6564"
+      },
+      {
+        "path": "report v6/assets/reference_0_kmeans.png",
+        "sha256": "3b14998a4886e0e415dee8c751782a8ed126946c8e2d696a66cfb3cdb14b9cc5"
+      },
+      {
+        "path": "report v6/assets/reference_0_light.png",
+        "sha256": "c99abc356a0c5c4affd7666f58f5932b13a77b86c01dc4d81b9b1fcea057574c"
+      },
+      {
+        "path": "report v6/assets/reference_1_original.png",
+        "sha256": "fae894366ce596aefd19391e3f1d29f492dbc3eac73be43f133123bff07fa196"
+      },
+      {
+        "path": "report v6/assets/reference_1_mask.png",
+        "sha256": "841e901c7e7e5761e64ad0ec4241f4753a41430ddedbd4e68eccdb90686202c9"
+      },
+      {
+        "path": "report v6/assets/reference_1_hls.png",
+        "sha256": "bec7e96f5573ece6b480874146e6a8fd0c0cf8defbc9701e0a47e3927ebdfbed"
+      },
+      {
+        "path": "report v6/assets/reference_1_kmeans.png",
+        "sha256": "6793b81f577c0aac66b1e211aa338fbc6653416230ff9a25ed1a1a9c4f916953"
+      },
+      {
+        "path": "report v6/assets/reference_1_light.png",
+        "sha256": "c53111568ece7c21163dcb86b22f060f78b37ef8af48a4cc1908f210333bec51"
+      },
+      {
+        "path": "report v6/assets/reference_9_original.png",
+        "sha256": "0ed3932ec71c9302a01bacb93a83bae532de54ff8b3c99808c2d81561105d54a"
+      },
+      {
+        "path": "report v6/assets/reference_9_mask.png",
+        "sha256": "908378f97fa013f799fbaa94f138fcff4e1a2c106ea74ad80d17853278538b07"
+      },
+      {
+        "path": "report v6/assets/reference_9_hls.png",
+        "sha256": "e65456d0a35ff2b0e54c90ec6397a72d4633c0ebbf81bbd254dd93cc2ec3d6ce"
+      },
+      {
+        "path": "report v6/assets/reference_9_kmeans.png",
+        "sha256": "666f4212f455d6fcdbef1f6d48130e8cfa46d03718d304b4c62600bc5bba8f00"
+      },
+      {
+        "path": "report v6/assets/reference_9_light.png",
+        "sha256": "12b031cedd017ae8685cbf9df370d5883f1074594d6fd832321bd1219ebbd47c"
+      },
+      {
+        "path": "report v6/assets/reference_examples.csv",
+        "sha256": "534c4d825ed15164c6ca39685f60b7ba89a0f0bc7fd0fa4a78cd9f09ef4ff1ad"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/assignment_example.csv",
+      "sha256": "7fc69ceb3038b15ac380d084c86d96c33256092297c7ece64b079d7161e27853"
+    },
+    "inputs": [
+      {
+        "path": "report v6/assets/candidate_evidence.csv",
+        "sha256": "a0473b0f5f8719d596e155aef413ca7b434fa86bf521be7c11ada8822b59e0aa"
+      },
+      {
+        "path": "report v6/assets/colour_scores.csv",
+        "sha256": "a7c21d993aeec3b4ddd7c7648d5da959d18654ea5eb48937528ec41ccd6f2c57"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/type_support.pdf",
+      "sha256": "3c334e9e122c309c66bc11e54dd85f3309be59b451a2c129c808000c8ed7fcb2"
+    },
+    "inputs": [
+      {
+        "path": "report v6/assets/type_support.csv",
+        "sha256": "8d68f441ac063143e1735c9b21ed73dc86025a2eb3c27e51c5440de7a094d1c4"
+      },
+      {
+        "path": "report v6/assets/candidate_evidence.csv",
+        "sha256": "a0473b0f5f8719d596e155aef413ca7b434fa86bf521be7c11ada8822b59e0aa"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/purple_evidence.pdf",
+      "sha256": "577b9ff52cecbcf28323f6577516385ca210248c71208aeb5dc09a117483acfc"
+    },
+    "inputs": [
+      {
+        "path": "Media/Table2.jpeg",
+        "sha256": "b395652398929302ef088ffbd89a728f5ecb317c390fd88157bb8f1db03a8822"
+      },
+      {
+        "path": "final_output/final/Table2/balls.csv",
+        "sha256": "1e729655bdd7456a254916ef2521580cec610713f11a478d0c2fb5e188ec873a"
+      },
+      {
+        "path": "report v6/assets/assignment_example.csv",
+        "sha256": "7fc69ceb3038b15ac380d084c86d96c33256092297c7ece64b079d7161e27853"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/development_trials.pdf",
+      "sha256": "6f10a748b5758978a6b8bd51c26eb3b873c6834400e64d02a298602da694bb60"
+    },
+    "inputs": [
+      {
+        "path": "report v6/assets/development_global_hough.png",
+        "sha256": "df79e58a2e11d93de4859853277ec9665a9729eb8ae6b00252b1aa12f4387ce2"
+      },
+      {
+        "path": "report v6/assets/development_guided_hough.png",
+        "sha256": "a0b1c69331aea242a01d10c773cb835940d7ac229bd840d862720464871aeec9"
+      },
+      {
+        "path": "report v6/assets/development_guided_watershed.png",
+        "sha256": "05fb786df68c9667dba5cd1284c889b35a0f3470b972e2b7ac4ad7daea2669d3"
+      },
+      {
+        "path": "report v6/assets/development_comparisons.csv",
+        "sha256": "a4c84a2e75a941a991b1aea652d7d8ff5e368fa3a7f4fc92b1208aee85b755a6"
+      }
+    ]
+  },
+  {
+    "output": {
+      "path": "report v6/assets/cue_refinement.pdf",
+      "sha256": "63449c0e533873f6cdbef12218d2550e8676c0f07b0de2e6837958f9a4e6f20e"
+    },
+    "inputs": [
+      {
+        "path": "report v6/assets/cue_decisions.csv",
+        "sha256": "25d341b16e94e22b41c0c4a4fc550e039bcdd8f94ce49bee59b45932be84b979"
+      },
+      {
+        "path": "report v6/assets/Table3_candidate_2_context.png",
+        "sha256": "3046e53c667cc8dbee4d31ea8f1050992ffda849311a2d7f3347ebb49934193d"
+      },
+      {
+        "path": "report v6/assets/Table3_candidate_2_padded.png",
+        "sha256": "80d85d54be73379b710b3b0460fa5c1e24fe3126184491ad8708f0d40efe5c55"
+      },
+      {
+        "path": "report v6/assets/Table3_candidate_4_context.png",
+        "sha256": "58d827cfd13befe6c39724be70544c4c6540db6d2c9dea9b6a69dcd8ddbcff49"
+      },
+      {
+        "path": "report v6/assets/Table3_candidate_4_padded.png",
+        "sha256": "997f4a56487d5626d38135e8e0400bcebb544385decec9b9bc72ddaa1643c4cd"
+      }
+    ]
+  }
+]

@@ -1,0 +1,11 @@
+Model source: "output/experiments/ball_colour_histograms/training/models.yml" (exact file snapshot in frozen_models.yml). No retraining.
+HSV colour histogram: 18x8x8; eroded-circle mask 3x3; exclude HSV V>=170,S<=165; minimum 12 body pixels; neutral BGR chroma <15; [1,2,1]/4 smoothing; L1 normalisation; 1-Bhattacharyya similarity. Identical model, query mask and scores for all profiles.
+K2 type: current production classifier; K=2 is explicit in the original-CCA comparison.
+Original production CCA: light V>=170 S<=165; 8-connectivity; component cutoff 2%; ellipse boundary 5x5.
+Cue: light>=85%, largest light>=80%, light boundary>=75%, zero eligible non-light components.
+Stripe: largest light>=20%, light boundary>=20%, non-light>=10%.
+Solid: non-light>=70%, light boundary<=12%, exactly one eligible non-light component.
+Cue, stripe and solid rules enabled in their original order; otherwise baseline fallback.
+Uses analyseConnectedComponents and classifyBallTypeWithCCA directly. No K6 or tuned CCA rules applied.
+Cue maps to 0, Solid to colours 1..8, Striped to colours 1..7 plus 8; stripe+black is Unknown.
+No hue thresholds or black S/V rule are used for number recognition here. No parameters selected or changed after evaluation. Main application unchanged.

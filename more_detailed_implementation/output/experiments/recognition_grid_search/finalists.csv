@@ -1,0 +1,6 @@
+label,configId,k,cloth,lightMinV,lightMaxS,darkMaxV,whiteMinPercent,solidMinPercent,redUpper,orangeUpper,yellowUpper,greenLower,greenUpper,blueLower,bluePurple,purpleUpper,redWrap,maroonMaxV,blackMaxS,blackMaxV,bodyMinPercent
+baseline,98,2,0,170,165,90,85,70,6,15,35,45,90,100,130,165,170,150,60,90,2
+baseline_cloth,278,2,1,170,165,90,85,70,6,15,35,45,90,100,130,165,170,150,60,90,2
+best_type_grid,1510,6,0,170,125,90,85,80,6,15,35,45,90,100,130,165,170,150,60,90,2
+best_number,2153,6,0,170,125,90,85,80,6,15,35,45,90,100,125,165,170,150,60,90,2
+best_type,2153,6,0,170,125,90,85,80,6,15,35,45,90,100,125,165,170,150,60,90,2

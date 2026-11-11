@@ -1,0 +1,1 @@
+AllBalls median detectedRadius / inverse-homography majorRadius = 0.972029558212

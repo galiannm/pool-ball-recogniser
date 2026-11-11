@@ -1,0 +1,3 @@
+baseline: colour=73/80 identities=80/90 fixed=0 lost=0
+white_balance: colour=74/80 identities=79/90 fixed=0 lost=1
+clahe_lab_l: colour=69/80 identities=75/90 fixed=0 lost=5

@@ -1,0 +1,2 @@
+TP,FP,FN,precision,recall,F1,meanError
+16,32,0,0.333333,1,0.5,5.19803

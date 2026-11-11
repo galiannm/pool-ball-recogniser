@@ -1,0 +1,17 @@
+image,method,candidate,trueNumber,baselineNumber,predictedNumber,baselineColour,predictedColour,identityOutcome,colourOutcome
+Table1.jpeg,white_balance,6,0,0,0,6,8,unchanged_correctness,cue_excluded
+Table1.jpeg,clahe_lab_l,2,3,3,7,3,3,regressed,unchanged_correctness
+Table1.jpeg,clahe_lab_l,3,11,11,3,3,3,regressed,unchanged_correctness
+Table1.jpeg,clahe_lab_l,5,13,13,12,5,2,regressed,regressed
+Table1.jpeg,clahe_lab_l,6,0,0,0,6,8,unchanged_correctness,cue_excluded
+Table1.jpeg,clahe_lab_l,10,5,9,13,5,5,unchanged_correctness,unchanged_correctness
+Table1.jpeg,clahe_lab_l,11,12,12,9,7,7,regressed,unchanged_correctness
+Table2.jpeg,white_balance,4,14,14,-1,6,6,regressed,unchanged_correctness
+Table2.jpeg,clahe_lab_l,4,14,14,-1,6,6,regressed,unchanged_correctness
+Table3.jpeg,white_balance,2,0,0,0,6,8,unchanged_correctness,cue_excluded
+Table4.jpeg,clahe_lab_l,2,0,0,0,7,-1,unchanged_correctness,cue_excluded
+Table4.jpeg,clahe_lab_l,11,11,11,11,3,7,unchanged_correctness,regressed
+Table5.jpeg,white_balance,4,12,12,12,8,4,unchanged_correctness,corrected
+Table5.jpeg,clahe_lab_l,8,11,11,11,3,7,unchanged_correctness,regressed
+Table6.jpeg,clahe_lab_l,1,0,0,0,1,-1,unchanged_correctness,cue_excluded
+Table6.jpeg,clahe_lab_l,11,3,11,11,3,7,unchanged_correctness,regressed

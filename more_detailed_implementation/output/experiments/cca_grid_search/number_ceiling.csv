@@ -1,0 +1,10 @@
+split,image,matched,oracleNumberCorrect
+tuning,Table1.jpeg,14,10
+tuning,Table2.jpeg,16,15
+tuning,Table3.jpeg,15,14
+tuning,Table4.jpeg,14,13
+tuning,Table5.jpeg,14,12
+tuning,Table6.jpeg,13,11
+tuning,ALL,86,75
+reference,AllBalls.jpeg,16,16
+reference,ALL,16,16

@@ -1,0 +1,11 @@
+method,whitePadding,minimumQueryBodyPixels,cueWeight,typeWidth
+unpadded_control,0,12,1.000000,0.100000
+pad1_control,1,12,1.000000,0.100000
+pad4_control,4,12,1.000000,0.100000
+pad1_min6,1,6,1.000000,0.100000
+pad1_cue075,1,12,0.750000,0.100000
+pad1_cue050,1,12,0.500000,0.100000
+pad1_width015,1,12,1.000000,0.150000
+pad1_min6_cue075,1,6,0.750000,0.100000
+pad1_min6_width015,1,6,1.000000,0.150000
+pad1_min6_cue075_width015,1,6,0.750000,0.150000

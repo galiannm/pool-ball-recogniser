@@ -1,0 +1,4 @@
+number,candidate,x,y,radius,bodyPixels,lightPercent,hlsLightPercent,type
+0,2,1035.75,171.75,22.5,1,98.0883,1.71391,White
+1,5,1142.25,147.75,20.55,1140,0,0,Solid
+9,9,1148.25,192.75,23.55,610,53.2069,0.278862,Striped

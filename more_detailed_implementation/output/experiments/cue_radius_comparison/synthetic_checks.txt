@@ -1,0 +1,1 @@
+PASS: raw and depth-normalised selectors disagree in a synthetic depth case; equal-size ties preserve order; non-White candidates excluded; fewer than two White candidates skip reservation; reservation preserves numbered alternatives.

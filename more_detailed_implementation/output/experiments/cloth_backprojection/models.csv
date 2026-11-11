@@ -1,0 +1,8 @@
+image,hBins,sBins,samples,modelValid,status,rawCandidates,pocketFilteredCandidates,retainedCandidates
+AllBalls.jpeg,18,16,615111,1,ok,17,16,16
+Table1.jpeg,18,16,621447,1,ok,15,15,15
+Table2.jpeg,18,16,612228,1,ok,17,17,17
+Table3.jpeg,18,16,617352,1,ok,15,15,15
+Table4.jpeg,18,16,620024,1,ok,14,14,14
+Table5.jpeg,18,16,616936,1,ok,14,14,14
+Table6.jpeg,18,16,619135,1,ok,13,13,13

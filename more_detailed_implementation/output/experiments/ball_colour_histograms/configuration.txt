@@ -1,0 +1,11 @@
+Training image: AllBalls.jpeg only. No evaluation-image tuning or winner selection.
+Fixed ablations: HS (18x8), HSV (18x8x8), HLS stored H,S,L (18x8x8).
+Body mask: erode circular ROI with 3x3 ellipse, exclude HSV V>=170 and S<=165.
+Minimum body pixels=12. Neutral BGR chroma <15 sets H=0. No cloth filtering or padding.
+Smooth each axis [1,2,1]/4, hue wrapping and endpoint replication on other axes.
+Each training crop is L1 normalised; shared solid/stripe models average crops equally.
+Ranking: largest 1-Bhattacharyya distance; no fitted rejection/margin threshold.
+Black is colour model 8, not an HSV black threshold. Cue/type decisions remain current K=2.
+Per-pixel body masks and K-means type masks are distinct measurements. CCA disabled.
+Backprojections are float histogram masses, not probabilities of class membership.
+PNG maps are divided by that class histogram's peak for visibility only; maps do not choose labels.
