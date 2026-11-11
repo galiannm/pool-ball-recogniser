@@ -23,11 +23,11 @@
 */
 
 // ========Constants========
-inline const std::string MEDIA_DIR = "Media/Pool/";
-inline const std::string OUTPUT_DIR = "final_output/";
+const std::string MEDIA_DIR = "Media/Pool/";
+const std::string OUTPUT_DIR = "final_output/";
 
 // ground truth values given in the spreadsheet
-inline const std::string GROUND_TRUTH_CSV = R"csv(
+const std::string GROUND_TRUTH_CSV = R"csv(
 AllBalls.jpeg,253,908,250,959,255,1013,256,1072,254,1132,262,1184,256,1244,253,1307,329,901,330,961,335,1013,336,1067,334,1130,345,1187,342,1245,293,797
 Table1.jpeg,309,1092,429,1212,380,1133,335,1050,285,1211,261,1170,352,1173,331,1132,240,1210,310,1170,407,1169,281,1135,374,1212,360,1091,331,1213,288,29
 Table2.jpeg,282,1103,620,1224,391,1121,315,1046,310,1305,202,621,361,1173,331,1132,177,725,185,1269,665,798,296,438,53,1235,362,1090,399,1205,507,1169
@@ -37,35 +37,35 @@ Table5.jpeg,535,23,545,1408,444,1204,,,305,1406,131,25,260,1294,226,1252,538,72,
 Table6.jpeg,535,23,478,1363,444,1204,,,305,1406,131,25,260,1294,226,1252,538,72,171,1270,,,249,351,,,169,901,399,1201,629,947
 )csv";
 
-inline const std::string DETECTION_DIR = OUTPUT_DIR + "detection/";
-inline const std::string RECOGNITION_DIR = OUTPUT_DIR + "recognition/";
-inline const std::string FINAL_RES_DIR = OUTPUT_DIR + "final/";
-inline const std::string EXPERIMENT_DIR = OUTPUT_DIR + "experiments/";
+const std::string DETECTION_DIR = OUTPUT_DIR + "detection/";
+const std::string RECOGNITION_DIR = OUTPUT_DIR + "recognition/";
+const std::string FINAL_RES_DIR = OUTPUT_DIR + "final/";
+const std::string EXPERIMENT_DIR = OUTPUT_DIR + "experiments/";
 
-inline const std::string TUNNNING_IMG = "AllBalls.jpeg";
-inline const std::vector<std::string> VAL_IMG = {"Table1.jpeg", "Table2.jpeg", "Table3.jpeg", "Table4.jpeg", "Table5.jpeg", "Table6.jpeg"};
+const std::string TUNNNING_IMG = "AllBalls.jpeg";
+const std::vector<std::string> VAL_IMG = {"Table1.jpeg", "Table2.jpeg", "Table3.jpeg", "Table4.jpeg", "Table5.jpeg", "Table6.jpeg"};
 
-inline constexpr int TABLE_WIDTH = 1434;
-inline constexpr int TABLE_HEIGHT = 683;
-inline constexpr double MATCH_TOLERANCE = 15.0;
-inline constexpr float ESTIMATE_POCKET_RADIUS = 25.0f;
-inline constexpr int K_MEAN_CLUSTERS = 2;
+constexpr int TABLE_WIDTH = 1434;
+constexpr int TABLE_HEIGHT = 683;
+constexpr double MATCH_TOLERANCE = 15.0;
+constexpr float ESTIMATE_POCKET_RADIUS = 25.0f;
+constexpr int K_MEAN_CLUSTERS = 2;
 
-inline const std::vector<cv::Point> TABLE_CORNERS = {{337, 35}, {1570, 21}, {1888, 451}, {38, 472}};
+const std::vector<cv::Point> TABLE_CORNERS = {{337, 35}, {1570, 21}, {1888, 451}, {38, 472}};
 
-inline constexpr double BALL_DIAMETER_MM = 43.0;
+constexpr double BALL_DIAMETER_MM = 43.0;
 
-inline const int LIGHT_MIN_V = 170;
-inline const int LIGHT_MAX_S = 165;
-inline const int DARK_MAX_V = 90;
+const int LIGHT_MIN_V = 170;
+const int LIGHT_MAX_S = 165;
+const int DARK_MAX_V = 90;
 
-inline const double WHITE_BALL_MIN = 85.0;
-inline const double SOLID_MIN = 70.0;
+const double WHITE_BALL_MIN = 85.0;
+const double SOLID_MIN = 70.0;
 
-inline constexpr double TYPE_WIDTH = 0.10;
+constexpr double TYPE_WIDTH = 0.10;
 
-inline const cv::Scalar DETECTION_COLOUR{255, 0, 255}; // magenta
-inline const cv::Scalar ERROR_COLOUR{0, 255, 255}; // yellow
+const cv::Scalar DETECTION_COLOUR{255, 0, 255}; // magenta
+const cv::Scalar ERROR_COLOUR{0, 255, 255}; // yellow
 
 // ========Structs========
 struct HoughParams {

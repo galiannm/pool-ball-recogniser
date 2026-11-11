@@ -47,7 +47,7 @@
 
 \section{Generative AI Model Used}
 
-Tools and models used for this assignement:
+Tools and models used for this assignment:
 \begin{itemize}
     \item ChatGPT (GPT-6)
     \item OpenAI Codex (GPT-6.1 Sol Medium \& GPT-6.1 Sol High)
@@ -75,6 +75,8 @@ to critique that analysis.
 
 For the report, I planned the structure and selected the information to include. ChatGPT helped 
 me put my thoughts into words, improve clarity and develop the report I had in mind.
+
+\newpage
 
 \section{Main Uses and Prompts}
 
@@ -153,6 +155,12 @@ detection on regions where balls are closely clustered together?
 Could you help me implement an experiment for this?"
 \end{aiprompt}
 
+\begin{aiprompt}
+"Another things that could be good to test is a "Guided Hough", as in we use different hough
+parameters for different cases. For examples we could use a more permissive hough for ball clusters
+and keep the parameters we currently have for more sparse setups."
+\end{aiprompt}
+
 \textbf{Impact on project:} Helped implement an experiment for watershed segmentation. 
 After testing this experiment the performance did not change much. So this was not included in the
 final pipeline. This led to another idea to improve detection; using a more permissive Hough in
@@ -226,11 +234,17 @@ and not included in the final report.
 colour recogntion? We could use the AllBalls image for reference.
 This could help capture some variations taht the single HSV rules cannot capture."
 \end{aiprompt}
-\FloatBarrier
 
-\textbf{Impact on project:} AI's most substantial contribution here was helping me plan and implement
-the histogram training based on the colours of the balls in the training image. 
-Help a lot with the code implementation.
+\begin{aiprompt}
+"Yes exactly! Another thing is that we need to make sure that stipped and solid ball contribute equally even
+though full balls will usually have more coloured pixel. So maybe we need some normalisation for the histograms as well.
+Also let's use Bhattacharyya distance. I am not sure how to go about for the code at all
+could you help me"
+\end{aiprompt}
+
+\textbf{Impact on project:} AI's contribution here was helping me plan 
+the histogram references based on the colours of the balls in the training image. 
+It also helped a lot with the code implementation.
 
 \end{promptentry}
 \FloatBarrier
@@ -315,7 +329,9 @@ help me write a function in the chat do to this"
 \textbf{Impact on project:} Helped implement a function that help me pinpoint better the shortcomings of the system
 that was designed.
 
-\subsection{Help for Result Visualisation}
+\subsection{Help for Result Visualisation and Results}
+
+\begin{promptentry}
 
 \begin{aiprompt}
 "could you help me write a function to created a top view grid of the results of the system.
@@ -325,15 +341,38 @@ with the detected circle and the label"
 
 \textbf{Impact on project:} Helped implement a function to draw this results grid with the detected and recognised balls.
 
+\end{promptentry}
+\FloatBarrier
+
+\begin{promptentry}
+\begin{aiprompt}
+"To keep track of the different design's performace maybe we should save the results, metrics and some params.
+could you make sure to save these when we write functions. Also let's save the generated images so I can inspect and compare
+them more easily."
+\end{aiprompt}
+
+\textbf{Impact on project:} Helped save the relevant results and images for key functions.
+This mostly helped me keep track and a log of my implementations and performance which was very helpful
+when writing the report. This also help compare implementation more easily.
+\end{promptentry}
+\FloatBarrier
+
 \subsection{Help for Report}
 
+\begin{promptentry}
 \begin{aiprompt}
 "in the Ball type recognition section I added some images but I would also like a nice visulisation. 
 to support the pictures I added, maybe someting to show to final classification?"
 \end{aiprompt}
 
-\textbf{Impact on project:} made the small visualisation in figure 4
+\textbf{Impact on project:} It helped make the small visualisation in figure 4, 
+showing how HLS and K-means estimated light coverage and how this 
+determined the initial ball type.
 
+\end{promptentry}
+\FloatBarrier
+
+\begin{promptentry}
 \begin{aiprompt}
 "I want to illustration the histogram referencing the report. I think we could draw
 approximative histogram for a ball pair and then show the averaging that is done.
@@ -341,16 +380,29 @@ Also for that section I want a nice visulisation for how this approaches the per
 we could take 1-3 balls that were previsouly miss classified and how the correction. Makes sure
 to show that classification works on scores now and not hard boundaries."
 \end{aiprompt}
+\end{promptentry}
+\FloatBarrier
 
-\textbf{Impact on project:} made the visualisation for figure 5 and 6.
+\textbf{Impact on project:} Helped create the visualisation for figure 5 and 6.
+This illustrated reference-histogram averaging schematically and using 
+saved matching scores to show corrections to earlier colour 
+classifications.
 
+\begin{promptentry}
 \begin{aiprompt}
 "Given the ball by ball performace: [performance output]. Help me create a visulisation for this.
 I was thinking a bar-like chart with the annotated vs detected vs correct identity recognition for each
 ball"
 \end{aiprompt}
+\end{promptentry}
+\FloatBarrier
 
-\textbf{Impact on project:} made the visualisation for figure 9.
+\textbf{Impact on project:} It helped make the visualisation for figure 9, comparing 
+annotated, detected and correctly identified ball counts for each 
+identity to highlight strengths and weaknesses.
+
+\newpage
+
 
 \textbf{Additionally, some repetitive prompts such as:}
 
@@ -417,7 +469,7 @@ Summary of AI usage in the assignment.
     \item Designing experiments, parameter searches and interactive tools.
     \item generating LaTeX template for the report and AI usage document
     \item Proofread the report and helped re-formulate some section for added clarity
-    \item Helped generate some visualisation for the report with gidence and from the given results
+    \item Helped generate some visualisation for the report with guidance and from the given results
 \end{itemize}
 
 \end{document}

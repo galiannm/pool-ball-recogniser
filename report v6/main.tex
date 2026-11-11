@@ -148,7 +148,7 @@ Histogram matching improved this to 73/80 with 8 corrections and no regression.
 \subsection{Soft Score Approach}
 
 Then, a property I wanted to leverage was that each ball has a unique identity. To use this I pivoted to soft scores
-instead of hard decisions. Therefore, I first replace the single type 
+instead of hard decisions. Therefore, I first replaced the single type 
 classification with compatibility scores for Solid, Striped and Cue. 
 I kept the original light-coverage intervals that were previously used: \([0,0.30]\) 
 for Solid, \([0.30,0.85]\) for Striped and \([0.85,1]\) for White. A type received a score of 
@@ -174,7 +174,7 @@ For numbered balls, I multiplied histogram colour similarity by type compatibili
 rewarding high light coverage and adding a penalty below 85\%. 
 These scores provided the alternatives needed for the unique assignment stage.
 
-\subsection{Unique identity assignment Algorithm}
+\subsection{Unique identity Assignment}
 To enforce uniqueness, I used the Hungarian algorithm \cite{hungarian} to maximise the total compatibility score 
 across the table. Each row of the score matrix represented a candidate and each column a possible 
 identity. The algorithm built an assignment while allowing earlier pairings to be rearranged, 
@@ -294,7 +294,7 @@ centres. This was done post detection and recognition so as to not affect the ba
 
 \begin{figure}[H]\ContinuedFloat\centering
 \includegraphics[width=.98\linewidth]{assets/final_views_5_6.pdf}
-\caption[]{Final visulisation for Tables1--6.}
+\caption[]{Final visualisation for Tables1--6.}
 \end{figure}
 
 The final views pair a numbered rectified photograph with an overhead diagram. The photograph 
