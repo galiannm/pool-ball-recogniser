@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/manon/Documents/Uni/Trinity4/CV/Assignment/report v5/build_figures.py", line 7, in <module>
-    import numpy as np
-ModuleNotFoundError: No module named 'numpy'

@@ -4,8 +4,8 @@ A separate version focused on the final pipeline and the decisions that produced
 **Report v5 is unchanged.**
 The report retains 12-point text, normal spacing, 25 mm margins and the eight-page
 upper limit. It keeps the original pipeline diagram and the repository link.
-The AI-use statement is included at the end of the main report within those eight
-pages; the separate `ai_report` retains the detailed prompts and usage account.
+The AI-use statement, prompts and detailed usage account are kept separately in
+`ai_report`, following the author's confirmed submission arrangement.
 
 The current manuscript is a full prose rewrite from the author's development
 notes, including the evaluation and failure analysis. The previous compressed
@@ -27,7 +27,7 @@ remain on disk. The author's subsequent edits to the structure and wording are r
 Checked against the supplied report brief: pages 1–4 cover processing theory and
 pages 5–8 results and analysis. There is no separate title page. The method uses
 technique descriptions and parameters without source filenames or library calls.
-The AI-use disclosure and repository link remain at the end. Metrics use the
+The repository link remains at the end. Metrics use the
 working annotations in `data/ground_truth/BallLocationsNew.csv`.
 
 Changes from v5:
@@ -41,7 +41,11 @@ Changes from v5:
   future work on lighting, spatial masks and crowded-ball segmentation. The
   detailed rejected-trial montage remains a diagnostic asset.
 - Combines missing-colour and neighbour-contamination failures into one padding
-  trade-off, retaining the three failure crops. A compact per-identity count plot
+  trade-off. The larger three-column failure figure adds clean photographic
+  context with the saved detected circle, the original crop and retained-colour
+  evidence, with explicit true/predicted type labels. The red example's light
+  mask is inferred from its exported K=2 image and verified against the saved
+  light-coverage percentage. A compact per-identity count plot
   illustrates group performance. The closing text explicitly limits the evidence
   to six development images from one fixed table view, followed by next steps and
   a short conclusion.
@@ -77,13 +81,23 @@ Changes from v5:
   HLS light fractions make its failure on the cue and stripe visible.
 - Separates crop padding (75 to 79 correct identities) from cue reservation (79
   to 80), and labels the Table3 example with its actual before/after predictions.
+  The cue-refinement figure pairs each original detection with its expanded crop,
+  using larger images and wrong-to-correct prediction labels. The repeated
+  unexpanded crop is omitted to keep the comparison clear and compact.
 - Shows the actual `table_numbered.png` and `table_diagram.png` outputs for every
   Table1–6, including the application's larger labels and magenta/yellow outlines.
 - Splits Figure 8 into three two-table bands (`final_views_1_2.pdf`,
   `final_views_3_4.pdf`, `final_views_5_6.pdf`) so parts can fit on page 6.
   Continued floats retain one figure number, with an invisible first caption
   reserving that number when only the final band has a visible caption.
-- Refreshes the detection montage from the latest saved raw/filtered circle images.
+- Places full masked and smoothed AllBalls frames immediately after the
+  preprocessing paragraph, followed by full starting/tuned Hough frames after
+  the tuning paragraph. The Hough comparison shows complete starting and tuned
+  raw frames beside the tuned filtered frame, keeping false positives visible.
+  Panel counts come directly from the current saved
+  metrics, including false positives; the starting baseline can be changed and
+  rerun independently of the selected detector. The earlier detail montage remains
+  available as a diagnostic asset; every image in the two new figures is uncropped.
 - Places TP/FP/FN, correct identities/annotations and centre error above each
   final pair, replacing the separate per-image results table.
 - Uses the requested course, CP-Algorithms, scikit-learn and MathWorks sources. See

@@ -5,35 +5,39 @@
   },
   {
     "path": "report v6/assets/colour_comparison.pdf",
-    "sha256": "beecdaececba4987e8a135b27d0eb7816e3b29557c948604530985756ef4cf2a"
+    "sha256": "38ed506805fcf959aaad9a55480c379fdf3607b50531edaff810419d7de03a79"
   },
   {
     "path": "report v6/assets/cue_refinement.pdf",
-    "sha256": "52b215936694e0f85f423e0d5b48d3e9a31a0cf412ff1612e56e57683f5f7286"
+    "sha256": "63449c0e533873f6cdbef12218d2550e8676c0f07b0de2e6837958f9a4e6f20e"
   },
   {
-    "path": "report v6/assets/detection-stages.pdf",
-    "sha256": "eb3d2ff07e8a9aef485b30a96355049f19a648cda402f6e185c3b9924aa1d50c"
+    "path": "report v6/assets/detection_preprocessing.pdf",
+    "sha256": "77fbb5e846b542cdc9c2dac97bd26499fc3d9519adeb9fb95ad8d7b583fd1f1f"
   },
   {
     "path": "report v6/assets/failure_details.pdf",
-    "sha256": "cb6f9f9704231e7b09d064a8e9f499d9309f4df8f34770abf766b61aa7deb1c7"
+    "sha256": "30d7e2b4c329f4461c4dff9a939c4d62362934e39286587e4876a241e07d6ddf"
   },
   {
     "path": "report v6/assets/final_views_1_2.pdf",
-    "sha256": "e7f0b47fee8c80f08e234351a0b3996faf40a020f7eb67492281f7f8baae968c"
+    "sha256": "b4fffb811cc84eec6fd1634e65992b1c55c610959f36c728534ecaa87fa20f9d"
   },
   {
     "path": "report v6/assets/final_views_3_4.pdf",
-    "sha256": "7162af7d71563b26cdb6fa24088149067f3113d8b2fa6c433c0550a9fdb27ed9"
+    "sha256": "ac4ea2d26645011a5324018eebc31e356e5cc4d074fa7dc2b1b32463cba34151"
   },
   {
     "path": "report v6/assets/final_views_5_6.pdf",
-    "sha256": "5aaa014fb25bdaf36fc5a3b957937cbdaf6a90ddecfe39319ca716b9f2c1695b"
+    "sha256": "38697a0ecb7c1a26a13e51fb2cdc51d94bb36a462331e94a6545c070d5ff3cf8"
+  },
+  {
+    "path": "report v6/assets/hough_comparison.pdf",
+    "sha256": "9f76de87817729edb4bfb357b517e41752570e6188d1f165f89ffeb2d8f377f2"
   },
   {
     "path": "report v6/assets/identity_counts.pdf",
-    "sha256": "246734b01fadfb8726795497fda5d954aa700c846c0c3548514b67e743a1306e"
+    "sha256": "f949cbcea23169a914d519c104abea4a259232d58e941ed59ddfa6a7a535046b"
   },
   {
     "path": "report v6/assets/pipeline.png",
@@ -41,11 +45,11 @@
   },
   {
     "path": "report v6/assets/reference_construction.pdf",
-    "sha256": "57afb030f9195d7c01e274076b18439e506da7124e9f4f28cd01cafa88d68d53"
+    "sha256": "231440e63dbd70712c0fb8c5d11a5c284926f3e2e8c63bef47e3f096b27d94d3"
   },
   {
     "path": "report v6/assets/type_development.pdf",
-    "sha256": "28afc1d7d5ab6edb518dc331386a1aed27cfd7e12b318cd39527e85618883af1"
+    "sha256": "12db6fc11799affe48a79193facb216c54cc11d6f3c0320f25b53d751ba8b566"
   },
   {
     "path": "final_output/final/Table1/table_numbered.png",
@@ -136,6 +140,18 @@
     "sha256": "45856c18a662002d5adc2d902043b98aef1ba77ba93666d77324557322169d0f"
   },
   {
+    "path": "final_output/experiments/past_designs/AllBalls/starting_hough/raw_circles.png",
+    "sha256": "fcfc1a32461cf69ab3e8da35635423bdc76ba5eaec9e37593c136c1a442ec51a"
+  },
+  {
+    "path": "final_output/experiments/past_designs/AllBalls/starting_hough/filtered_circles.png",
+    "sha256": "3a3a0511df9d1e62cfc6ddced152d21cb24a9ef19c7d65f6d5c5af4dcc706963"
+  },
+  {
+    "path": "final_output/experiments/past_designs/AllBalls/starting_hough/detection_evaluation.csv",
+    "sha256": "0ab9eb23a98a409afda8da3ce79c3145e614cce5efa981e2b17a7ab6b671d5ad"
+  },
+  {
     "path": "report v6/assets/detection_grey_blur.png",
     "sha256": "3599fd0bfec442ada20fe0e6a01e8b917029f11362cd603003cbd4eeb8ea52e8"
   },
@@ -145,7 +161,7 @@
   },
   {
     "path": "final_output/experiments/past_designs/overall/starting_hough/detection_evaluation.csv",
-    "sha256": "474e9e503e518ed423598088fb43b48357aa0079c3cd2bb38a99251608e73592"
+    "sha256": "24bfd14d41280aacf8f6cb79f143069e884f1533fc462aec8139deef91b6b334"
   },
   {
     "path": "final_output/experiments/past_designs/overall/selected_hough/detection_evaluation.csv",

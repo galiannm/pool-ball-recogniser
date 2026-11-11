@@ -22,6 +22,9 @@ paths += ['../final_output/final/AllBalls/identity_evaluation.csv',
           '../final_output/detection/AllBalls/detection_evaluation.csv']
 paths += ['../final_output/detection/AllBalls/raw_circles.png',
           '../final_output/detection/AllBalls/filtered_circles.png',
+          '../final_output/experiments/past_designs/AllBalls/starting_hough/raw_circles.png',
+          '../final_output/experiments/past_designs/AllBalls/starting_hough/filtered_circles.png',
+          '../final_output/experiments/past_designs/AllBalls/starting_hough/detection_evaluation.csv',
           'assets/detection_grey_blur.png']
 paths += ['../final_output/experiments/past_designs/recognition_comparison.csv',
           '../final_output/experiments/past_designs/overall/starting_hough/detection_evaluation.csv',
@@ -55,6 +58,8 @@ allballs_detection = row(ROOT / 'final_output/detection/AllBalls/detection_evalu
 allballs_identity = row(ROOT / 'final_output/final/AllBalls/identity_evaluation.csv')
 assert [int(allballs_detection[k]) for k in ['TP','FP','FN']] == [16,0,0]
 assert int(allballs_identity['correct']) == int(allballs_identity['groundTruth']) == 16
+allballs_start = row(ROOT / 'final_output/experiments/past_designs/AllBalls/starting_hough/detection_evaluation.csv')
+assert int(allballs_start['TP']) + int(allballs_start['FN']) == 16
 
 detection = {k: 0 for k in ['TP','FP','FN']}
 correct = 0
@@ -164,7 +169,12 @@ for method, counts in expected.items():
     assert math.isclose(float(r['accuracy']), counts[0]/counts[1], abs_tol=1e-6)
     assert math.isclose(float(r['endToEnd']), counts[0]/counts[2], abs_tol=1e-6)
 start = row(past / 'overall/starting_hough/detection_evaluation.csv')
-assert tuple(int(start[k]) for k in ['TP','FP','FN']) == (59,0,31)
+start_images = [row(past / f'Table{i}/starting_hough/detection_evaluation.csv') for i in range(1,7)]
+assert tuple(int(start[k]) for k in ['TP','FP','FN']) == tuple(
+    sum(int(r[k]) for r in start_images) for k in ['TP','FP','FN'])
+assert int(start['TP']) + int(start['FN']) == 90
+assert math.isclose(float(start['precision']), int(start['TP'])/(int(start['TP'])+int(start['FP'])), abs_tol=1e-6)
+assert math.isclose(float(start['recall']), int(start['TP'])/90, abs_tol=1e-6)
 selected = row(past / 'overall/selected_hough/detection_evaluation.csv')
 assert tuple(int(selected[k]) for k in ['TP','FP','FN']) == (86,2,4)
 

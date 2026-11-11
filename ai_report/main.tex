@@ -45,19 +45,36 @@
 \textbf{Assignment:} & Pool ball detection and recognition
 \end{tabular}
 
-\section{Statement of AI use}
+\section{Generative AI Model Used}
+
+Tools and models used for this assignement:
+\begin{itemize}
+    \item ChatGPT (GPT-6)
+    \item OpenAI Codex (GPT-6.1 Sol Medium \& GPT-6.1 Sol High)
+\end{itemize}
+
+\textbf{note:} For simplicity, ``ChatGPT'' refers throughout this report to AI assistance
+received through either the ChatGPT interface or Codex.
+
+\section{Description of AI Use}
 
 I used ChatGPT as a technical assistant throughout this assignment to discuss
 computer vision methods, review design alternatives, translate ideas into
 C++/OpenCV code, troubleshoot implementation problems, and improve the organisation
-and wording of my report. I proposed and selected the overall approaches adopted,
-including separate detection and recognition stages, automated Hough parameter
-testing, reference colour histograms, and the use of unique ball identities.
-ChatGPT supplied substantial code examples and, at several points, complete or
+and wording of my report. 
+
+I initially asked ChatGPT to guide my reasoning without providing a complete solution, as I 
+wanted to design the system myself. I proposed the main approaches (e.g. separate detection and recognition stages, automated Hough parameter
+testing, reference colour histograms, and the use of unique ball identities) and made the final design 
+decisions, while ChatGPT helped me question assumptions, refine ideas and implement them.
+
+ChatGPT supplied substantial code examples and, at points, complete or
 corrected implementations, which I reviewed, adapted, tested and evaluated against
 the assignment images. I performed the results analysis myself and used ChatGPT
-to critique that analysis. I planned the report's structure and used ChatGPT to
-help rewrite and formulate sections.
+to critique that analysis. 
+
+For the report, I planned the structure and selected the information to include. ChatGPT helped 
+me put my thoughts into words, improve clarity and develop the report I had in mind.
 
 \section{Main Uses and Prompts}
 
@@ -74,7 +91,7 @@ It is important to use traditional computer vision techinique and not a neural n
 I will attach the assignment brief."
 \end{aiprompt}
 
-\textbf{Impact on project:} Explaination of the brief, noted that there are seperate training and eval
+\textbf{Impact on project:} Explanation of the brief, noted that there are separate training and eval
 images. Noted that it will not propose full solutions and that we should use traditional CV techniques
 
 \end{promptentry}
@@ -88,7 +105,7 @@ parameters on the AllBalls image right? But would we be allowed to look at the v
 and find general patterns that we are missing and then build new experiments around those errors?"
 \end{aiprompt}
 
-\textbf{Impact on project:} Noted that yes we cannot use the Table1-6 for training, e.g. parameter tweeking.
+\textbf{Impact on project:} Noted that yes we cannot use the Table1-6 for training, e.g. parameter tweaking.
 Also if we wanted to structure new experiment around the validation result this should be noted.
 
 \end{promptentry}
@@ -121,9 +138,9 @@ So we should focus on getting pretty much 100\% recall. Then focus on precision
 to avoid getting too many FPs. We can validate afterwards on Table1-6."
 \end{aiprompt}
 
-\textbf{Impact on project:} Outputed that automation would be a good idea.
+\textbf{Impact on project:} Confirmed that automation was appropriate and 
 proposed a range of parameters to test (200+, I later increased it to 480 in the final
-pipeline after more experimenting). Also proposed the validation structure from my criterias.
+pipeline after more experimenting). Also proposed the validation structure from my criteria.
 
 \end{promptentry}
 \FloatBarrier
@@ -137,9 +154,9 @@ Could you help me implement an experiment for this?"
 \end{aiprompt}
 
 \textbf{Impact on project:} Helped implement an experiment for watershed segmentation. 
-After testing this experiment the performance didn't not change much. So this was not included in the
-final pipeline. This led to another idea to improve detection; using a more permissive hough in
-the ball clusters and the current hough everywhere else. This experiment manage to catch 1 missing ball
+After testing this experiment the performance did not change much. So this was not included in the
+final pipeline. This led to another idea to improve detection; using a more permissive Hough in
+the ball clusters and the current Hough everywhere else. This experiment managed to detect 1 missing ball
 but added a lot more FP and complexity so was also left out of the final pipeline.
 
 \end{promptentry}
@@ -150,7 +167,12 @@ but added a lot more FP and complexity so was also left out of the final pipelin
 \begin{promptentry}
 
 \begin{aiprompt}
-"For recognition I initially think we could just use HLS maybe?"
+"For recognition I initially think we could just use HLS maybe?
+I don't think this approach will perform amazingly but I think it 
+will be good in the report later for comparaison.
+we can look at the pixel inside the balls and divided the pixels
+into light, dark, coloured and classify the types based on the proportions.
+What do you think?"
 \end{aiprompt}
 
 \textbf{Impact on project:} Explained that it was a good simple start. 
@@ -172,9 +194,9 @@ Then we could use Hue to get the colour of the ball.
 We can also test other k sizes, k=2 just seem like the simplest and most logical."
 \end{aiprompt}
 
-\textbf{Impact on project:} Helped implement this k means exepriment and the visualisations.
+\textbf{Impact on project:} Helped implement this k means experiment and the visualisations.
 We tested with k = 2,3,4,5. 
-With k=2 we were getting optimal performance on the test images so there was not enough evidence to switch to a 
+With k=2 we were getting optimal performance on the training image so there was not enough evidence to switch to a 
 larger k.
 
 \end{promptentry}
@@ -201,11 +223,12 @@ and not included in the final report.
 
 \begin{aiprompt}
 "maybe since we have the training image we could use histogram backprojection / Bhattacharyya for better 
-colour recogntion? We could use the AllBalls image for reference."
+colour recogntion? We could use the AllBalls image for reference.
+This could help capture some variations taht the single HSV rules cannot capture."
 \end{aiprompt}
 \FloatBarrier
 
-\textbf{Impact on project:} The biggest help AI provided in helping me plan and implement
+\textbf{Impact on project:} AI's most substantial contribution here was helping me plan and implement
 the histogram training based on the colours of the balls in the training image. 
 Help a lot with the code implementation.
 
@@ -222,8 +245,8 @@ I think there is an algorithm that does this but I do not remeber the name or ho
 exactly"
 \end{aiprompt}
 
-\textbf{Impact on project:} Gave the name of the algorithm I was missing (hungarian algorithm)
-proposed a Guassian function for the scores. Helped implement the code for the algorithm.
+\textbf{Impact on project:} Gave the name of the algorithm I was missing (Hungarian algorithm)
+proposed a Gaussian function for the scores. Helped implement the code for the algorithm.
 
 \end{promptentry}
 \FloatBarrier
@@ -233,13 +256,13 @@ proposed a Guassian function for the scores. Helped implement the code for the a
 \begin{aiprompt}
 "Yes that makes sense. A Gaussian function makes sense, we could also try a linear one first. 
 But probably the smooth decisions that the Gaussian would give a better performace than decisions 
-based on a threshold that the linear function would give.
+based on a threshold that the linear function would give. We also need to find an appropriate gaussian form. 
 What do you think?"
 \end{aiprompt}
 
-\textbf{Impact on project:} We implement this soft scores experiment using both linear and gaussian
-functions. Only the Gaussian one was retained as it performed significantly better. Helped with the
-code implementation.
+\textbf{Impact on project:} We implemented and compared linear and Gaussian compatibility 
+functions. The Gaussian formulation was the only one retained in the final implementation 
+and iterated on. ChatGPT assisted with implementing both approaches.
 
 \end{promptentry}
 \FloatBarrier
@@ -254,7 +277,7 @@ This is because a common error, is that sometimes the hough transform detects th
 white circle of the balls instead of the full ball."
 \end{aiprompt}
 
-\textbf{Impact on project:} We tested multiple padding 1-5 pixels. 1pixel worked the 
+\textbf{Impact on project:} We tested multiple padding 1-5 pixels. 1 pixel worked the 
 best and is what was kept.
 
 \end{promptentry}
@@ -276,7 +299,7 @@ have to compute estimate ball sizes at all depths."
 solution. The complex solution involved taking the training image and fitting a line 
 relating detected radius to the center row using the 16 balls. We then divided each
 candidate radius by the expected radius at its row. 
-Both method produced the same improvements so we kept the simpler radius rule.
+Both methods produced the same improvements so we kept the simpler radius rule.
 
 \end{promptentry}
 \FloatBarrier
@@ -300,14 +323,39 @@ I think that would be more clear than what I currently have. Which is a top view
 with the detected circle and the label"
 \end{aiprompt}
 
-\textbf{Impact on project:} Help implement a function to draw this results grid with the dected and recognised balls.
+\textbf{Impact on project:} Helped implement a function to draw this results grid with the detected and recognised balls.
 
-\subsection{Report writting}
-
-Used some repetive prompts such as:
+\subsection{Help for Report}
 
 \begin{aiprompt}
-"Help me rephrase this"
+"in the Ball type recognition section I added some images but I would also like a nice visulisation. 
+to support the pictures I added, maybe someting to show to final classification?"
+\end{aiprompt}
+
+\textbf{Impact on project:} made the small visualisation in figure 4
+
+\begin{aiprompt}
+"I want to illustration the histogram referencing the report. I think we could draw
+approximative histogram for a ball pair and then show the averaging that is done.
+Also for that section I want a nice visulisation for how this approaches the performance.
+we could take 1-3 balls that were previsouly miss classified and how the correction. Makes sure
+to show that classification works on scores now and not hard boundaries."
+\end{aiprompt}
+
+\textbf{Impact on project:} made the visualisation for figure 5 and 6.
+
+\begin{aiprompt}
+"Given the ball by ball performace: [performance output]. Help me create a visulisation for this.
+I was thinking a bar-like chart with the annotated vs detected vs correct identity recognition for each
+ball"
+\end{aiprompt}
+
+\textbf{Impact on project:} made the visualisation for figure 9.
+
+\textbf{Additionally, some repetitive prompts such as:}
+
+\begin{aiprompt}
+"Help me rephrase this" 
 \end{aiprompt}
 
 \begin{aiprompt}
@@ -316,7 +364,7 @@ Used some repetive prompts such as:
 
 \subsection{Help for Code/Syntax}
 
-Used some repetive prompts such as:
+\textbf{Used some repetitive prompts such as:}
 
 \begin{aiprompt}
 "Help me debug this"
@@ -338,6 +386,26 @@ Used some repetive prompts such as:
 "How can I implement this in OpenCV?"
 \end{aiprompt}
 
+\begin{aiprompt}
+"I don't like your implementation maybe we can try ..."
+\end{aiprompt}
+
+\begin{aiprompt}
+"this function can definitly be a lot shorter and more efficient"
+\end{aiprompt}
+
+\subsection{Other:}
+
+\textbf{Used some repetitive prompts such as:}
+
+\begin{aiprompt}
+"What does this mean?"
+\end{aiprompt}
+
+\begin{aiprompt}
+"Could you please clarify this?"
+\end{aiprompt}
+
 \section{Coverage checklist}
 
 Summary of AI usage in the assignment.
@@ -347,7 +415,9 @@ Summary of AI usage in the assignment.
     \item Generating, modifying, consolidating or formatting C++ code.
     \item Debugging and explaining code or algorithms.
     \item Designing experiments, parameter searches and interactive tools.
-    \item generating latex template for the report and AI usage document
+    \item generating LaTeX template for the report and AI usage document
+    \item Proofread the report and helped re-formulate some section for added clarity
+    \item Helped generate some visualisation for the report with gidence and from the given results
 \end{itemize}
 
 \end{document}

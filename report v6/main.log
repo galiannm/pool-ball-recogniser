@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2023.10.7)  10 NOV 2026 02:38
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2023.10.7)  11 NOV 2026 16:28
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -447,76 +447,98 @@ Package hyperref Info: Link coloring OFF on input line 12.
 \@outlinefile=\write3
 \openout3 = `main.out'.
 
-<assets/pipeline.png, id=64, 749.80125pt x 290.08376pt>
+<assets/pipeline.png, id=60, 749.80125pt x 290.08376pt>
 File: assets/pipeline.png Graphic file (type png)
 <use assets/pipeline.png>
-Package pdftex.def Info: assets/pipeline.png  used on input line 27.
+Package pdftex.def Info: assets/pipeline.png  used on input line 28.
 (pdftex.def)             Requested size: 345.98302pt x 112.89563pt.
-<assets/detection-stages.pdf, id=67, 505.64862pt x 87.89348pt>
-File: assets/detection-stages.pdf Graphic file (type pdf)
-<use assets/detection-stages.pdf>
-Package pdftex.def Info: assets/detection-stages.pdf  used on input line 45.
-(pdftex.def)             Requested size: 455.24411pt x 79.13423pt.
- [1
+<assets/detection_preprocessing.pdf, id=63, 481.96143pt x 75.64212pt>
+File: assets/detection_preprocessing.pdf Graphic file (type pdf)
+<use assets/detection_preprocessing.pdf>
+Package pdftex.def Info: assets/detection_preprocessing.pdf  used on input line 41.
+(pdftex.def)             Requested size: 455.24411pt x 71.45215pt.
 
-{/usr/local/texlive/2023/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc} <./assets/detection-stages.pdf> <./assets/pipeline.png>]
-<assets/type_development.pdf, id=101, 512.87845pt x 147.9173pt>
+
+Package caption Warning: The option `hypcap=true' will be ignored for this
+(caption)                particular \caption on input line 42.
+See the caption package documentation for explanation.
+
+<assets/hough_comparison.pdf, id=64, 491.19463pt x 56.48601pt>
+File: assets/hough_comparison.pdf Graphic file (type pdf)
+<use assets/hough_comparison.pdf>
+Package pdftex.def Info: assets/hough_comparison.pdf  used on input line 52.
+(pdftex.def)             Requested size: 455.24411pt x 52.35214pt.
+
+Package caption Warning: The option `hypcap=true' will be ignored for this
+(caption)                particular \caption on input line 53.
+See the caption package documentation for explanation.
+
+[1
+
+{/usr/local/texlive/2023/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc} <./assets/detection_preprocessing.pdf> <./assets/hough_comparison.pdf> <./assets/pipeline.png>]
+<assets/type_development.pdf, id=109, 512.87845pt x 147.9173pt>
 File: assets/type_development.pdf Graphic file (type pdf)
 <use assets/type_development.pdf>
-Package pdftex.def Info: assets/type_development.pdf  used on input line 78.
+Package pdftex.def Info: assets/type_development.pdf  used on input line 108.
 (pdftex.def)             Requested size: 437.0374pt x 126.04402pt.
  [2 <./assets/type_development.pdf>]
-<assets/reference_construction.pdf, id=147, 512.87563pt x 71.46179pt>
+<assets/reference_construction.pdf, id=155, 512.87563pt x 71.46179pt>
 File: assets/reference_construction.pdf Graphic file (type pdf)
 <use assets/reference_construction.pdf>
-Package pdftex.def Info: assets/reference_construction.pdf  used on input line 103.
+Package pdftex.def Info: assets/reference_construction.pdf  used on input line 134.
 (pdftex.def)             Requested size: 437.0374pt x 60.89763pt.
-<assets/colour_comparison.pdf, id=148, 512.87563pt x 95.72185pt>
+<assets/colour_comparison.pdf, id=156, 512.87563pt x 95.72185pt>
 File: assets/colour_comparison.pdf Graphic file (type pdf)
 <use assets/colour_comparison.pdf>
-Package pdftex.def Info: assets/colour_comparison.pdf  used on input line 114.
+Package pdftex.def Info: assets/colour_comparison.pdf  used on input line 145.
 (pdftex.def)             Requested size: 437.0374pt x 81.57135pt.
  [3 <./assets/reference_construction.pdf> <./assets/colour_comparison.pdf>]
-<../final_output/final/AllBalls/table_numbered.png, id=203, 1439.3775pt x 685.56125pt>
+<../final_output/final/AllBalls/table_numbered.png, id=212, 1439.3775pt x 685.56125pt>
 File: ../final_output/final/AllBalls/table_numbered.png Graphic file (type png)
 <use ../final_output/final/AllBalls/table_numbered.png>
-Package pdftex.def Info: ../final_output/final/AllBalls/table_numbered.png  used on input line 167.
+Package pdftex.def Info: ../final_output/final/AllBalls/table_numbered.png  used on input line 207.
 (pdftex.def)             Requested size: 227.62206pt x 65.45438pt.
  [4 <../final_output/final/AllBalls/table_numbered.png (PNG copy)>]
-<assets/cue_refinement.pdf, id=213, 454.4872pt x 51.79301pt>
+<assets/cue_refinement.pdf, id=223, 439.80377pt x 79.90164pt>
 File: assets/cue_refinement.pdf Graphic file (type pdf)
 <use assets/cue_refinement.pdf>
-Package pdftex.def Info: assets/cue_refinement.pdf  used on input line 189.
-(pdftex.def)             Requested size: 446.13727pt x 50.84293pt.
-<assets/identity_counts.pdf, id=214, 491.19463pt x 97.32285pt>
+Package pdftex.def Info: assets/cue_refinement.pdf  used on input line 230.
+(pdftex.def)             Requested size: 446.13727pt x 81.05602pt.
+
+
+Package caption Warning: The option `hypcap=true' will be ignored for this
+(caption)                particular \caption on input line 231.
+See the caption package documentation for explanation.
+
+<assets/identity_counts.pdf, id=224, 491.19463pt x 97.32285pt>
 File: assets/identity_counts.pdf Graphic file (type pdf)
 <use assets/identity_counts.pdf>
-Package pdftex.def Info: assets/identity_counts.pdf  used on input line 232.
+Package pdftex.def Info: assets/identity_counts.pdf  used on input line 274.
 (pdftex.def)             Requested size: 437.0374pt x 86.59328pt.
- [5 <./assets/cue_refinement.pdf>]
-<assets/final_views_1_2.pdf, id=240, 422.35881pt x 194.88762pt>
+[5 <./assets/cue_refinement.pdf>]
+<assets/final_views_1_2.pdf, id=253, 408.57079pt x 180.43362pt>
 File: assets/final_views_1_2.pdf Graphic file (type pdf)
 <use assets/final_views_1_2.pdf>
-Package pdftex.def Info: assets/final_views_1_2.pdf  used on input line 245.
-(pdftex.def)             Requested size: 446.13727pt x 205.86618pt.
-<assets/final_views_3_4.pdf, id=241, 422.35881pt x 194.88762pt>
+Package pdftex.def Info: assets/final_views_1_2.pdf  used on input line 287.
+(pdftex.def)             Requested size: 446.13727pt x 197.02664pt.
+<assets/final_views_3_4.pdf, id=254, 408.57079pt x 180.43362pt>
 File: assets/final_views_3_4.pdf Graphic file (type pdf)
 <use assets/final_views_3_4.pdf>
-Package pdftex.def Info: assets/final_views_3_4.pdf  used on input line 249.
-(pdftex.def)             Requested size: 446.13727pt x 205.86618pt.
-<assets/final_views_5_6.pdf, id=242, 422.35881pt x 194.88762pt>
+Package pdftex.def Info: assets/final_views_3_4.pdf  used on input line 292.
+(pdftex.def)             Requested size: 446.13727pt x 197.02664pt.
+<assets/final_views_5_6.pdf, id=255, 408.57079pt x 180.43362pt>
 File: assets/final_views_5_6.pdf Graphic file (type pdf)
 <use assets/final_views_5_6.pdf>
-Package pdftex.def Info: assets/final_views_5_6.pdf  used on input line 253.
-(pdftex.def)             Requested size: 446.13727pt x 205.86618pt.
+Package pdftex.def Info: assets/final_views_5_6.pdf  used on input line 296.
+(pdftex.def)             Requested size: 446.13727pt x 197.02664pt.
  [6 <./assets/identity_counts.pdf> <./assets/final_views_1_2.pdf> <./assets/final_views_3_4.pdf>]
-<assets/failure_details.pdf, id=290, 467.82016pt x 61.18811pt>
+<assets/failure_details.pdf, id=303, 457.76176pt x 159.01463pt>
 File: assets/failure_details.pdf Graphic file (type pdf)
 <use assets/failure_details.pdf>
-Package pdftex.def Info: assets/failure_details.pdf  used on input line 290.
-(pdftex.def)             Requested size: 427.93057pt x 55.97067pt.
+Package pdftex.def Info: assets/failure_details.pdf  used on input line 333.
+(pdftex.def)             Requested size: 446.13727pt x 154.97919pt.
  [7 <./assets/final_views_5_6.pdf>]
-LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 336.
+LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 376.
  (/usr/local/texlive/2023/texmf-dist/tex/latex/base/t1cmtt.fd
 File: t1cmtt.fd 2022/07/10 v2.5l Standard LaTeX font definitions
 )
@@ -526,21 +548,21 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             See the microtype manual for details.
  [8 <./assets/failure_details.pdf>] (./main.aux)
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 5305A9A4B9B822D0A58BA051B0723825;2536.
+(rerunfilecheck)             Checksum: 409DAACB8ABDDE1EE42AEC082B0790CE;2347.
  ) 
 Here is how much of TeX's memory you used:
  14212 strings out of 476025
- 230343 string characters out of 5790017
+ 230542 string characters out of 5790017
  1860388 words of memory out of 5000000
- 34309 multiletter control sequences out of 15000+600000
- 528131 words of font info for 125 fonts, out of 8000000 for 9000
+ 34315 multiletter control sequences out of 15000+600000
+ 527903 words of font info for 121 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,11n,76p,1063b,451s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,11n,76p,1063b,474s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
-Output written on main.pdf (8 pages, 3374666 bytes).
+Output written on main.pdf (8 pages, 3522027 bytes).
 PDF statistics:
- 433 PDF objects out of 1000 (max. 8388607)
- 288 compressed objects within 3 object streams
- 42 named destinations out of 1000 (max. 500000)
- 27329 words of extra memory for PDF output out of 29859 (max. 10000000)
+ 454 PDF objects out of 1000 (max. 8388607)
+ 300 compressed objects within 3 object streams
+ 43 named destinations out of 1000 (max. 500000)
+ 27326 words of extra memory for PDF output out of 29859 (max. 10000000)
 

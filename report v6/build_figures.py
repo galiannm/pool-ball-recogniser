@@ -31,20 +31,57 @@ blur_path = ASSETS / "detection_grey_blur.png"
 filtered_path = detection_directory / "filtered_circles.png"
 raw_path = detection_directory / "raw_circles.png"
 masked_path = detection_directory / "masked.png"
-figure, axes = plt.subplots(1, 5, figsize=(7, 1.35), width_ratios=[2, 1, 2, 1, 1], layout="constrained")
+detection_inputs = [masked_path, blur_path, raw_path, filtered_path]
+figure, axes = plt.subplots(1, 4, figsize=(7, 1.35),
+                            width_ratios=[2.5, 1, 1, 1], layout="constrained")
 for index, (axis, path, title) in enumerate(zip(
-    axes, [masked_path, blur_path, raw_path, raw_path, filtered_path],
-    ["Table mask", "Grey + blur", "Hough: 17 circles", "Pocket circle", "Pocket rejected"],
+    axes, [filtered_path, blur_path, raw_path, filtered_path],
+    ["Detected circles on masked table", "Smoothed detail",
+     "Raw pocket circle", "Pocket rejected"],
 )):
     picture = Image.open(path)
     if index == 1:
         picture = picture.crop((1120, 120, 1260, 225))
-    elif index >= 3:
+    elif index >= 2:
         picture = picture.crop((920, 0, 1010, 75))
     axis.imshow(picture, cmap="gray", vmin=0, vmax=255)
     axis.set_title(title, fontsize=8, pad=3)
     axis.axis("off")
+# Keep the report's hyphenated name and the older builder name in sync.
+for name in ["detection-stages.png", "detection_stages.png", "detection-stages.pdf"]:
+    figure.savefig(ASSETS / name, bbox_inches="tight", pad_inches=.04, dpi=240)
 save(figure, "detection_stages.pdf")
+
+# Full frames for the separately placed preprocessing and Hough figures.
+preprocessing_inputs = [masked_path, blur_path]
+figure, axes = plt.subplots(1, 2, figsize=(6.8, 1.05), layout="constrained")
+for axis, path, title in zip(axes, preprocessing_inputs,
+                            ["Table mask", "Greyscale + Gaussian smoothing"]):
+    axis.imshow(Image.open(path), cmap="gray", vmin=0, vmax=255)
+    axis.set_title(title, fontsize=8, pad=3)
+    axis.axis("off")
+figure.savefig(ASSETS / "detection_preprocessing.png", bbox_inches="tight", pad_inches=.04, dpi=240)
+save(figure, "detection_preprocessing.pdf")
+
+starting_directory = ROOT / "final_output/experiments/past_designs/AllBalls/starting_hough"
+starting_metrics_path = starting_directory / "detection_evaluation.csv"
+selected_metrics_path = detection_directory / "detection_evaluation.csv"
+starting_metrics = next(csv.DictReader(starting_metrics_path.open()))
+selected_metrics = next(csv.DictReader(selected_metrics_path.open()))
+assert int(starting_metrics["TP"]) + int(starting_metrics["FN"]) == 16
+assert [int(selected_metrics[key]) for key in ["TP", "FP", "FN"]] == [16,0,0]
+hough_paths = [starting_directory / "raw_circles.png", raw_path, filtered_path]
+hough_inputs = [*hough_paths, starting_metrics_path, selected_metrics_path]
+figure, axes = plt.subplots(1, 3, figsize=(6.8, 1.1), layout="constrained")
+for axis, path, title in zip(axes, hough_paths,
+    ["Starting Hough: raw circles", "Tuned Hough: raw circles",
+     f"After pocket filtering: {selected_metrics['TP']} balls"]):
+    # Display the entire saved image, including all false positives.
+    axis.imshow(Image.open(path))
+    axis.set_title(title, fontsize=8, pad=3)
+    axis.axis("off")
+figure.savefig(ASSETS / "hough_comparison.png", bbox_inches="tight", pad_inches=.04, dpi=240)
+save(figure, "hough_comparison.pdf")
 
 # Reference construction is a schematic: these bar heights are invented solely
 # to explain averaging. Purple is placed between blue (240°) and magenta (300°).
@@ -275,7 +312,7 @@ save(figure, "final_views.pdf")
 # Every band embeds the original numbered photograph and overhead diagram.
 final_parts = []
 for first in [1, 3, 5]:
-    figure = plt.figure(figsize=(6.8, 2.7), layout="constrained")
+    figure = plt.figure(figsize=(6.8, 2.5), layout="constrained")
     grid = figure.add_gridspec(1, 2, wspace=.04)
     inputs = []
     for column, number in enumerate([first, first+1]):
@@ -321,23 +358,75 @@ axis.legend(loc="lower center", bbox_to_anchor=(.5,1.03), ncol=3,
 figure.savefig(ASSETS / "identity_counts.png", bbox_inches="tight", pad_inches=.04, dpi=240)
 save(figure, "identity_counts.pdf")
 
-# Pair each failure crop with its evidence in one compact row.
+# Show the neighbourhood, detected crop and evidence for each failure.
+# Context comes from the original photograph and saved circle geometry; the red
+# light mask is inferred from the exported K=2 image and checked against its CSV.
+from matplotlib.patches import Circle
 failure_inputs = []
-figure = plt.figure(figsize=(6.8, .85), layout="constrained")
-grid = figure.add_gridspec(1, 3, wspace=.10)
-for column, (prefix, title, diagnostic, evidence_title) in enumerate([
-    ("Table1_candidate_7", "Table1: green", "body", "Colour pixels"),
-    ("Table6_candidate_13", "Table6: blue", "body", "Colour pixels"),
-    ("Table6_candidate_11", "Table6: red", "kmeans", "K=2 regions"),
+figure = plt.figure(figsize=(6.8, 2.05))
+failure_evidence_path = ASSETS / "candidate_evidence.csv"
+failure_evidence = {(r["image"], int(r["candidate"])): r
+                    for r in csv.DictReader(failure_evidence_path.open())}
+failure_inputs.append(failure_evidence_path)
+for column, (table, candidate, description, true_number, predicted_number, diagnostic, outcome) in enumerate([
+    ("Table1", 7, "green stripe", 14, -1, "body", "Green stripe → Unknown"),
+    ("Table6", 13, "blue stripe", 10, 4, "body", "Blue stripe → Purple solid"),
+    ("Table6", 11, "red solid", 3, 11, "kmeans", "Red solid → Red stripe"),
 ]):
-    pair = grid[0, column].subgridspec(1, 2, wspace=.03)
-    for index, (suffix, label) in enumerate([("original", title), (diagnostic, evidence_title)]):
-        path = ASSETS / f"{prefix}_{suffix}.png"
-        failure_inputs.append(path)
-        axis = figure.add_subplot(pair[0, index])
-        axis.imshow(Image.open(path), interpolation="nearest")
-        axis.set_title(label, fontsize=8, pad=3)
+    prefix = f"{table}_candidate_{candidate}"
+    photo_path = ROOT / f"Media/{table}.jpeg"
+    circles_path = ROOT / f"final_output/final/{table}/balls.csv"
+    failure_inputs.extend([photo_path, circles_path])
+    circles = {int(r["candidate"]): r for r in csv.DictReader(circles_path.open())}
+    circle = circles[candidate]
+    assert int(circle["predictedNumber"]) == predicted_number
+    assert int(failure_evidence[(table, candidate)]["trueNumber"]) == true_number
+    x, y, radius = [round(float(circle[k])) for k in ["originalX", "originalY", "originalRadiusPixels"]]
+    photo = Image.open(photo_path)
+    context = photo.crop((x-45, y-45, x+46, y+46))
+    left = column / 3
+    centre = left + 1/6
+    figure.text(centre, .97, f"{table}: {description}", ha="center", fontsize=8.5)
+    axis = figure.add_axes([left+.055, .51, .223, .40])
+    axis.imshow(context)
+    axis.add_patch(Circle((45,45), radius, fill=False, edgecolor="#ff00ff", linewidth=1.1))
+    axis.axis("off")
+
+    original_path = ASSETS / f"{prefix}_original.png"
+    diagnostic_path = ASSETS / f"{prefix}_{diagnostic}.png"
+    failure_inputs.extend([original_path, diagnostic_path])
+    diagnostic_image = np.asarray(Image.open(diagnostic_path).convert("RGB"))
+    evidence_title = "Retained colour"
+    evidence_note = ""
+    if diagnostic == "kmeans":
+        mask_path = ASSETS / f"{prefix}_mask.png"
+        type_path = ROOT / f"final_output/recognition/{table}/ball_types.csv"
+        failure_inputs.extend([mask_path, type_path])
+        mask = np.asarray(Image.open(mask_path).convert("L")) > 0
+        maximum = diagnostic_image.max(axis=2).astype(float)
+        minimum = diagnostic_image.min(axis=2).astype(float)
+        saturation = np.rint(np.divide((maximum-minimum)*255, maximum,
+                            out=np.zeros_like(maximum), where=maximum>0))
+        light_mask = mask & (maximum >= 170) & (saturation <= 165)
+        measured = 100*np.count_nonzero(light_mask)/np.count_nonzero(mask)
+        type_record = next(r for r in csv.DictReader(type_path.open()) if int(r["candidate"])==candidate)
+        assert np.isclose(measured, float(type_record["lightPercent"]), atol=.0001)
+        diagnostic_image = np.zeros((*mask.shape,3))
+        diagnostic_image[mask] = matplotlib.colors.to_rgb("#305673")
+        diagnostic_image[light_mask] = matplotlib.colors.to_rgb("#efcf70")
+        evidence_title = "Light mask"
+        evidence_note = f"Gold = light ({measured:.1f}%)"
+    for index, (picture, title) in enumerate([
+        (Image.open(original_path), "Detected crop"), (diagnostic_image, evidence_title)
+    ]):
+        panel_left = left + .035 + index*.155
+        axis = figure.add_axes([panel_left, .14, .11, .29])
+        axis.imshow(picture, interpolation="nearest")
+        figure.text(panel_left+.055, .45, title, ha="center", fontsize=7.5)
         axis.axis("off")
+    figure.text(centre, .065, outcome, ha="center", va="center", fontsize=8, color="#873c30")
+    if evidence_note:
+        figure.text(centre, .005, evidence_note, ha="center", va="center", fontsize=7)
 figure.savefig(ASSETS / "failure_details.png", bbox_inches="tight", pad_inches=.04, dpi=240)
 save(figure, "failure_details.pdf")
 
@@ -405,25 +494,30 @@ save(figure, "development_trials.pdf")
 cue_decisions_path = ASSETS / "cue_decisions.csv"
 cue_decisions = {int(r["candidate"]): r for r in csv.DictReader(cue_decisions_path.open())
                  if r["image"] == "Table3"}
-figure = plt.figure(figsize=(6.8, .72), layout="constrained")
-examples = figure.add_gridspec(1, 2, wspace=.16)
+figure = plt.figure(figsize=(6.8, 1.0))
 def label(number):
     return "Cue" if int(number) == 0 else "Unknown" if int(number) < 0 else str(number)
 for example, candidate in enumerate([2, 4]):
     sample = cue_decisions[candidate]
-    panels = examples[0, example].subgridspec(1, 3, wspace=.04)
-    for col, suffix in enumerate(["context", "original", "padded"]):
-        axis = figure.add_subplot(panels[0, col])
+    assert int(sample["paddingOnly"]) == int(sample["trueNumber"])
+    left = example*.51
+    truth = "Cue ball" if int(sample["trueNumber"]) == 0 else "Purple stripe (12)"
+    figure.text(left+.235, .96, truth, ha="center", fontsize=9, weight="bold")
+    for col, suffix in enumerate(["context", "padded"]):
+        centre = left + [.11, .36][col]
+        axis = figure.add_axes([centre-.09, .19, .18, .56])
         axis.imshow(Image.open(ASSETS / f"Table3_candidate_{candidate}_{suffix}.png"),
                     interpolation="nearest")
-        if col == 0:
-            title = f"True {label(sample['trueNumber'])}"
-        elif col == 1:
-            title = f"Before: {label(sample['unique'])}"
-        else:
-            title = f"+1 px: {label(sample['paddingOnly'])}"
-        axis.set_title(title, fontsize=8, pad=2)
         axis.axis("off")
+        figure.text(centre, .81, "Detected circle" if col == 0 else "Expanded crop",
+                    ha="center", fontsize=8)
+        colour = "#a64438" if col == 0 else "#246347"
+        figure.text(centre, .09, f"Predicted: {label(sample['unique' if col == 0 else 'paddingOnly'])}",
+                    ha="center", va="center", fontsize=8.5, color=colour,
+                    bbox={"boxstyle":"round,pad=.22", "facecolor":"#fbefed" if col == 0 else "#edf6f0",
+                          "edgecolor":"none"})
+    figure.text(left+.235, .43, "→", ha="center", va="center", fontsize=17, color="#657079")
+    figure.text(left+.235, .59, "+1 px", ha="center", fontsize=8, color="#657079")
 figure.savefig(ASSETS / "cue_refinement.png", bbox_inches="tight", pad_inches=.04, dpi=240)
 save(figure, "cue_refinement.pdf")
 # Bind each refreshed montage to the exact image bytes used for its construction.
@@ -433,7 +527,10 @@ def fingerprint(path):
 
 provenance = []
 for name, inputs in [
-    ("detection_stages.pdf", [masked_path, filtered_path, raw_path, blur_path]),
+    ("detection_stages.pdf", detection_inputs),
+    ("detection-stages.pdf", detection_inputs),
+    ("detection_preprocessing.pdf", preprocessing_inputs),
+    ("hough_comparison.pdf", hough_inputs),
     ("final_views.pdf", final_inputs),
     *final_parts,
     ("identity_counts.pdf", [group_counts_path]),
@@ -449,7 +546,7 @@ for name, inputs in [
                                + [ASSETS / "development_comparisons.csv"]),
     ("cue_refinement.pdf", [cue_decisions_path]
                            + [ASSETS / f"Table3_candidate_{n}_{suffix}.png"
-                              for n in [2, 4] for suffix in ["context", "original", "padded"]]),
+                              for n in [2, 4] for suffix in ["context", "padded"]]),
 ]:
     provenance.append({"output": fingerprint(ASSETS / name),
                        "inputs": [fingerprint(path) for path in inputs]})

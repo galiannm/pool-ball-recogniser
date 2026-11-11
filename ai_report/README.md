@@ -10,4 +10,6 @@ Compile from the repository root with:
 pdflatex -interaction=nonstopmode -halt-on-error -output-directory=ai_report ai_report/main.tex
 ```
 
-Check the module's submission instructions before submitting a separate declaration. The assignment states that all pages submitted count towards its eight-page report limit; placing material in a separate file or appendix does not establish an exemption.
+The author has confirmed that the AI-use declaration is submitted separately
+from the main report. The eight-page main-report check therefore excludes this
+document.

@@ -17,32 +17,34 @@
 \@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Diagram of the Final Pipeline\relax }}{1}{figure.caption.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {2}Detailed Design}{1}{section.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Ball Detection}{1}{subsection.2.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces AllBalls through preprocessing and detection.\relax }}{1}{figure.caption.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Candidate Ball Extraction}{2}{subsection.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Ball Type Recognition}{2}{subsection.2.3}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces AllBalls cue, solid and stripe examples for HLS and $k$ means\relax }}{2}{figure.caption.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Ball Colour Recognition}{2}{subsection.2.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Masking (left) and greyscale smoothing (right) on AllBalls.\relax }}{1}{figure.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Starting Hough (left), tuned Hough (centre) and pocket filtering (right).\relax }}{1}{figure.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Ball Type Recognition}{2}{subsection.2.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces AllBalls cue, solid and stripe examples for HLS and $k$ means\relax }}{2}{figure.caption.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Ball Colour Recognition}{2}{subsection.2.3}\protected@file@percent }
 \citation{rbf}
 \citation{gauss2mf}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Approximate histogram reference example on purple balls\relax }}{3}{figure.caption.4}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Exported results (csv \& ball crops) show two colour corrections.\relax }}{3}{figure.caption.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Soft Score Approach}{3}{subsection.2.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}Unique identity assignment Algorithm}{4}{subsection.2.6}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Scores example; the two purple crops in Table2\relax }}{4}{table.caption.6}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Cropped overhead view of AllBalls after perspective correction. AllBalls supplied tuning and colour references.\relax }}{4}{figure.caption.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.7}Resolving cue-ball ambiguity}{4}{subsection.2.7}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Expanding the radius by one pixel corrects the cue/stripe swap in Table3.\relax }}{5}{figure.caption.8}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Approximate histogram reference example on purple balls\relax }}{3}{figure.caption.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Exported results (csv \& ball crops) show two colour corrections.\relax }}{3}{figure.caption.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Soft Score Approach}{3}{subsection.2.4}\protected@file@percent }
+\citation{hungarian}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Unique identity assignment Algorithm}{4}{subsection.2.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Scores example; the two purple crops in Table2\relax }}{4}{table.caption.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Cropped overhead view of AllBalls after recognition and perspective correction. AllBalls supplied tuning and colour references.\relax }}{4}{figure.caption.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}Resolving cue-ball ambiguity}{4}{subsection.2.6}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Table3: one-pixel radius expansion corrects the swapped cue and stripe-12 predictions.\relax }}{5}{figure.8}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {3}Results and Analysis}{5}{section.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Evaluation methodology}{5}{subsection.3.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Final Metrics}{5}{subsection.3.2}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Counts by true identity on Tables1--6 (0 is the cue). Correct identities: solids 41/45, stripes 33/39, cues 6/6; blue stripe 10 was weakest at 2/6.\relax }}{6}{figure.caption.9}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Counts by true identity on Tables1--6 (0 is the cue). Correct identities: solids 41/45, stripes 33/39, cues 6/6.\relax }}{6}{figure.caption.7}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Final Table Views}{6}{subsection.3.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Observed Strengths and Weaknesses}{7}{subsection.3.4}\protected@file@percent }
 \bibcite{course}{1}
-\bibcite{rbf}{2}
-\bibcite{gauss2mf}{3}
-\bibcite{hungarian}{4}
-\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Failure pairs (crop, evidence): missing green colour, neighbour contamination, and red counted as light. Black in the colour views marks excluded pixels.\relax }}{8}{figure.caption.13}\protected@file@percent }
+\bibcite{opencv}{2}
+\bibcite{rbf}{3}
+\bibcite{gauss2mf}{4}
+\bibcite{hungarian}{5}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Failure examples: context and detected circles above, crops and evidence below. Gold marks pixels counted as light; black marks excluded pixels.\relax }}{8}{figure.caption.11}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Possible Next Steps \& Conclusion}{8}{subsection.3.5}\protected@file@percent }
 \newlabel{sec:assessment}{{3.5}{8}{Possible Next Steps \& Conclusion}{subsection.3.5}{}}
 \gdef \@abspage@last{8}

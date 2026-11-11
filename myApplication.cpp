@@ -884,7 +884,6 @@ cv::Mat smoothHistogram(const cv::Mat& histogram, const BallHistogramOptions& p)
 
 // Selects ball body pixels by shrinking the circular mask slightly and removing bright, low-saturation pixels.
 cv::Mat histogramBodyMask(const BallROI& ball, const BallHistogramOptions& p) {
-    validate(p);
     if (ball.image.empty() || ball.image.type() != CV_8UC3 || ball.mask.type() != CV_8UC1 || ball.image.size() != ball.mask.size())
         throw std::invalid_argument("Invalid ball ROI");
     cv::Mat mask, hsv, light;
@@ -897,7 +896,6 @@ cv::Mat histogramBodyMask(const BallROI& ball, const BallHistogramOptions& p) {
 
 // Builds a smoothed, normalised colour histogram from the pixels selected by the supplied mask.
 cv::Mat buildColourHistogram(const cv::Mat& features, const cv::Mat& mask, const BallHistogramOptions& p) {
-    // TODO
     const int channels[] = {0, 1, 2}, bins[] = {p.hueBins, p.saturationBins, p.toneBins};
     const float hue[] = {0, 180}, other[] = {0, 256};
     const float* ranges[] = {hue, other, other};
@@ -913,7 +911,6 @@ Learn Reference Histograms
     3. Combines examples belonging to the same colour (e.g. the red full (3) and striped ball (11))
 */
 BallColourModel buildReferenceHistograms(const std::vector<LabelledColourSample>& samples, const BallHistogramOptions& options) {
-    validate(options);
     BallColourModel model{};
     model.options = options;
     for (const auto& sample : samples) {
@@ -1263,7 +1260,7 @@ IdentityRecognitionResult runIdentityRecognition( const cv::Mat& image, const st
                             const std::vector<cv::Vec3f>& circles, const std::vector<BallTypeResult>& types,
                             const std::vector<BallColourScores>& colours, const BallColourModel& model,
                             const std::filesystem::path& directory, const std::string& filename, 
-                            const EvaluationContext& context) {
+                            const EvaluationContext& context, bool printFinalResults) {
 
     if (balls.size() != circles.size() || types.size() != circles.size() || colours.size() != circles.size()) {
         throw std::runtime_error("Identity inputs have different counts");
@@ -1311,7 +1308,7 @@ IdentityRecognitionResult runIdentityRecognition( const cv::Mat& image, const st
         finalTypes.push_back(number < 0 ? "Unknown" : number == 0 ? "White" : number <= 8 ? "Solid" : "Striped");
     }
 
-    saveFinalResults(image, directory, circles, centres, finalTypes, numbers, context);
+    saveFinalResults(image, directory, circles, centres, finalTypes, numbers, context, printFinalResults);
 
     // Evaluate and save the summary.
     const IdentityRecognitionResult evaluation = evaluateBallIdentities(numbers, context);
@@ -1697,7 +1694,7 @@ Saves the final results to a directory:
     - balls.csv: a CSV file containing the predicted ball information (candidate number, predicted type, predicted number, original coordinates, radius, and transformed coordinates).
 */
 void saveFinalResults(const cv::Mat& image, const std::filesystem::path& directory, const std::vector<cv::Vec3f>& circles, const std::vector<cv::Point2f>& tableCentres, const std::vector<std::string>& types,
-                      const std::vector<int>& numbers, const EvaluationContext& context) {
+                      const std::vector<int>& numbers, const EvaluationContext& context, bool printFinalResults) {
     if (circles.size() != tableCentres.size() || circles.size() != types.size() || circles.size() != numbers.size())
         throw std::runtime_error("Final result vectors have inconsistent candidate counts");
 
@@ -1734,7 +1731,22 @@ void saveFinalResults(const cv::Mat& image, const std::filesystem::path& directo
     saveImage(directory / "original_numbered.png", original);
     saveImage(directory / "table_rectified.png", rectified);
     saveImage(directory / "table_numbered.png", overhead);
-    saveImage(directory / "table_diagram.png", drawTableDiagram(tableCentres, numbers, outlineColours));
+    
+    
+    const cv::Mat diagram =drawTableDiagram(tableCentres, numbers, outlineColours);
+    saveImage(directory / "table_diagram.png", diagram);
+
+    if (printFinalResults) {
+        cv::Mat combined;
+        cv::vconcat(overhead, diagram, combined);
+
+        cv::namedWindow("Final results", cv::WINDOW_NORMAL);
+        cv::resizeWindow("Final results", 950, 900);
+        cv::imshow("Final results", combined);
+
+        cv::waitKey(0);
+        cv::destroyWindow("Final results");
+    }
 
     std::ofstream csv(directory / "balls.csv");
     if (!csv.is_open())
@@ -1745,6 +1757,202 @@ void saveFinalResults(const cv::Mat& image, const std::filesystem::path& directo
         csv << i + 1 << ',' << types[i] << ',' << numbers[i] << ',' << circles[i][0] << ',' << circles[i][1] << ',' << circles[i][2] << ',' << tableCentres[i].x << ',' << tableCentres[i].y << '\n';
 
     finishOutputFile(csv);
+}
+
+// outputs mentioned in the report
+void reportSpecificOutputs() {
+    using Row = std::map<std::string, std::string>;
+
+    const auto readCSV = [](const std::string& path) {
+        std::ifstream file(path);
+        std::string line;
+        if (!std::getline(file, line))
+            throw std::runtime_error("Could not read: " + path);
+
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+
+        std::vector<std::string> columns;
+        std::stringstream header(line);
+        for (std::string key; std::getline(header, key, ',');)
+            columns.push_back(key);
+
+        std::vector<Row> rows;
+        while (std::getline(file, line)) {
+            if (line.empty() || line == "\r")
+                continue;
+
+            Row row;
+            std::stringstream values(line);
+            for (const auto& key : columns)
+                if (!std::getline(values, row[key], ','))
+                    throw std::runtime_error("Incomplete CSV row: " + path);
+
+            rows.push_back(row);
+        }
+        return rows;
+    };
+
+    const auto circleOf = [](const Row& r) {
+        return cv::Vec3f(
+            std::stof(r.at("originalX")),
+            std::stof(r.at("originalY")),
+            std::stof(r.at("originalRadiusPixels")));
+    };
+
+    const auto findCandidate = [&](const std::string& path, int candidate) {
+        for (const auto& r : readCSV(path))
+            if (std::stoi(r.at("candidate")) == candidate)
+                return r;
+        throw std::runtime_error("Candidate missing from: " + path);
+    };
+
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(2)
+        << "\n---------Additional Report Figures---------\n";
+
+    // Histogram examples: read saved similarities and margins.
+    for (const auto& [table, candidate, ball] :
+         std::vector<std::tuple<std::string, int, int>>{
+             {"Table2", 6, 4}, {"Table1", 12, 10}
+         }) {
+        const auto r = findCandidate(
+            RECOGNITION_DIR + table + "/ball_colours.csv", candidate);
+
+        const double best = std::stod(r.at("similarity"));
+        out << table << " ball " << ball
+            << ": " << r.at("colour") << '=' << best
+            << "; next best=" << best - std::stod(r.at("margin")) << '\n';
+    }
+
+    // Type examples: read K-means coverage and calculate HLS coverage.
+    const cv::Mat reference = cv::imread(MEDIA_DIR + TUNNNING_IMG);
+    if (reference.empty())
+        throw std::runtime_error("Could not load reference image");
+
+    out << "\nAllBalls type examples\n" << std::setprecision(1);
+
+    for (const auto& [candidate, label] :
+         std::vector<std::pair<int, std::string>>{
+             {2, "Cue"}, {5, "Solid 1"}, {9, "Stripe 9"}
+         }) {
+        const auto geometry = findCandidate(
+            FINAL_RES_DIR + "AllBalls/balls.csv", candidate);
+        const auto type = findCandidate(
+            RECOGNITION_DIR + "AllBalls/ball_types.csv", candidate);
+
+        cv::Mat preview;
+        const auto hls = pastHLSType(
+            extractBall(reference, circleOf(geometry)), preview);
+        const double light = std::stod(type.at("lightPercent"));
+
+        out << label << ": HLS light=" << hls.lightPercent
+            << "%; K=2 light=" << light
+            << "%; non-light=" << 100 - light
+            << "% -> " << type.at("type") << '\n';
+    }
+
+    const auto model = buildColourReferenceModel(reference);
+    int matched = 0, paddingCorrect = 0, gains = 0, losses = 0;
+    double distanceSum = 0;
+    out << std::setprecision(2);
+
+    for (const auto& filename : VAL_IMG) {
+        const std::string table =
+            std::filesystem::path(filename).stem().string();
+        const cv::Mat image = cv::imread(MEDIA_DIR + filename);
+        if (image.empty())
+            throw std::runtime_error("Could not load: " + filename);
+
+        std::vector<cv::Vec3f> circles;
+        std::vector<Candidate> original;
+        std::vector<int> oldColours;
+
+        for (const auto& r : readCSV(FINAL_RES_DIR + table + "/balls.csv")) {
+            Candidate c;
+            c.circle = circleOf(r);
+            c.roi = extractBall(image, c.circle);
+
+            const auto segmentation = segmentBallKMeans(c.roi, 2);
+            c.baselineType = classifyBallType(segmentation);
+            c.colours = scoreBallColours(c.roi, model);
+            identityEvidence(c);
+
+            circles.push_back(c.circle);
+            original.push_back(c);
+            oldColours.push_back(pastHueColour(segmentation));
+        }
+
+        const auto context = prepareEvaluation(circles, filename);
+        const auto detection = readCSV(
+            DETECTION_DIR + table + "/detection_evaluation.csv").at(0);
+
+        matched += std::stoi(detection.at("TP"));
+        distanceSum += std::stod(detection.at("meanError"))
+                     * std::stoi(detection.at("TP"));
+
+        // Evaluate padding without applying cue reservation.
+        auto padded = original;
+        for (size_t i = 0; i < original.size(); ++i)
+            if (original[i].baselineType.type == "White")
+                padded[i] = rawWhitePadding(image, original[i], model, 1);
+
+        paddingCorrect +=
+            evaluateBallIdentities(assignUnique(padded), context).correct;
+
+        for (size_t i = 0; i < original.size(); ++i) {
+            const int g = context.matching.predictionToGroundTruth[i];
+            if (g < 0)
+                continue;
+
+            const int number = context.truth[g].number;
+            if (number > 0) {
+                const int colour = number <= 8 ? number : number - 8;
+                const bool before = oldColours[i] == colour;
+                const bool after = original[i].colours.bestColour == colour;
+                gains += !before && after;
+                losses += before && !after;
+            }
+
+            if (table == "Table1" &&
+                (number == 0 || number == 14 || number == 5 || number == 9)) {
+                const auto r = findCandidate(
+                    FINAL_RES_DIR + table + "/balls.csv", int(i) + 1);
+                const cv::Point2f centre(
+                    std::stof(r.at("tableX")), std::stof(r.at("tableY")));
+
+                out << "Table1 ball " << number
+                    << ": radius=" << original[i].circle[2]
+                    << " px; centre error="
+                    << cv::norm(centre - context.truth[g].centre)
+                    << " table units\n";
+            }
+        }
+
+        if (table == "Table2") {
+            const auto& solid = original.at(5).identityScore;   // Candidate 6.
+            const auto& stripe = original.at(10).identityScore; // Candidate 11.
+
+            out << std::setprecision(3)
+                << "\nTable2 crop | Score for 4 | Score for 12\n"
+                << "Purple solid | " << solid[4] << " | " << solid[12]
+                << "\nPurple stripe | " << stripe[4] << " | " << stripe[12]
+                << "\nSelected pairing: " << solid[4] + stripe[12]
+                << "; reverse pairing: " << solid[12] + stripe[4]
+                << "\n\n" << std::setprecision(2);
+        }
+    }
+
+    if (matched > 0)
+        out << "Mean localisation error: "
+            << distanceSum / matched << " table units\n";
+
+    out << "After padding alone: " << paddingCorrect
+        << '/' << matched << " correct identities\n"
+        << "Colour corrections: " << gains
+        << "; regressions: " << losses << '\n';
+
+    std::cout << out.str();
 }
 
 /*
@@ -2059,7 +2267,7 @@ int pastHardIdentity(const BallTypeResult& type, int colour) {
 */
 
 void runPastHoughComparison(const PastImage& data, std::map<std::string, EvaluationResult>& totals) {
-    const HoughParams starting{1.0, 20.0, 80.0, 30.0, 15, 30};
+    const HoughParams starting{2.0, 20.0, 150.0, 20.0, 15, 30};
 
     const auto initial = runDetection(data.image, starting, data.directory / "starting_hough", data.filename);
 
@@ -2477,7 +2685,7 @@ void runMainPipeline() {
         // run identity recognition
         const IdentityRecognitionResult identity = runIdentityRecognition(image, balls, 
                 detection.filteredCircles, recognition.types, colourRecognition.colours, 
-                colourModel, directory_final, filename, context);
+                colourModel, directory_final, filename, context, true);
 
         std::cout << "---------Ball Identity Results---------\n";
         std::cout << filename << ": "
@@ -2522,16 +2730,29 @@ void runMainPipeline() {
 void MyApplication() {
     const bool runGridSeachExp = true;
     const bool runPast = true;
+    const bool runReport = true;
 
     if (runGridSeachExp) {
+        std::cout << "===========GRID SEARCH===========\n";
         runGridSearch();
+        std::cout << "\n\n";
     }
 
     if (runPast){
+        std::cout << "===========PAST DESIGNS===========\n";
         runPastDesigns();
+        std::cout << "\n\n";
     }
 
+    if (runReport) {
+        std::cout << "===========REPORT SPECIFIC OUTPUT===========\n";
+        reportSpecificOutputs();
+        std::cout << "\n\n";
+    }
+
+    std::cout << "===========MAIN PIPELINE===========\n";
     runMainPipeline();
+    std::cout << "\n";
 }
 
 #ifdef POOL_BALL_STANDALONE

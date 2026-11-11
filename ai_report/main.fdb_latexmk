@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1794255563 "/Users/manon/Documents/Uni/Trinity4/CV/Assignment/ai_report/main.tex" "main.pdf" "main" 1794255563 0
-  "/Users/manon/Documents/Uni/Trinity4/CV/Assignment/ai_report/main.tex" 1794255562 12707 a5556adcba793664b665a530ab622e01 ""
+["pdflatex"] 1794354721 "/Users/manon/Documents/Uni/Trinity4/CV/Assignment/ai_report/main.tex" "main.pdf" "main" 1794354721 0
+  "/Users/manon/Documents/Uni/Trinity4/CV/Assignment/ai_report/main.tex" 1794354720 15544 85fb02cfa4f56320099a74df5211458d ""
   "/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc" 1254269338 2375 baa924870cfb487815765f9094cf3728 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc" 1254269338 3031 6c4d3515bf7115d8518af1c9ab97ca44 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -75,9 +75,9 @@
   "/usr/local/texlive/2023/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1696674663 4623355 b8cad38412faebe1ce5b780a45db67bd ""
   "/usr/local/texlive/2023/texmf-var/web2c/pdftex/pdflatex.fmt" 1696674622 7883454 cad98362a735f83ca250224c082febf9 ""
   "/usr/local/texlive/2023/texmf.cnf" 1678822455 577 1b2b1af17af2508fb20dd85783af4050 ""
-  "main.aux" 1794255563 1796 8c5c27121e3d48da8210d0b1a57f346d "pdflatex"
-  "main.out" 1794255563 1602 91f468c370efd3c9310d475867888191 "pdflatex"
-  "main.tex" 1794255562 12707 a5556adcba793664b665a530ab622e01 ""
+  "main.aux" 1794354721 2032 07dedf8f84e5d6d3b062dbdc5cfdbd2c "pdflatex"
+  "main.out" 1794354721 1876 c941b81ed90074f9b7c8ace875c7e816 "pdflatex"
+  "main.tex" 1794354720 15544 85fb02cfa4f56320099a74df5211458d ""
   (generated)
   "main.aux"
   "main.log"

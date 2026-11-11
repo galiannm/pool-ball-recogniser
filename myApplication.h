@@ -303,21 +303,18 @@ std::vector<int> assignUnique(const std::vector<Candidate>& candidates);
 IdentityRecognitionResult evaluateBallIdentities(const std::vector<int>& numbers, const EvaluationContext& context);
 
 IdentityRecognitionResult runIdentityRecognition(
-    const cv::Mat& image,
-    const std::vector<BallROI>& balls,
-    const std::vector<cv::Vec3f>& circles,
-    const std::vector<BallTypeResult>& types,
-    const std::vector<BallColourScores>& colours,
-    const BallColourModel& model,
-    const std::filesystem::path& directory,
-    const std::string& filename,
-    const EvaluationContext& context);
+    const cv::Mat& image, const std::vector<BallROI>& balls,
+    const std::vector<cv::Vec3f>& circles, const std::vector<BallTypeResult>& types,
+    const std::vector<BallColourScores>& colours, const BallColourModel& model,
+    const std::filesystem::path& directory, const std::string& filename,
+    const EvaluationContext& context, bool printFinalResults = false);
 
 void accumulateBallGroups(const std::vector<int>& numbers, const EvaluationContext& context, std::map<std::string, BallGroupCounts>& groups);
 void printBallGroupEvaluation(const std::map<std::string, BallGroupCounts>& groups);
 void printOverallEvaluation(const OverallEvaluation& totals);
 
-void saveFinalResults(const cv::Mat& image, const std::filesystem::path& directory, const std::vector<cv::Vec3f>& circles, const std::vector<cv::Point2f>& tableCentres, const std::vector<std::string>& types, const std::vector<int>& numbers, const EvaluationContext& context);
+void saveFinalResults(const cv::Mat& image, const std::filesystem::path& directory, const std::vector<cv::Vec3f>& circles, const std::vector<cv::Point2f>& tableCentres, 
+    const std::vector<std::string>& types, const std::vector<int>& numbers, const EvaluationContext& context, bool printFinalResults = false);
 
 PastImage preparePastImage(const std::string& filename, const std::filesystem::path& root);
 BallTypeResult pastHLSType(const BallROI& ball, cv::Mat& preview);
@@ -333,4 +330,5 @@ void savePastSummaries(const std::filesystem::path& root, const std::vector<Past
 
 void runGridSearch();
 void runMainPipeline();
+void reportSpecificOutputs();
 void MyApplication();
