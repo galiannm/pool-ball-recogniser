@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2023.10.7)  11 NOV 2026 16:28
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2023.10.7)  11 NOV 2026 18:10
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -490,24 +490,24 @@ Package pdftex.def Info: assets/reference_construction.pdf  used on input line 1
 <assets/colour_comparison.pdf, id=156, 512.87563pt x 95.72185pt>
 File: assets/colour_comparison.pdf Graphic file (type pdf)
 <use assets/colour_comparison.pdf>
-Package pdftex.def Info: assets/colour_comparison.pdf  used on input line 145.
+Package pdftex.def Info: assets/colour_comparison.pdf  used on input line 144.
 (pdftex.def)             Requested size: 437.0374pt x 81.57135pt.
  [3 <./assets/reference_construction.pdf> <./assets/colour_comparison.pdf>]
 <../final_output/final/AllBalls/table_numbered.png, id=212, 1439.3775pt x 685.56125pt>
 File: ../final_output/final/AllBalls/table_numbered.png Graphic file (type png)
 <use ../final_output/final/AllBalls/table_numbered.png>
-Package pdftex.def Info: ../final_output/final/AllBalls/table_numbered.png  used on input line 207.
+Package pdftex.def Info: ../final_output/final/AllBalls/table_numbered.png  used on input line 206.
 (pdftex.def)             Requested size: 227.62206pt x 65.45438pt.
  [4 <../final_output/final/AllBalls/table_numbered.png (PNG copy)>]
 <assets/cue_refinement.pdf, id=223, 439.80377pt x 79.90164pt>
 File: assets/cue_refinement.pdf Graphic file (type pdf)
 <use assets/cue_refinement.pdf>
-Package pdftex.def Info: assets/cue_refinement.pdf  used on input line 230.
+Package pdftex.def Info: assets/cue_refinement.pdf  used on input line 229.
 (pdftex.def)             Requested size: 446.13727pt x 81.05602pt.
 
 
 Package caption Warning: The option `hypcap=true' will be ignored for this
-(caption)                particular \caption on input line 231.
+(caption)                particular \caption on input line 230.
 See the caption package documentation for explanation.
 
 <assets/identity_counts.pdf, id=224, 491.19463pt x 97.32285pt>
@@ -535,10 +535,10 @@ Package pdftex.def Info: assets/final_views_5_6.pdf  used on input line 296.
 <assets/failure_details.pdf, id=303, 457.76176pt x 159.01463pt>
 File: assets/failure_details.pdf Graphic file (type pdf)
 <use assets/failure_details.pdf>
-Package pdftex.def Info: assets/failure_details.pdf  used on input line 333.
+Package pdftex.def Info: assets/failure_details.pdf  used on input line 334.
 (pdftex.def)             Requested size: 446.13727pt x 154.97919pt.
  [7 <./assets/final_views_5_6.pdf>]
-LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 376.
+LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 377.
  (/usr/local/texlive/2023/texmf-dist/tex/latex/base/t1cmtt.fd
 File: t1cmtt.fd 2022/07/10 v2.5l Standard LaTeX font definitions
 )
@@ -551,15 +551,15 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: 409DAACB8ABDDE1EE42AEC082B0790CE;2347.
  ) 
 Here is how much of TeX's memory you used:
- 14212 strings out of 476025
- 230542 string characters out of 5790017
- 1860388 words of memory out of 5000000
+ 14216 strings out of 476025
+ 230580 string characters out of 5790017
+ 1861388 words of memory out of 5000000
  34315 multiletter control sequences out of 15000+600000
- 527903 words of font info for 121 fonts, out of 8000000 for 9000
+ 528011 words of font info for 123 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  75i,11n,76p,1063b,474s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
-Output written on main.pdf (8 pages, 3522027 bytes).
+Output written on main.pdf (8 pages, 3522637 bytes).
 PDF statistics:
  454 PDF objects out of 1000 (max. 8388607)
  300 compressed objects within 3 object streams

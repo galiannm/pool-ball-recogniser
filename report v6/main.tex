@@ -19,7 +19,7 @@ Manon Yiqin Galian Ng (23375206) -- CSU44053
 The objective of this project was to locate pool balls in photographs of a table
 and identify each ball by type and number. I divided the task into detecting
 candidate balls and recognising their identities, then converted their positions
-into table coordinates for the final views. 
+into table coordinates for the final views. The system was implemented using OpenCV 4.12.0 and C++17.
 % Development was iterative: I began with simple approaches and used intermediate
 % images and quantitative errors to decide what to change. AllBalls supplied tuning
 % and colour references; Tables1--6 supported evaluation and refinement.
@@ -42,7 +42,7 @@ intensity variations before circular Hough transform.
 \captionof{figure}{Masking (left) and greyscale smoothing (right) on AllBalls.}
 \end{minipage}
 
-I initially varied Hough parameters manually on AllBalls. This was slow and configurations were hard to compare, so I searched and evaluated 480 configurations.
+I initially varied Hough parameters manually on AllBalls. This was slow and configurations were hard to compare, so I evaluated 480 configurations.
 The centers were matched to annotations in table coordinates. I ranked settings by
 highest number of correct detections (missed ball cannot be recognised later) then by fewest 
 extras and finally by lowest centre error (smallest average distance between detected and annotated ball centres).
@@ -136,9 +136,8 @@ body pixels gave an Unknown colour label.
 \end{figure}
 
 Finally, each candidate's body-colour histogram were compared with all eight references using one minus Bhattacharyya
-distance to give similarity $s_{i,c}$ scores. The inital k means approach gave 65/80 
-and the histogram with the representative-colour rules improved the results to 73/80 with 8
-corrections and no regression.
+distance to give similarity $s_{i,c}$ scores. The inital k means correctly classified body colour for 65/80 matched balls.
+Histogram matching improved this to 73/80 with 8 corrections and no regression.
 
 % SOURCE: native ROI exports and ball_colours/hard_hue CSVs.
 \begin{figure}[H]\centering
@@ -255,11 +254,12 @@ $\mathrm{MLE}=\frac{1}{N}\sum_{i=1}^{N}
 Recognition accuracy measured the fraction of matched balls given the correct
 identity. End-to-end accuracy divided correct identities by all annotated balls,
 so missed balls also counted as failures. Unknown labels counted as incorrect.
-False detections reduced precision but were excluded from these recognition
-fractions. Body-colour accuracy excluded the cue.
+False detections lowered detection precision but were excluded from recognition 
+accuracy because they don't match a real ball whose identity could be assessed.
+Body-colour accuracy excluded the cue.
 
 I reported AllBalls separately because it supplied tuning and colour references.
-The pooled results cover Tables1--6, which also guided development. They therefore
+The overall results combine Tables1--6, which also guided development. They therefore
 describe performance on images used to refine the system, rather than an independent test.
 
 \subsection{Final Metrics}
@@ -278,9 +278,9 @@ solids 41/45, stripes 33/39, cues 6/6.}
 
 \subsection{Final Table Views}
 
-Using the four supplied corners, I calculated a perspective transform that mapped the playing 
+Using the supplied corners, I calculated a perspective transform that mapped the playing 
 surface to a \(1434\times683\) rectangle, then applied the same transform to the detected ball 
-centres. The warping was done post detection and recognition so as to not affect the ball shapes.
+centres. This was done post detection and recognition so as to not affect the ball shapes.
 
 % SOURCE: unchanged saved table_numbered.png/table_diagram.png pairs for all six tables.
 \begin{figure}[H]\centering
@@ -299,8 +299,9 @@ centres. The warping was done post detection and recognition so as to not affect
 
 The final views pair a numbered rectified photograph with an overhead diagram. The photograph 
 shows the predictions in context, while the diagram uses enlarged markers for readability.
-Magenta outlines indicate correct identities while yellow indicates wrong identities or false circles, 
-using annotations only for these evaluation colours.
+Magenta outlines indicate correct identities while yellow indicates wrong identities or false circles. 
+% Annotations and colour were added post predictions.
+These outline colours were added after prediction by comparing results with the ground truth.
 
 \subsection{Observed Strengths and Weaknesses}
 Table2 was the clearest success: all 16 real balls were correctly identified, while the extra 
@@ -350,12 +351,12 @@ Additionally, we could test lighting correction to make white coverage estimates
 accurate and consistent across different lighting conditions.
 
 \textbf{Conclusion.} 
-The pipeline performed well for the tested setup. AllBalls provided clear reference examples but 
-limited variety, so the table images were needed to reveal edge cases such as overlapping balls 
-and imperfect crops. These cases helped refine the general approach, while I aimed to limit 
-adjustments for individual images. Additional fully unseen test images would help assess how 
-well these refinements carry over to new arrangements and lighting conditions, with the parameters 
-kept fixed.
+The pipeline performed well for the tested setup. AllBalls provided clear reference examples but had 
+limited variety, so the different arrangements in Tables1--6 helped reveal more difficult cases such as overlapping balls.
+I focused on changes that addressed recurring errors across the images, aiming to keep the approach 
+applicable beyond individual cases.
+To fully assess the system’s performance and ability to generalise, testing on additional unseen images with the same fixed parameters would help establish how well it
+handles new ball arrangements and lighting conditions.
 
 \begin{thebibliography}{4}
 \setlength{\itemsep}{2pt}
